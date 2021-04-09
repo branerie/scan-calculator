@@ -1,17 +1,22 @@
 import { getPointDistance } from '../utils/point'
 import { getQuadrant, radiansToDegrees } from '../utils/angle'
 import Element from './element'
+import Point from './point'
 
 class Line extends Element {
-    #drawingElement
-
-    constructor({ pointA, pointB, groupId, generatorFunc }) {
+    constructor(pointA, pointB, groupId = null) {
         super(groupId)
         // TODO: check if both points are the same point
-        this.generatorFunc = generatorFunc.bind(this)
 
         this.pointA = pointA
-        this.pointB = pointB || { x: 10, y: 10 }
+        this.pointB = pointB
+    }
+
+    isPointOnLine(point) {
+        const pointDistA = getPointDistance(this.pointA, point)
+        const pointDistB = getPointDistance(this.pointB, point)
+
+        return Math.abs((pointDistA + pointDistB) - this.length) < 1
     }
 
     get baseX() {
@@ -20,16 +25,6 @@ class Line extends Element {
 
     get baseY() {
         return this.pointA.y
-    }
-
-    get drawingElement() {
-        if (!this.isFullyDefined) return null
-
-        if (!this.#drawingElement) {
-            this.__setDrawingElement()
-        }
-
-        return this.#drawingElement
     }
 
     get isFullyDefined() {
@@ -42,7 +37,38 @@ class Line extends Element {
     }
 
     get isAlmostDefined() {
-        return this.pointA
+        return (!!this.pointA)
+    }
+
+    setLastAttribute(lastPoint) {
+        this.pointB = lastPoint
+    }
+
+    getMovedCopy(dX, dY) {
+        const movedLine = new Line(this.pointA, this.pointB)
+
+        movedLine.pointA.x += dX
+        movedLine.pointB.x += dX
+        movedLine.pointA.y += dY
+        movedLine.pointB.y += dY
+
+        return movedLine
+    }
+
+    getFoundationalElements() {
+        return [this.pointA.x, this.pointA.y, this.pointB.x, this.pointB.y]
+    }
+
+    // Should never have to be used for Line element
+    defineNextAttribute(definingPoint) {
+        if (this.isFullyDefined) return
+
+        if (!this.pointA) {
+            this.pointA = definingPoint
+            return
+        }
+
+        this.pointB = definingPoint
     }
 
     get length() {
@@ -78,45 +104,6 @@ class Line extends Element {
             default:
                 throw new Error()
         }
-    }
-
-    isPointOnLine(point) {
-        const pointDistA = getPointDistance(this.pointA, point)
-        const pointDistB = getPointDistance(this.pointB, point)
-
-        return Math.abs((pointDistA + pointDistB) - this.length) < 1
-    }
-
-    setLastAttribute(lastPoint) {
-        this.pointB = lastPoint
-        this.__setDrawingElement()
-    }
-
-    getMovedCopy(dX, dY) {
-        const movedLine = new Line({ pointA: this.pointA, pointB: this.pointB })
-
-        movedLine.pointA.x += dX
-        movedLine.pointB.x += dX
-        movedLine.pointA.y += dY
-        movedLine.pointB.y += dY
-
-        return movedLine
-    }
-
-    // Should never have to be used for Line element
-    defineNextAttribute(definingPoint) {
-        if (this.isFullyDefined) return
-
-        if (!this.pointA) {
-            this.pointA = definingPoint
-            return
-        }
-
-        this.pointB = definingPoint
-    }
-
-    __setDrawingElement() {
-        this.#drawingElement = this.generatorFunc()
     }
 }
 

@@ -6,13 +6,17 @@ import useForm from '../../hooks/useForm'
 import Navbar from '../Navbar'
 import ToolInputMapper from '../ToolInputMapper'
 
-import { createEditedElement, createElement } from '../../utils/elementFactory'
+import { createEditedElement, createElement, getRoughElements } from '../../utils/elementFactory'
 import Point from '../../drawingElements/point'
+import Line from '../../drawingElements/line'
+
+let groupId = 1
 
 const Canvas = () => {
     const { elements, addElement, editElement, deleteElement } = useElementsHistory([])
     const [tool, setTool] = useState({ type: 'draw', name: 'line' })
     const [inputValues, setInputValue] = useForm({})
+    const [currentGroupId, setCurrentGroupId] = useState(null)
     const [currentElement, setCurrentElement] = useState(null)
 
     // const [isUsingTool, setIsUsingTool] = useState(false)
@@ -24,9 +28,13 @@ const Canvas = () => {
 
         const roughCanvas = rough.canvas(canvas)
 
-        elements.forEach(element => roughCanvas.draw(element.drawingElement))
-        if (currentElement && currentElement.isFullyDefined) {
-            roughCanvas.draw(currentElement.drawingElement)
+        const roughElements = getRoughElements(elements)
+        roughElements.forEach(element => roughCanvas.draw(element))
+        if (currentElement && currentElement.isAlmostDefined) {
+            const roughElementsParam = Array.isArray(currentElement) ? currentElement : [currentElement]
+            const roughElements = getRoughElements(roughElementsParam)
+
+            roughElements.forEach((roughElement) => roughCanvas.draw(roughElement))
         }
     }, [elements, currentElement])
 
@@ -64,6 +72,11 @@ const Canvas = () => {
     //     }
     // }, [undo, redo])
 
+    const setNextGroupId = () => {
+        setCurrentGroupId(groupId)
+        return groupId++
+    }
+
     const handleMouseClick = (event) => {
         if (!tool) {
             // TODO: Handle element select
@@ -79,14 +92,19 @@ const Canvas = () => {
                     addElement(currentElement)
 
 
-                    return setCurrentElement(null)
+                    setCurrentElement(null)
+                    if (currentGroupId) {
+                        setCurrentGroupId(null)
+                    }
                 }
 
                 return currentElement.defineNextAttribute(newPoint)
             }
 
             const { clientX, clientY } = event
-            const newElement = createElement(tool.name, clientX, clientY)
+
+            const groupId = setNextGroupId()
+            const newElement = createElement(tool.name, clientX, clientY, groupId)
             setCurrentElement(newElement)
         }
     }
@@ -123,6 +141,7 @@ const Canvas = () => {
             <Navbar
                 tool={tool}
                 setTool={setTool}
+                setNextGroupId={setNextGroupId}
             />
 
             { tool &&

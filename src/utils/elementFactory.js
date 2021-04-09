@@ -3,58 +3,31 @@ import rough from 'roughjs/bundled/rough.esm'
 import Arc from '../drawingElements/arc'
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
-import { degreesToRadians } from './angle'
+import Polyline from '../drawingElements/polyline'
 
 
 const generator = rough.generator()
 
-const getGeneratorFunc = (elementType) => {
-    switch (elementType) {
-        case 'line':
-            return function() {
-                return (
-                    generator.line(
-                        [
-                            this.pointA.x, 
-                            this.pointA.y, 
-                            this.pointB.x, 
-                            this.pointB.y
-                        ], 
-                        { roughness: 0.5 }
-                    )
-                )
-            }
-                
-        case 'arc':
-            // roughElements.push(generator.path(foundationalElements))
-            return () => generator.arc([
-                this.centerPoint.x,
-                this.centerPoint.y,
-                this.radius,
-                this.radius,
-                degreesToRadians(this.startAngle),
-                degreesToRadians(this.endAngle),
-                false
-            ], { roughness: 0.5 })
-        default:
-            return null
-    }
-}
-
 // let nextId = 0
 const createElement = (type, initialX, initialY, groupId = null) => {
-    const generatorFunc = getGeneratorFunc(type)
-
     let element
     if (type === 'line') {
         const pointA = new Point(initialX, initialY)
         // const pointB = new Point(initialX, initialY)
 
-        element = new Line({ pointA, generatorFunc })
+        element = new Line(pointA)
     } else if (type === 'arc') {
         const centerPoint = new Point(initialX, initialY)
 
         element = new Arc(centerPoint)
+    } else if (type === 'polyline') {
+        const initialPoint = new Point(initialX, initialY)
+
+        element = new Polyline(
+            initialPoint, 
+            groupId, 
+            (secondPointX, secondPointY, groupId) => createElement('line', secondPointX, secondPointY, groupId)
+        )
     }
 
     // element.id = nextId
@@ -94,7 +67,31 @@ const createEditedElement = (element, payload, keepIds = true) => {
     return newElement
 }
 
+const getRoughElements = (elements) => {
+    const roughElements = []
+    for (const element of elements) {
+        const foundationalElements = element.getFoundationalElements()
+        switch (element.type) {
+            case 'line':
+                roughElements.push(generator.line(...foundationalElements, { roughness: 0 }))
+                break
+            case 'arc':
+                // roughElements.push(generator.path(foundationalElements))
+                roughElements.push(generator.arc(...foundationalElements))
+                break
+            case 'polyline':
+                foundationalElements.forEach(fe => roughElements.push(generator.line(fe)))
+                break
+            default:
+                break
+        }
+    }
+
+    return roughElements
+}
+
 export {
     createElement,
-    createEditedElement
+    createEditedElement,
+    getRoughElements
 }

@@ -1,6 +1,6 @@
 import React from 'react'
 
-const Navbar = ({ tool, setTool, undo, redo }) => {
+const Navbar = ({ tool, setTool, undo, redo, setNextGroupId }) => {
     return (
         <>
             <div>
@@ -11,34 +11,32 @@ const Navbar = ({ tool, setTool, undo, redo }) => {
                     onChange={() => setTool('selection')}
                 /> */}
                 {/* <label htmlFor='selection'>Selection</label> */}
+                <label htmlFor='line'>Line</label>
                 <input
                     type='radio'
                     id='line'
                     checked={tool.name === 'line'}
                     onChange={() => setTool({ type: 'draw', name: 'line' })}
                 />
-                <label htmlFor='line'>Line</label>
+
+                <label htmlFor='line'>Polyline</label>
                 <input
                     type='radio'
-                    id='rectangle'
-                    checked={tool === 'rectangle'}
-                    onChange={() => setTool('rectangle')}
+                    id='polyline'
+                    checked={tool.name === 'polyline'}
+                    onChange={() => {
+                        setTool({ type: 'draw', name: 'polyline' })
+                        setNextGroupId()
+                    }}
                 />
-                <label htmlFor='rectangle'>Rectangle</label>
-                <input
-                    type='radio'
-                    id='circle'
-                    checked={tool === 'circle'}
-                    onChange={() => setTool('circle')}
-                />
-                <label htmlFor='circle'>Circle</label>
+
+                <label htmlFor='arc'>Arc</label>
                 <input
                     type='radio'
                     id='arc'
                     checked={tool.name === 'arc'}
                     onChange={() => setTool({ type: 'draw', name: 'arc' })}
                 />
-                <label htmlFor='arc'>Arc</label>
             </div>
             {/* <div>
                 <button onClick={undo}>Undo</button>

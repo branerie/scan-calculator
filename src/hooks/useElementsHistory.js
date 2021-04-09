@@ -4,6 +4,7 @@ import { createEditedElement } from '../utils/elementFactory'
 let nextId = 1
 
 const useElementsHistory = (initialElements, initialGroups) => {
+    // TODO: maybe change to object with id as keys?
     const [elements, setElements] = useState(initialElements || [])
     const [groups, setGroups] = useState(initialGroups || {})
     const [historyPointer, setHistoryPointer] = useState(null)

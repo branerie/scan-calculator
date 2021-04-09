@@ -1,10 +1,6 @@
 class Element {
-    constructor(groupId = null) {
+    constructor(groupId) {
         this.groupId = groupId
-    }
-
-    get type() {
-        return this.constructor.name.toLowerCase()
     }
 
     get baseX() {
@@ -13,6 +9,10 @@ class Element {
 
     get baseY() {
         throw new Error('Property baseY is not implemented')
+    }
+
+    get type() {
+        return this.constructor.name.toLowerCase()
     }
 
     get isFullyDefined() {
