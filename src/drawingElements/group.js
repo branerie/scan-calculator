@@ -1,18 +1,17 @@
-class Element {
-    constructor(groupId = null) {
-        this.groupId = groupId
-    }
+import Element from './element'
 
-    get type() {
-        return this.constructor.name.toLowerCase()
+class Group extends Element {
+    constructor(elements) {
+        super()
+        this.elements = elements
     }
 
     get baseX() {
-        throw new Error('Property baseX is not implemented')
+        return this.elements[0].baseX
     }
 
     get baseY() {
-        throw new Error('Property baseY is not implemented')
+        return this.elements[0].baseY
     }
 
     get isFullyDefined() {
@@ -25,7 +24,7 @@ class Element {
     }
 
     getFoundationalElements() {
-        throw new Error('Method getFoundationalElements is not implemented')
+        return this.elements.map(e => e.getFoundationalElements())
     }
 
     defineNextAttribute(definingPoint) {
@@ -37,4 +36,4 @@ class Element {
     }
 }
 
-export default Element
+export default Group
