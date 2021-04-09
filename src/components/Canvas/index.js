@@ -30,8 +30,8 @@ const Canvas = () => {
 
         const roughElements = getRoughElements(elements)
         roughElements.forEach(element => roughCanvas.draw(element))
-        if (currentElement && currentElement.isAlmostDefined) {
-            const roughElementsParam = Array.isArray(currentElement) ? currentElement : [currentElement]
+        if (currentElement && currentElement.isFullyDefined) {
+            const roughElementsParam = currentElement.type === 'polyline' ? currentElement.elements : [currentElement]
             const roughElements = getRoughElements(roughElementsParam)
 
             roughElements.forEach((roughElement) => roughCanvas.draw(roughElement))
@@ -44,6 +44,12 @@ const Canvas = () => {
                 setCurrentElement(null)
             }
         } else if (event.keyCode === 13) { // enter
+            if (currentElement.type === 'polyline') {
+                addElement(currentElement)
+
+                setCurrentElement(null)
+                setCurrentGroupId(null)
+            }
         }
     }, [currentElement])
 
@@ -88,14 +94,10 @@ const Canvas = () => {
                 const { clientX, clientY } = event
                 const newPoint = new Point(clientX, clientY)
                 
-                if (currentElement.isFullyDefined) {
+                if (currentElement.isFullyDefined && currentElement.type !== 'polyline') {
                     addElement(currentElement)
 
-
                     setCurrentElement(null)
-                    if (currentGroupId) {
-                        setCurrentGroupId(null)
-                    }
                 }
 
                 return currentElement.defineNextAttribute(newPoint)

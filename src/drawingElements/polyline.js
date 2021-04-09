@@ -42,8 +42,11 @@ class Polyline extends Element {
         this.elements.push(line)
     }
 
-    setLastAttribute() {
+    setLastAttribute(definingPoint) {
         this.#isFullyDefined = true
+
+        const lineToDefine = this.elements[this.elements.length - 1]
+        lineToDefine.pointB = definingPoint
     }
 }
 

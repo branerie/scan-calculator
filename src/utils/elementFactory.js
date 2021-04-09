@@ -80,7 +80,7 @@ const getRoughElements = (elements) => {
                 roughElements.push(generator.arc(...foundationalElements))
                 break
             case 'polyline':
-                foundationalElements.forEach(fe => roughElements.push(generator.line(fe)))
+                foundationalElements.forEach(fe => roughElements.push(generator.line(...fe, { roughness: 0 })))
                 break
             default:
                 break
