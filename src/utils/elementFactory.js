@@ -5,7 +5,6 @@ import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
 
-
 const generator = rough.generator()
 
 // let nextId = 0
@@ -39,19 +38,11 @@ const createElement = (type, initialX, initialY, groupId = null) => {
     return element
 }
 
-const createEditedElement = (element, payload, keepIds = true) => {
+const createEditedElement = (element, payload) => {
     const newElement = createElement(element.constructor.name.toLowerCase(), element.baseX, element.baseY)
     for (const [key, value] of Object.entries(element)) {
         newElement[key] = value
     }
-
-    // if (keepIds) {
-    //     newElement.id = element.id
-    //     newElement.groupId = element.groupId
-    // } else {
-    //     newElement.id = nextId
-    //     nextId++
-    // }
 
     if (payload) {
         switch (payload.action) {

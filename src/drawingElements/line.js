@@ -12,13 +12,6 @@ class Line extends Element {
         this.pointB = pointB
     }
 
-    isPointOnLine(point) {
-        const pointDistA = getPointDistance(this.pointA, point)
-        const pointDistB = getPointDistance(this.pointB, point)
-
-        return Math.abs((pointDistA + pointDistB) - this.length) < 1
-    }
-
     get baseX() {
         return this.pointA.x
     }
@@ -40,21 +33,39 @@ class Line extends Element {
         return (!!this.pointA)
     }
 
+    checkIfPointOnElement(point) {
+        const pointDistA = getPointDistance(this.pointA, point)
+        const pointDistB = getPointDistance(this.pointB, point)
+
+        return Math.abs((pointDistA + pointDistB) - this.length) < 1
+    }
+
     setLastAttribute(lastPoint) {
         this.pointB = lastPoint
     }
 
-    getMovedCopy(dX, dY) {
-        const movedLine = new Line(this.pointA, this.pointB)
+    getSnappingPoints() {
+        // TODO: test snapping points 
+        return {
+            edges: [ this.pointA, this.pointB ],
+            midPoints: [ (this.pointA.x + this.pointB.x) / 2, (this.pointA.y + this.pointB.y) / 2 ],
+            nearestPoint(point) {
+                // m = (y2 - y1) / (x2 - x1)
+                const slope = (this.pointB.y - this.pointA.y) / (this.pointB.x - this.pointA.x)
+                // b = y - m * x
+                const lineIntercept = this.pointA.y - slope * this.pointA.x
 
-        movedLine.pointA.x += dX
-        movedLine.pointB.x += dX
-        movedLine.pointA.y += dY
-        movedLine.pointB.y += dY
+                // find perpendicular intercept from input point
+                const perpendicularIntercept = point.y + slope * point.x
 
-        return movedLine
+                const intersectX = (perpendicularIntercept - lineIntercept) / (2 * slope)
+                const intersectY = slope * intersectX + lineIntercept
+
+                return new Point(intersectX, intersectY)
+            }
+        }
     }
-
+    
     getFoundationalElements() {
         return [this.pointA.x, this.pointA.y, this.pointB.x, this.pointB.y]
     }
@@ -69,6 +80,7 @@ class Line extends Element {
         }
 
         this.pointB = definingPoint
+        this.pointB.finalizePosition()
     }
 
     get length() {

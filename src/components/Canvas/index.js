@@ -8,7 +8,6 @@ import ToolInputMapper from '../ToolInputMapper'
 
 import { createEditedElement, createElement, getRoughElements } from '../../utils/elementFactory'
 import Point from '../../drawingElements/point'
-import Line from '../../drawingElements/line'
 
 let groupId = 1
 
@@ -16,7 +15,7 @@ const Canvas = () => {
     const { elements, addElement, editElement, deleteElement } = useElementsHistory([])
     const [tool, setTool] = useState({ type: 'draw', name: 'line' })
     const [inputValues, setInputValue] = useForm({})
-    const [currentGroupId, setCurrentGroupId] = useState(null)
+    const [selectedElements, setSelectedElements] = useState([])
     const [currentElement, setCurrentElement] = useState(null)
 
     // const [isUsingTool, setIsUsingTool] = useState(false)
@@ -41,24 +40,32 @@ const Canvas = () => {
     const handleKeyPress = useCallback((event) => {
         if (event.keyCode === 27) { // escape
             if (currentElement) {
+                if (currentElement.type === 'polyline' && currentElement.elements.length > 1) {
+                    currentElement.elements.pop()
+                    
+                    return
+                }
+
                 setCurrentElement(null)
+            }
+
+            if (selectedElements.length > 0) {
+                setSelectedElements([])
             }
         } else if (event.keyCode === 13) { // enter
             if (currentElement.type === 'polyline') {
+                currentElement.elements.pop()
                 addElement(currentElement)
-
+                
                 setCurrentElement(null)
-                setCurrentGroupId(null)
             }
         }
-    }, [currentElement])
+    }, [currentElement, selectedElements, addElement])
 
 
     useEffect(() => {
-        if (currentElement) {
-            document.addEventListener('keydown', handleKeyPress)
-            return () => document.removeEventListener('keydown', handleKeyPress)
-        }
+        document.addEventListener('keydown', handleKeyPress)
+        return () => document.removeEventListener('keydown', handleKeyPress)
     }, [currentElement, handleKeyPress])
 
     // useEffect(() => {
@@ -78,21 +85,16 @@ const Canvas = () => {
     //     }
     // }, [undo, redo])
 
-    const setNextGroupId = () => {
-        setCurrentGroupId(groupId)
-        return groupId++
-    }
-
     const handleMouseClick = (event) => {
         if (!tool) {
             // TODO: Handle element select
             return
         }
 
+        const { clientX, clientY } = event
+        const clickedPoint = new Point(clientX, clientY)
         if (tool.type === 'draw') {
             if (currentElement) {
-                const { clientX, clientY } = event
-                const newPoint = new Point(clientX, clientY)
                 
                 if (currentElement.isFullyDefined && currentElement.type !== 'polyline') {
                     addElement(currentElement)
@@ -100,14 +102,17 @@ const Canvas = () => {
                     setCurrentElement(null)
                 }
 
-                return currentElement.defineNextAttribute(newPoint)
+                return currentElement.defineNextAttribute(clickedPoint)
             }
 
-            const { clientX, clientY } = event
-
-            const groupId = setNextGroupId()
-            const newElement = createElement(tool.name, clientX, clientY, groupId)
+            const newGroupId = groupId++
+            const newElement = createElement(tool.name, clientX, clientY, newGroupId)
             setCurrentElement(newElement)
+        } else if (tool.type === 'select') {
+            const newlySelectedElements = elements.filter(e => 
+                                                    e.checkIfPointOnElement(clickedPoint) && 
+                                                    !selectedElements.some(se => se.id === e.id))
+            setSelectedElements([...selectedElements, ...newlySelectedElements])
         }
     }
 
@@ -132,7 +137,6 @@ const Canvas = () => {
                 width={window.innerWidth - 100}
                 height={window.innerHeight - 100}
                 onClick={handleMouseClick}
-                onKeyUp={handleKeyPress}
                 onMouseMove={handleMouseMove}
 
             // onMouseDown={handleMouseDown}
@@ -143,7 +147,6 @@ const Canvas = () => {
             <Navbar
                 tool={tool}
                 setTool={setTool}
-                setNextGroupId={setNextGroupId}
             />
 
             { tool &&

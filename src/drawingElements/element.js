@@ -24,6 +24,14 @@ class Element {
         throw new Error('Property isAlmostDefined is not implemented')
     }
 
+    getSnappingPoints() {
+        throw new Error('Method getSnappingPoints is not implemented')
+    }
+
+    checkIfPointOnElement() {
+        throw new Error('Method checkIfPointOnElement is not implemented')
+    }
+
     getFoundationalElements() {
         throw new Error('Method getFoundationalElements is not implemented')
     }

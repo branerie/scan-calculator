@@ -30,6 +30,10 @@ class Polyline extends Element {
         return !!(this.elements[0].pointA)
     }
 
+    checkIfPointOnElement(point) {
+        return this.elements.some(e => e.checkIfPointOnElement(point))
+    }
+
     getFoundationalElements() {
         return this.elements.map(e => e.getFoundationalElements())
     }

@@ -1,42 +1,43 @@
 import React from 'react'
 
-const Navbar = ({ tool, setTool, undo, redo, setNextGroupId }) => {
+const Navbar = ({ tool, setTool, undo, redo }) => {
     return (
         <>
             <div>
-                {/* <input
-                    type='radio'
-                    id='selection'
-                    checked={tool === 'selection'}
-                    onChange={() => setTool('selection')}
-                /> */}
-                {/* <label htmlFor='selection'>Selection</label> */}
-                <label htmlFor='line'>Line</label>
-                <input
-                    type='radio'
-                    id='line'
-                    checked={tool.name === 'line'}
-                    onChange={() => setTool({ type: 'draw', name: 'line' })}
-                />
+                <label>
+                    Select
+                    <input
+                        type='radio'
+                        checked={tool.name === 'select'}
+                        onChange={() => setTool({ type: 'select', name: 'select' })}
+                    />
+                </label>
+                <label>
+                    Line
+                    <input
+                        type='radio'
+                        checked={tool.name === 'line'}
+                        onChange={() => setTool({ type: 'draw', name: 'line' })}
+                    />
+                </label>
 
-                <label htmlFor='line'>Polyline</label>
-                <input
-                    type='radio'
-                    id='polyline'
-                    checked={tool.name === 'polyline'}
-                    onChange={() => {
-                        setTool({ type: 'draw', name: 'polyline' })
-                        setNextGroupId()
-                    }}
-                />
+                <label>
+                    Polyline
+                    <input
+                        type='radio'
+                        checked={tool.name === 'polyline'}
+                        onChange={() => setTool({ type: 'draw', name: 'polyline' })}
+                    />
+                </label>
 
-                <label htmlFor='arc'>Arc</label>
-                <input
-                    type='radio'
-                    id='arc'
-                    checked={tool.name === 'arc'}
-                    onChange={() => setTool({ type: 'draw', name: 'arc' })}
-                />
+                <label>
+                    Arc
+                    <input
+                        type='radio'
+                        checked={tool.name === 'arc'}
+                        onChange={() => setTool({ type: 'draw', name: 'arc' })}
+                    />
+                </label>
             </div>
             {/* <div>
                 <button onClick={undo}>Undo</button>
