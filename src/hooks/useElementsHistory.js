@@ -106,7 +106,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
         const elementPoints = deletedElement.getSnappingPoints()
         for (const pointValues of Object.values(elementPoints)) {
             for (const pointValue of pointValues) {
-                pointsTree.current.remove(pointValue.x, { y: pointValue.y, elementId: pointValue.id })
+                pointsTree.current.remove(pointValue.x, { y: pointValue.y, elementId: pointValue.elementId })
             }
         }
 

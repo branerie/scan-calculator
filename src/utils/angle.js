@@ -19,26 +19,16 @@ const getQuadrant = (deltaX, deltaY) => {
     return 3
 }
 
-const polarToCartesian = (centerPoint, radius, angleInDegrees) => {
-    const angleInRadians = (angleInDegrees) * Math.PI / 180.0
-
-    return {
-        x: centerPoint.x + (radius * Math.cos(angleInRadians)),
-        y: centerPoint.y + (radius * Math.sin(angleInRadians))
-    }
-}
-
 const radiansToDegrees = (radians) => {
-    return radians * 180 / Math.PI
+    return (radians * 180) / Math.PI
 }
 
 const degreesToRadians = (degrees) => {
-    return degrees / 180 * Math.PI
+    return (degrees / 180) * Math.PI
 }
 
 export {
     getQuadrant,
-    polarToCartesian,
     radiansToDegrees,
     degreesToRadians
 }

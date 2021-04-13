@@ -1,11 +1,7 @@
-import rough from 'roughjs/bundled/rough.esm'
-
 import Arc from '../drawingElements/arc'
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
-
-const generator = rough.generator()
 
 let nextPointId = 0
 
@@ -59,29 +55,6 @@ const createEditedElement = (element, payload) => {
     return newElement
 }
 
-const getRoughElements = (elements) => {
-    const roughElements = []
-    for (const element of elements) {
-        const foundationalElements = element.getFoundationalElements()
-        switch (element.type) {
-            case 'line':
-                roughElements.push(generator.line(...foundationalElements, { roughness: 0 }))
-                break
-            case 'arc':
-                // roughElements.push(generator.path(foundationalElements))
-                roughElements.push(generator.arc(...foundationalElements))
-                break
-            case 'polyline':
-                foundationalElements.forEach(fe => roughElements.push(generator.line(...fe, { roughness: 0 })))
-                break
-            default:
-                break
-        }
-    }
-
-    return roughElements
-}
-
 const createPoint = (pointX, pointY) => createElement('point', pointX, pointY)
 const createLine = (initialPointX, initialPointY, groupId) => 
                         createElement('line', initialPointX, initialPointY, groupId)
@@ -93,6 +66,5 @@ export {
     createPoint,
     createLine,
     createPolyline,
-    createEditedElement,
-    getRoughElements
+    createEditedElement
 }

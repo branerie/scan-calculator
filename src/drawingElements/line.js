@@ -53,13 +53,13 @@ class Line extends Element {
                 // line is horizontal
                 return deltaX > 0 ? 0 : 180
             case 1:
-                return angle
-            case 2:
-                return 180 - angle
-            case 3:
-                return 180 + angle
-            case 4:
                 return 360 - angle
+            case 2:
+                return 180 + angle
+            case 3:
+                return 180 - angle
+            case 4:
+                return angle
             default:
                 throw new Error()
         }
@@ -121,13 +121,9 @@ class Line extends Element {
         const midPoint = createPoint((this.pointA.x + this.pointB.x) / 2, (this.pointA.y + this.pointB.y) / 2)
 
         return {
-            endPoints: [ { ...this.pointA, id: this.id }, { ...this.pointB, id: this.id } ],
-            midPoint: [ { ...midPoint, id: this.id } ]
+            endPoints: [ { ...this.pointA, elementId: this.id }, { ...this.pointB, elementId: this.id } ],
+            midPoint: [ { ...midPoint, elementId: this.id } ]
         }
-    }
-    
-    getFoundationalElements() {
-        return [this.pointA.x, this.pointA.y, this.pointB.x, this.pointB.y]
     }
 
     // Should never have to be used for Line element

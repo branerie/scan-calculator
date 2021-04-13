@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react'
-import rough from 'roughjs/bundled/rough.esm'
 
 import useElementsHistory from '../../hooks/useElementsHistory'
 import useForm from '../../hooks/useForm'
 import Navbar from '../Navbar'
 import ToolInputMapper from '../ToolInputMapper'
 
-import { createEditedElement, createElement, createPoint, getRoughElements } from '../../utils/elementFactory'
+import { createEditedElement, createElement, createPoint } from '../../utils/elementFactory'
 
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA } from '../../utils/constants'
+import { draw } from '../../utils/canvas'
 
 let groupId = 1
 
@@ -39,38 +39,24 @@ const Canvas = () => {
     useLayoutEffect(() => {
         const canvas = document.getElementById('canvas')
         const context = canvas.getContext('2d')
-        context.clearRect(0, 0, canvas.width, canvas.height)
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 
-        const roughCanvas = rough.canvas(canvas)
-
-        let roughElements = getRoughElements(elements.filter(e => e.isShown))
-        // roughElements.forEach(element => roughCanvas.draw(element))
+        let canvasElements = elements.filter(e => e.isShown)
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
-            const roughElementsParam = currentlyCreatedElement.type === 'polyline'
-                ? currentlyCreatedElement.elements
-                : [currentlyCreatedElement]
-
-            const createdRoughElements = getRoughElements(roughElementsParam)
-            roughElements = roughElements.concat(createdRoughElements)
-            // roughElements.forEach((roughElement) => roughCanvas.draw(roughElement))
+            canvasElements.push(currentlyCreatedElement)
         }
 
         if (currentlyEditedElements) {
             const editedElements = []
             for (const editedElement of currentlyEditedElements) {
-                const roughElementsParam = editedElement.type === 'polyline'
-                        ? editedElement.elements
-                        : [editedElement]
-                
-                editedElements.push(roughElementsParam)
+                editedElements.push(editedElement)
             }
 
-            const editedRoughElements = getRoughElements(editedElements.flat())
-            roughElements = roughElements.concat(editedRoughElements)
+            canvasElements = canvasElements.concat(editedElements)
         }
 
-        roughElements.forEach(roughElement => roughCanvas.draw(roughElement))
+        canvasElements.forEach(element => draw(context, element))
 
         if (!selectedElements) return
 
@@ -83,21 +69,22 @@ const Canvas = () => {
             endPoints.forEach(endPoint => {
                 let pointFill = 'blue'
                 if (selectedPoints && 
-                    selectedPoints.some(p => p.leafValue === endPoint.x && p.y === endPoint.y && p.id === endPoint.id)) {
+                    selectedPoints.some(p => p.pointId === endPoint.pointId)) {
                     pointFill = 'red'
                 }
 
-                roughCanvas.rectangle(
+                context.beginPath()
+                context.moveTo(endPoint.x, endPoint.y)
+                context.fillStyle = pointFill
+                context.fillRect(
                     endPoint.x - 4,
-                    endPoint.y - 4, 8, 8,
-                    {
-                        fill: pointFill,
-                        fillStyle: 'solid',
-                        strokeWidth: 1,
-                        roughness: 0
-                    }
+                    endPoint.y - 4, 8, 8
                 )
+
+                context.stroke()
             })
+
+            context.fillStyle = 'white'
         })
     }, [elements, currentlyCreatedElement, selectedElements, selectedPoints, currentlyEditedElements])
 

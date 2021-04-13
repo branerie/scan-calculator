@@ -29,10 +29,6 @@ class Polyline extends Element {
         return this.elements.some(e => e.checkIfPointOnElement(point))
     }
 
-    getFoundationalElements() {
-        return this.elements.map(e => e.getFoundationalElements())
-    }
-
     defineNextAttribute(definingPoint) {
         const lineToDefine = this.elements[this.elements.length - 1]
         lineToDefine.defineNextAttribute(definingPoint)
@@ -50,7 +46,7 @@ class Polyline extends Element {
                 }
 
                 for (const point of snappingPointValues) {
-                    acc[snappingPointType].push({ ...point, id: this.groupId })
+                    acc[snappingPointType].push({ ...point, elementId: this.groupId })
                 }
             }
 

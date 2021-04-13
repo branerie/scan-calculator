@@ -41,10 +41,6 @@ class Element {
         throw new Error('Method checkIfPointOnElement is not implemented')
     }
 
-    getFoundationalElements() {
-        throw new Error('Method getFoundationalElements is not implemented')
-    }
-
     defineNextAttribute(definingPoint) {
         throw new Error('Method defineNextAttribute is not implemented')
     }

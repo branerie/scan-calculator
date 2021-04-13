@@ -5,14 +5,13 @@ import Element from './element'
 import Line from './line'
 
 class Arc extends Element {
-    // TODO: Arc is not working properly
-    #startLine
-    #endLine
 
     constructor(centerPoint, groupId = null) {
         super(groupId)
 
         this.centerPoint = centerPoint
+        this.startLine = null
+        this.endLine = null
     }
 
     get basePoint() {
@@ -23,8 +22,8 @@ class Arc extends Element {
         return (
             this.centerPoint &&
             this.radius > 0 &&
-            (this.startAngle >= 0 && this.startAngle <= 360 && this.startAngle !== null) &&
-            (this.endAngle >= 0 && this.endAngle <= 360 && this.endAngle !== null)
+            (!!(this.startLine) && this.startLine.angle >= 0 && this.startLine.angle <= 360) &&
+            (!!(this.endLine) && this.endLine.angle >= 0 && this.endLine.angle <= 360)
         )
     }
 
@@ -32,15 +31,15 @@ class Arc extends Element {
         return (
             this.centerPoint &&
             this.radius > 0 &&
-            (this.startAngle >= 0 && this.startAngle <= 360 && this.startAngle !== null)
+            (this.startLine && this.startLine.angle >= 0 && this.startLine.angle <= 360)
         )
     }
 
     getSnappingPoints() {
         // TODO: test method
         return {
-            center: [ { ...this.centerPoint, id: this.id } ],
-            endPoints: [ { ...this.#startLine.pointB, id: this.id }, { ...this.#endLine.pointB, id: this.id } ]
+            center: [ { ...this.centerPoint, elementId: this.id } ],
+            endPoints: [ { ...this.startLine.pointB, elementId: this.id }, { ...this.endLine.pointB, elementId: this.id } ]
         }
     }
 
@@ -50,21 +49,21 @@ class Arc extends Element {
 
     setLastAttribute(lastPoint) {
         // TODO: test method
-        if (this.centerPoint.y === this.lastPoint.y) {
-            const endPointX = this.centerPoint.x > this.lastPoint.x 
+        if (this.centerPoint.y === lastPoint.y) {
+            const endPointX = this.centerPoint.x > lastPoint.x 
                                         ? this.centerPoint.x - this.radius
                                         : this.centerPoint.x + this.radius
 
-            this.#endLine = new Line(this.centerPoint, createPoint(endPointX, this.centerPoint.y))
+            this.endLine = new Line(this.centerPoint, createPoint(endPointX, this.centerPoint.y))
             return
         }
         
-        if (this.centerPoint.x === this.lastPoint.x) {
-            const endPointY = this.centerPoint.y > this.lastPoint.y 
+        if (this.centerPoint.x === lastPoint.x) {
+            const endPointY = this.centerPoint.y > lastPoint.y 
                                         ? this.centerPoint.y - this.radius
                                         : this.centerPoint.y + this.radius
 
-            this.#endLine = new Line(this.centerPoint, createPoint(this.centerPoint.x, endPointY))
+            this.endLine = new Line(this.centerPoint, createPoint(this.centerPoint.x, endPointY))
             return
         }
 
@@ -72,9 +71,9 @@ class Arc extends Element {
 
         const quadrant = getQuadrant(line.angle)
 
-        let endAngle
-        let dXMultiplier
-        let dYMultiplier
+        let endAngle,
+            dXMultiplier,
+            dYMultiplier
         switch(quadrant) {
             case 1:
                 endAngle = line.angle
@@ -100,12 +99,13 @@ class Arc extends Element {
                 throw new Error(`Invalid angle quadrant: ${quadrant}`)
         }
 
-        const dX = Math.cos(endAngle) * this.radius * dXMultiplier
-        const dY = Math.sin(endAngle) * this.radius * dYMultiplier
+        const endAngleRadians = degreesToRadians(endAngle)
+        const dX = Math.cos(endAngleRadians) * this.radius * dXMultiplier
+        const dY = Math.sin(endAngleRadians) * this.radius * dYMultiplier
 
-        const endPoint = createPoint(this.centerPoint.x + dX, this.centerPoint + dY)
+        const endPoint = createPoint(this.centerPoint.x + dX, this.centerPoint.y + dY)
 
-        this.#endLine = new Line(this.centerPoint, endPoint)
+        this.endLine = new Line(this.centerPoint, endPoint)
     }
 
     defineNextAttribute(definingPoint) {
@@ -120,7 +120,7 @@ class Arc extends Element {
             this.radius = getPointDistance(this.centerPoint, definingPoint)
 
             const line = new Line(this.centerPoint, definingPoint)
-            this.#startLine = line
+            this.startLine = line
 
             return
         }
@@ -129,28 +129,6 @@ class Arc extends Element {
     move(dX, dY) {
         this.centerPoint.x += dX
         this.centerPoint.y += dY
-    }
-
-    getFoundationalElements() {
-        // const start = polarToCartesian(this.centerPoint, this.radius, this.endAngle)
-        // const end = polarToCartesian(this.centerPoint, this.radius, this.startAngle)
-
-        // const largeArcFlag = this.endAngle - this.startAngle <= 180 ? '0' : '1'
-
-        // return [
-        //     'M', start.x, start.y,
-        //     'A', this.radius, this.radius, 0, largeArcFlag, 0, end.x, end.y
-        // ].join(' ')
-
-        return [
-            this.centerPoint.x,
-            this.centerPoint.y,
-            this.radius,
-            this.radius,
-            degreesToRadians(this.#startLine.angle),
-            degreesToRadians(this.#endLine.angle),
-            false
-        ]
     }
 }
 
