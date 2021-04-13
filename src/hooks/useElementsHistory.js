@@ -1,36 +1,96 @@
-import { useState } from 'react'
-import { createEditedElement } from '../utils/elementFactory'
+import { useCallback, useRef, useState } from 'react'
+import { createTree } from '../utils/pointsSearchTree'
+
+import { CANVAS_WIDTH } from '../utils/constants'
 
 let nextId = 1
+
+const buildPointsTreeDataObject = (point, elementId, pointType) => {
+    return {
+        leafValue: point.x,
+        y: point.y,
+        elementId: elementId,
+        pointId: point.pointId,
+        pointType
+    }
+}
 
 const useElementsHistory = (initialElements, initialGroups) => {
     // TODO: maybe change to object with id as keys?
     const [elements, setElements] = useState(initialElements || [])
-    const [groups, setGroups] = useState(initialGroups || {})
     const [historyPointer, setHistoryPointer] = useState(null)
     const [actionHistory, setActionHistory] = useState([])
+    const [selectedElements, setSelectedElements] = useState(null)
+    const [selectedPoints, setSelectedPoints] = useState(null)
+    const [currentlyCreatedElement, setCurrentlyCreatedElement] = useState(null)
+    const [currentlyEditedElements, setCurrentlyEditedElements] = useState(null)
+    const pointsTree = useRef(createTree(CANVAS_WIDTH))
+
+    const clearSelection = useCallback(() => {
+        setSelectedElements(null)
+        setSelectedPoints(null)
+    }, [])
 
     const addElement = (newElement) => {
         newElement.id = nextId++
+        // TODO: decide where to add id's to polyline elements:
+        // on creation or after explode/trim?
+        const elementPoints = newElement.getSnappingPoints()
+        for (const [pointType, pointValues] of Object.entries(elementPoints)) {
+            for (const pointValue of pointValues) {
+                pointsTree.current.insert(
+                    pointValue.x,
+                    buildPointsTreeDataObject(pointValue, newElement.id, pointType)
+                )
+            }
+        }
+
         setElements([...elements, newElement])
         updateHistoryEvents({ action: 'add', element: newElement })
     }
 
-    const editElement = (elementId, payload) => {
-        const elementIndex = elements.findIndex(e => e.id === elementId)
-        if (elementIndex < 0) {
-            throw new Error(`Element with id ${elementId} does not exist`)
-        }
+    const editElements = (editedElements, shouldAddToHistory = true) => {
+        const editedElementIds = editedElements.map(ee => ee.id)
+        const newHistoryEvents = []
+        const newElements = elements.map(element => {
+            if (!editedElementIds.includes(element.id)) {
+                return element
+            }
 
-        const newElements = [...elements]
-        const oldElement = newElements[elementIndex]
+            newHistoryEvents.push({ action: 'edit', oldElement: element })
+            return editedElements.find(ee => ee.id === element.id)
+        })
 
-        const newElement = createEditedElement(oldElement, payload, true)
-        newElements[elementIndex] = newElement
+        selectedPoints.forEach(selectedPoint => {
+            const elementOfPoint = currentlyEditedElements.find(cee => cee.getPointById(selectedPoint.pointId))
+            if (!elementOfPoint) {
+                throw new Error('Mismatch between selectedPoints and currentlyEditedElements.')
+            }
+
+            const editedPoint = elementOfPoint.getPointById(selectedPoint.pointId)
+            pointsTree.current.replace(
+                selectedPoint.leafValue,
+                { pointId: selectedPoint.pointId },
+                editedPoint.x,
+                buildPointsTreeDataObject(editedPoint, elementOfPoint.id, selectedPoint.pointType)
+            )
+        })
 
         setElements(newElements)
 
-        updateHistoryEvents({ action: 'edit', oldElement })
+        const newSelectedElements = selectedElements.map(se => {
+            if (!editedElementIds.includes(se.id)) {
+                return se
+            }
+
+            return editedElements.find(ee => ee.id === se.id)
+        })
+
+        setSelectedElements(newSelectedElements)
+        newHistoryEvents.forEach(nhe => updateHistoryEvents(nhe))
+
+        setSelectedPoints(null)
+        setCurrentlyEditedElements(null)
     }
 
     const deleteElement = (elementId) => {
@@ -43,6 +103,12 @@ const useElementsHistory = (initialElements, initialGroups) => {
         const newElements = [...elements]
         newElements.splice(elementIndex, 1)
 
+        const elementPoints = deletedElement.getSnappingPoints()
+        for (const pointValues of Object.values(elementPoints)) {
+            for (const pointValue of pointValues) {
+                pointsTree.current.remove(pointValue.x, { y: pointValue.y, elementId: pointValue.id })
+            }
+        }
 
         setElements(newElements)
         updateHistoryEvents({ action: 'delete', deletedElement })
@@ -66,6 +132,15 @@ const useElementsHistory = (initialElements, initialGroups) => {
 
         setHistoryPointer(pointer => pointer + 1)
         updateElementsFromHistory(historyPointer + 1, false)
+    }
+
+    const findNearbyPoints = (mouseX, mouseY, delta) => {
+        const filteredPoints = pointsTree.current.find(
+            Math.max(mouseX - delta, 0),
+            Math.min(mouseX + delta, CANVAS_WIDTH)
+        )
+
+        return filteredPoints.filter(point => Math.abs(point.y - mouseY) <= delta)
     }
 
     function updateElementsFromHistory(lastEventIndex, isUndo) {
@@ -125,9 +200,20 @@ const useElementsHistory = (initialElements, initialGroups) => {
 
     return {
         elements,
+        setElements,
+        selectedElements,
+        setSelectedElements,
+        currentlyCreatedElement,
+        setCurrentlyCreatedElement,
+        currentlyEditedElements,
+        setCurrentlyEditedElements,
+        selectedPoints,
+        setSelectedPoints,
+        clearSelection,
         addElement,
-        editElement,
+        editElements,
         deleteElement,
+        findNearbyPoints,
         undo,
         redo,
     }

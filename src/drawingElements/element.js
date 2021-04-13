@@ -1,14 +1,11 @@
 class Element {
     constructor(groupId) {
         this.groupId = groupId
+        this.isShown = true
     }
 
-    get baseX() {
-        throw new Error('Property baseX is not implemented')
-    }
-
-    get baseY() {
-        throw new Error('Property baseY is not implemented')
+    get basePoint() {
+        throw new Error('Property basePoint is not implemented')
     }
 
     get type() {
@@ -22,6 +19,18 @@ class Element {
     /* Should return true if all but the last dimension of the element are defined */
     get isAlmostDefined() {
         throw new Error('Property isAlmostDefined is not implemented')
+    }
+
+    copy(keepIds = false) {
+        throw new Error('Method copy is not implemented')
+    }
+
+    getPointById(pointId) {
+        throw new Error('Method getPointById is not implemented')
+    }
+
+    setPointById(pointId, newPointX, newPointY) {
+        throw new Error('Method setPointById is not implemented')
     }
 
     getSnappingPoints() {

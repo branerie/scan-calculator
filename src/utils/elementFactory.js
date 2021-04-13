@@ -7,26 +7,22 @@ import Polyline from '../drawingElements/polyline'
 
 const generator = rough.generator()
 
+let nextPointId = 0
+
 // let nextId = 0
 const createElement = (type, initialX, initialY, groupId = null) => {
+    const initialPoint = new Point(initialX, initialY)
+    initialPoint.pointId = nextPointId++
+    
     let element
-    if (type === 'line') {
-        const pointA = new Point(initialX, initialY)
-        // const pointB = new Point(initialX, initialY)
-
-        element = new Line(pointA)
+    if (type === 'point') {
+        element = initialPoint
+    } else if (type === 'line') {
+        element = new Line(initialPoint, null, groupId)
     } else if (type === 'arc') {
-        const centerPoint = new Point(initialX, initialY)
-
-        element = new Arc(centerPoint)
+        element = new Arc(initialPoint, groupId)
     } else if (type === 'polyline') {
-        const initialPoint = new Point(initialX, initialY)
-
-        element = new Polyline(
-            initialPoint, 
-            groupId, 
-            (secondPointX, secondPointY, groupId) => createElement('line', secondPointX, secondPointY, groupId)
-        )
+        element = new Polyline(initialPoint, groupId)
     }
 
     // element.id = nextId
@@ -39,7 +35,12 @@ const createElement = (type, initialX, initialY, groupId = null) => {
 }
 
 const createEditedElement = (element, payload) => {
-    const newElement = createElement(element.constructor.name.toLowerCase(), element.baseX, element.baseY)
+    const newElement = createElement(
+        element.constructor.name.toLowerCase(), 
+        element.basePoint.x, 
+        element.basePoint.y
+    )
+
     for (const [key, value] of Object.entries(element)) {
         newElement[key] = value
     }
@@ -81,8 +82,17 @@ const getRoughElements = (elements) => {
     return roughElements
 }
 
+const createPoint = (pointX, pointY) => createElement('point', pointX, pointY)
+const createLine = (initialPointX, initialPointY, groupId) => 
+                        createElement('line', initialPointX, initialPointY, groupId)
+const createPolyline = (initialPointX, initialPointY, groupId) => 
+                        createElement('polyline', initialPointX, initialPointY, groupId)
+
 export {
     createElement,
+    createPoint,
+    createLine,
+    createPolyline,
     createEditedElement,
     getRoughElements
 }

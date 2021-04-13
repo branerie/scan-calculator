@@ -1,8 +1,8 @@
 import { degreesToRadians, getQuadrant } from '../utils/angle'
+import { createPoint } from '../utils/elementFactory'
 import { getPointDistance } from '../utils/point'
 import Element from './element'
 import Line from './line'
-import Point from './point'
 
 class Arc extends Element {
     // TODO: Arc is not working properly
@@ -15,12 +15,8 @@ class Arc extends Element {
         this.centerPoint = centerPoint
     }
 
-    get baseX() {
-        return this.centerPoint.x
-    }
-
-    get baseY() {
-        return this.centerPoint.y
+    get basePoint() {
+        return this.centerPoint
     }
 
     get isFullyDefined() {
@@ -43,12 +39,13 @@ class Arc extends Element {
     getSnappingPoints() {
         // TODO: test method
         return {
-            center: this.centerPoint,
-            endPoints: [ this.#startLine.pointB, this.#endLine.pointB ],
-            nearest: () => {
-                // TODO: implement nearest point snap of arc
-            }
+            center: [ { ...this.centerPoint, id: this.id } ],
+            endPoints: [ { ...this.#startLine.pointB, id: this.id }, { ...this.#endLine.pointB, id: this.id } ]
         }
+    }
+
+    getNearestPoint() {
+        // TODO: implement nearest point snap of arc
     }
 
     setLastAttribute(lastPoint) {
@@ -58,7 +55,7 @@ class Arc extends Element {
                                         ? this.centerPoint.x - this.radius
                                         : this.centerPoint.x + this.radius
 
-            this.#endLine = new Line(this.centerPoint, new Point(endPointX, this.centerPoint.y))
+            this.#endLine = new Line(this.centerPoint, createPoint(endPointX, this.centerPoint.y))
             return
         }
         
@@ -67,7 +64,7 @@ class Arc extends Element {
                                         ? this.centerPoint.y - this.radius
                                         : this.centerPoint.y + this.radius
 
-            this.#endLine = new Line(this.centerPoint, new Point(this.centerPoint.x, endPointY))
+            this.#endLine = new Line(this.centerPoint, createPoint(this.centerPoint.x, endPointY))
             return
         }
 
@@ -106,7 +103,7 @@ class Arc extends Element {
         const dX = Math.cos(endAngle) * this.radius * dXMultiplier
         const dY = Math.sin(endAngle) * this.radius * dYMultiplier
 
-        const endPoint = new Point(this.centerPoint.x + dX, this.centerPoint + dY)
+        const endPoint = createPoint(this.centerPoint.x + dX, this.centerPoint + dY)
 
         this.#endLine = new Line(this.centerPoint, endPoint)
     }
