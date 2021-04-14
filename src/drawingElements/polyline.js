@@ -1,6 +1,5 @@
 import Element from './element'
-import { createLine, createPolyline } from '../utils/elementFactory'
-import Point from './point'
+import { createLine } from '../utils/elementFactory'
 
 class Polyline extends Element {
     #isFullyDefined
@@ -52,22 +51,6 @@ class Polyline extends Element {
 
             return acc
         }, {})
-    }
-
-    copy(keepIds = false) {
-        let polyline
-        if (keepIds) {
-            const newInitialPoint = new Point(this.basePoint.x, this.basePoint.y)
-            newInitialPoint.pointId = this.basePoint.pointId
-            polyline = new Polyline(newInitialPoint, this.groupId)
-            polyline.id = this.id
-
-        } else {
-            polyline = createPolyline(this.basePoint.x, this.basePoint.y)    
-        }
-
-        polyline.elements = this.elements.map(e => e.copy(keepIds))
-        return polyline
     }
 
     getNearestPoint(point) {

@@ -6,6 +6,7 @@ const draw = (context, element) => {
         case 'line':
             context.moveTo(element.pointA.x, element.pointA.y)
             context.lineTo(element.pointB.x, element.pointB.y)
+            console.log(element.angle)
             break
         case 'arc':
             context.moveTo(element.startLine.pointB.x, element.startLine.pointB.y)

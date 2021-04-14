@@ -37,7 +37,7 @@ class Element {
         throw new Error('Method getSnappingPoints is not implemented')
     }
 
-    checkIfPointOnElement() {
+    checkIfPointOnElement(point) {
         throw new Error('Method checkIfPointOnElement is not implemented')
     }
 

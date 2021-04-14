@@ -1,8 +1,7 @@
 import { getPointDistance } from '../utils/point'
 import { getQuadrant, radiansToDegrees } from '../utils/angle'
-import { createPoint, createLine } from '../utils/elementFactory'
 import Element from './element'
-import Point from './point'
+import { createPoint } from '../utils/elementFactory'
 
 class Line extends Element {
     constructor(pointA, pointB, groupId = null) {
@@ -74,23 +73,6 @@ class Line extends Element {
 
     setLastAttribute(lastPoint) {
         this.pointB = lastPoint
-    }
-
-    copy(keepIds = false) {
-        if (keepIds) {
-            const newPointA = new Point(this.pointA.x, this.pointA.y)
-            newPointA.pointId = this.pointA.pointId
-            
-            const newPointB = new Point(this.pointB.x, this.pointB.y)
-            newPointB.pointId = this.pointB.pointId
-            const newLine = new Line(newPointA, newPointB, this.groupId)
-            newLine.id = this.id
-            return newLine
-        }
-            
-        const newLine = createLine(this.pointA.x, this.pointA.y, this.groupId)
-        newLine.setLastAttribute(createPoint(this.pointB.x, this.pointB.y))
-        return newLine
     }
 
     getPointById(pointId) {

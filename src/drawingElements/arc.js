@@ -1,11 +1,11 @@
 import { degreesToRadians, getQuadrant } from '../utils/angle'
+import { SELECT_DELTA } from '../utils/constants'
 import { createPoint } from '../utils/elementFactory'
 import { getPointDistance } from '../utils/point'
 import Element from './element'
 import Line from './line'
 
 class Arc extends Element {
-
     constructor(centerPoint, groupId = null) {
         super(groupId)
 
@@ -41,6 +41,27 @@ class Arc extends Element {
             center: [ { ...this.centerPoint, elementId: this.id } ],
             endPoints: [ { ...this.startLine.pointB, elementId: this.id }, { ...this.endLine.pointB, elementId: this.id } ]
         }
+    }
+
+    checkIfPointOnElement(point) {
+        const distanceFromCenter = getPointDistance(this.centerPoint, point)
+        if (Math.abs(this.radius - distanceFromCenter) > SELECT_DELTA) {
+            return false
+        }
+
+        const lineFromCenter = new Line(this.centerPoint, point)
+        const lineAngle = lineFromCenter.angle
+        const startAngle = this.startLine.angle
+        const endAngle = this.endLine.angle
+        const isInArc = startAngle < endAngle 
+                        ? lineAngle <= startAngle && lineAngle >= endAngle
+                        : lineAngle >= startAngle && lineAngle <= endAngle
+
+        if (isInArc) {
+            return true
+        }
+
+        return false
     }
 
     getNearestPoint() {

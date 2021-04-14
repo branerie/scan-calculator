@@ -6,11 +6,12 @@ import Navbar from '../Navbar'
 import ToolInputMapper from '../ToolInputMapper'
 
 import { createEditedElement, createElement, createPoint } from '../../utils/elementFactory'
-
+import ElementManipulator from '../../utils/elementManipulator'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA } from '../../utils/constants'
 import { draw } from '../../utils/canvas'
 
 let groupId = 1
+// const manipulator = new ElementManipulator()
 
 const Canvas = () => {
     const { 
@@ -83,8 +84,6 @@ const Canvas = () => {
 
                 context.stroke()
             })
-
-            context.fillStyle = 'white'
         })
     }, [elements, currentlyCreatedElement, selectedElements, selectedPoints, currentlyEditedElements])
 
@@ -201,7 +200,7 @@ const Canvas = () => {
                     const editedElement = selectedElements.find(se => se.id === point.elementId)
                     if (editedElement && point.pointType === 'endPoints') {
                         selectedPoints.push(point)
-                        const copiedElement = editedElement.copy(true)
+                        const copiedElement = ElementManipulator.copyElement(editedElement, true)
                         editedElements.push(copiedElement)
                         editedElement.isShown = false
                     }
@@ -220,7 +219,6 @@ const Canvas = () => {
                                                     e.checkIfPointOnElement(clickedPoint) &&
                                                     !oldSelectedElements.some(se => se.id === e.id))
             setSelectedElements([...oldSelectedElements, ...newlySelectedElements])
-            console.log(newlySelectedElements)
         }
     }
 

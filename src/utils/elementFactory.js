@@ -9,7 +9,7 @@ let nextPointId = 0
 const createElement = (type, initialX, initialY, groupId = null) => {
     const initialPoint = new Point(initialX, initialY)
     initialPoint.pointId = nextPointId++
-    
+
     let element
     if (type === 'point') {
         element = initialPoint
@@ -32,8 +32,8 @@ const createElement = (type, initialX, initialY, groupId = null) => {
 
 const createEditedElement = (element, payload) => {
     const newElement = createElement(
-        element.constructor.name.toLowerCase(), 
-        element.basePoint.x, 
+        element.constructor.name.toLowerCase(),
+        element.basePoint.x,
         element.basePoint.y
     )
 
@@ -58,13 +58,10 @@ const createEditedElement = (element, payload) => {
 const createPoint = (pointX, pointY) => createElement('point', pointX, pointY)
 const createLine = (initialPointX, initialPointY, groupId) => 
                         createElement('line', initialPointX, initialPointY, groupId)
-const createPolyline = (initialPointX, initialPointY, groupId) => 
-                        createElement('polyline', initialPointX, initialPointY, groupId)
 
 export {
     createElement,
     createPoint,
     createLine,
-    createPolyline,
     createEditedElement
 }
