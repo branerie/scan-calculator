@@ -7,7 +7,6 @@ const draw = (context, element) => {
         case 'line':
             context.moveTo(element.pointA.x, element.pointA.y)
             context.lineTo(element.pointB.x, element.pointB.y)
-            console.log(element.pointB)
             break
         case 'arc':
             context.moveTo(element.startLine.pointB.x, element.startLine.pointB.y)
@@ -21,6 +20,7 @@ const draw = (context, element) => {
             )
             break
         case 'polyline':
+        case 'rectangle':
             element.elements.forEach(e => draw(context, e))
             break
         case 'circle':

@@ -8,6 +8,11 @@ class Element {
         throw new Error('Property basePoint is not implemented')
     }
 
+    get baseType() {
+        const baseType = Object.getPrototypeOf(this.constructor).name
+        return baseType !== 'Element' ? baseType : this.type 
+    }
+
     get type() {
         return this.constructor.name.toLowerCase()
     }
@@ -48,7 +53,7 @@ class Element {
         throw new Error('Method defineNextAttribute is not implemented')
     }
 
-    setLastAttribute(lastPoint) {
+    setLastAttribute(pointX, pointY) {
         throw new Error('Method setLastAttribute is not implemented')
     }
 }

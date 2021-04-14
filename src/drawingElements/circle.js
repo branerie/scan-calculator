@@ -7,12 +7,16 @@ import Point from './point'
 class Circle extends Element {
     #radius
 
-    constructor(centerPoint) {
+    constructor(centerPoint, radius) {
         super()
         
         this.centerPoint = centerPoint
-        this.#radius = null
+        this.#radius = radius
         this.endPoints = null
+
+        if (radius) {
+            this.__setEndPoints()
+        }
     }
 
     get basePoint() {

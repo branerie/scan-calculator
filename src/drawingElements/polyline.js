@@ -60,7 +60,6 @@ class Polyline extends Element {
     setLastAttribute(pointX, pointY) {
         this.#isFullyDefined = true
 
-
         const lineToDefine = this.elements[this.elements.length - 1]
 
         if (!lineToDefine.pointB) {

@@ -85,7 +85,7 @@ const Canvas = () => {
     const handleKeyPress = useCallback((event) => {
         if (event.keyCode === 27) { // escape
             if (currentlyCreatedElement) {
-                if (currentlyCreatedElement.type === 'polyline' && currentlyCreatedElement.elements.length > 1) {
+                if (currentlyCreatedElement.baseType === 'polyline' && currentlyCreatedElement.elements.length > 1) {
                     currentlyCreatedElement.elements.pop()
 
                     return
@@ -173,12 +173,13 @@ const Canvas = () => {
                     addElement(currentlyCreatedElement)
 
                     setCurrentlyCreatedElement(null)
+                    return
                 }
 
                 return currentlyCreatedElement.defineNextAttribute(clickedPoint)
             }
 
-            const newGroupId = tool.name === 'polyline' ? groupId++ : null
+            const newGroupId = tool.name === 'polyline' || tool.name === 'rectangle' ? groupId++ : null
             const newElement = createElement(tool.name, clientX, clientY, newGroupId)
             setCurrentlyCreatedElement(newElement)
         } else if (tool.type === 'select') {

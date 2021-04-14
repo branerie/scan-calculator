@@ -7,7 +7,7 @@ import Circle from '../drawingElements/circle'
 
 class ElementManipulator {
     static copyElement(element, keepIds = false) {
-        const functionName = `copy${element.type.charAt(0).toUpperCase() + element.type.slice(1)}`
+        const functionName = `copy${element.baseType.charAt(0).toUpperCase() + element.baseType.slice(1)}`
 
         const func = ElementManipulator[functionName]
         console.log(func)
@@ -74,9 +74,8 @@ class ElementManipulator {
             const newCenterPoint = new Point(circle.centerPoint.x, circle.centerPoint.y)
             newCenterPoint.pointId = circle.centerPoint.pointId
 
-            const newCircle = new Circle(newCenterPoint)
+            const newCircle = new Circle(newCenterPoint, circle.radius)
             newCircle.endPoints = [...circle.endPoints]
-            newCircle.radius = circle.radius
             newCircle.id = circle.id
             return newCircle
         }

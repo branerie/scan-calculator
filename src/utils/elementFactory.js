@@ -3,6 +3,7 @@ import Circle from '../drawingElements/circle'
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
+import Rectangle from '../drawingElements/rectangle'
 
 let nextPointId = 0
 
@@ -22,6 +23,8 @@ const createElement = (type, initialX, initialY, groupId = null) => {
         element = new Polyline(initialPoint, groupId)
     } else if (type === 'circle') {
         element = new Circle(initialPoint)
+    } else if (type === 'rectangle') {
+        element = new Rectangle(initialPoint, null, groupId)
     }
 
     // element.id = nextId
@@ -59,8 +62,15 @@ const createEditedElement = (element, payload) => {
 }
 
 const createPoint = (pointX, pointY) => createElement('point', pointX, pointY)
-const createLine = (initialPointX, initialPointY, groupId) => 
-                        createElement('line', initialPointX, initialPointY, groupId)
+const createLine = (initialPointX, initialPointY, groupId, lastPointX, lastPointY) => {
+    const line = createElement('line', initialPointX, initialPointY, groupId)
+
+    if ((lastPointX || lastPointX === 0) && (lastPointY || lastPointY === 0)) {
+        line.pointB = createPoint(lastPointX, lastPointY)
+    }
+
+    return line
+}
 
 export {
     createElement,
