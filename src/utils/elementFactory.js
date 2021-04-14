@@ -1,4 +1,5 @@
 import Arc from '../drawingElements/arc'
+import Circle from '../drawingElements/circle'
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
@@ -19,6 +20,8 @@ const createElement = (type, initialX, initialY, groupId = null) => {
         element = new Arc(initialPoint, groupId)
     } else if (type === 'polyline') {
         element = new Polyline(initialPoint, groupId)
+    } else if (type === 'circle') {
+        element = new Circle(initialPoint)
     }
 
     // element.id = nextId

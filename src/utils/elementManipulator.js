@@ -1,8 +1,9 @@
-import { createElement } from "react"
+import { createElement } from './elementFactory'
 import Arc from "../drawingElements/arc"
 import Line from "../drawingElements/line"
 import Point from "../drawingElements/point"
 import Polyline from "../drawingElements/polyline"
+import Circle from '../drawingElements/circle'
 
 class ElementManipulator {
     static copyElement(element, keepIds = false) {
@@ -56,6 +57,7 @@ class ElementManipulator {
             const newArc = new Arc(newCenterPoint, arc.groupId)
             newArc.startLine = newStartLine
             newArc.endLine = newEndLine
+            newArc.radius = arc.radius
             newArc.id = arc.id
             return newArc
         }
@@ -63,6 +65,25 @@ class ElementManipulator {
         const newArc = createElement('arc', arc.centerPoint.x, arc.centerPoint.y, arc.groupId)
         newArc.startLine = newStartLine
         newArc.endLine = newEndLine
+        newArc.radius = arc.radius
+        return newArc
+    }
+
+    static copyCircle(circle, keepIds = false) {
+        if (keepIds) {
+            const newCenterPoint = new Point(circle.centerPoint.x, circle.centerPoint.y)
+            newCenterPoint.pointId = circle.centerPoint.pointId
+
+            const newCircle = new Circle(newCenterPoint)
+            newCircle.endPoints = [...circle.endPoints]
+            newCircle.radius = circle.radius
+            newCircle.id = circle.id
+            return newCircle
+        }
+
+        const newCircle = createElement('circle', circle.centerPoint.x, circle.centerPoint.y)
+        newCircle.radius = circle.radius
+        return newCircle
     }
 }
 

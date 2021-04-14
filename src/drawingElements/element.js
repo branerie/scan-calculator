@@ -21,16 +21,19 @@ class Element {
         throw new Error('Property isAlmostDefined is not implemented')
     }
 
-    copy(keepIds = false) {
-        throw new Error('Method copy is not implemented')
-    }
-
     getPointById(pointId) {
         throw new Error('Method getPointById is not implemented')
     }
 
     setPointById(pointId, newPointX, newPointY) {
-        throw new Error('Method setPointById is not implemented')
+        const point = this.getPointById(pointId)
+        if (!point) {
+            return false
+        }
+
+        point.x = newPointX
+        point.y = newPointY
+        return true
     }
 
     getSnappingPoints() {

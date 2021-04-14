@@ -71,8 +71,13 @@ class Line extends Element {
         return Math.abs((pointDistA + pointDistB) - this.length) < 0.3
     }
 
-    setLastAttribute(lastPoint) {
-        this.pointB = lastPoint
+    setLastAttribute(pointX, pointY) {
+        if (!this.pointB) {
+            return this.pointB = createPoint(pointX, pointY)
+        }
+
+        this.pointB.x = pointX
+        this.pointB.y = pointY
     }
 
     getPointById(pointId) {
@@ -85,17 +90,6 @@ class Line extends Element {
         }
     
         return null
-    }
-
-    setPointById(pointId, newPointX, newPointY) {
-        const point = this.getPointById(pointId)
-        if (!point) {
-            return false
-        }
-
-        point.x = newPointX
-        point.y = newPointY
-        return true
     }
 
     getSnappingPoints() {
@@ -118,7 +112,6 @@ class Line extends Element {
         }
 
         this.pointB = definingPoint
-        this.pointB.finalizePosition()
     }
 
     getNearestPoint(point) {

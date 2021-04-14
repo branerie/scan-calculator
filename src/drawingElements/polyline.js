@@ -1,5 +1,5 @@
 import Element from './element'
-import { createLine } from '../utils/elementFactory'
+import { createLine, createPoint } from '../utils/elementFactory'
 
 class Polyline extends Element {
     #isFullyDefined
@@ -57,11 +57,18 @@ class Polyline extends Element {
         // TODO: implement method
     }
 
-    setLastAttribute(definingPoint) {
+    setLastAttribute(pointX, pointY) {
         this.#isFullyDefined = true
 
+
         const lineToDefine = this.elements[this.elements.length - 1]
-        lineToDefine.pointB = definingPoint
+
+        if (!lineToDefine.pointB) {
+            return lineToDefine.pointB = createPoint(pointX, pointY)
+        }
+
+        lineToDefine.pointB.x = pointX
+        lineToDefine.pointB.y = pointY
     }
 
     getPointById(pointId) {
@@ -75,17 +82,6 @@ class Polyline extends Element {
         }
 
         return point
-    }
-
-    setPointById(pointId, newPointX, newPointY) {
-        let isPointSet = false
-        this.elements.forEach(e => {
-            if (isPointSet) return
-
-            isPointSet = e.setPointById(pointId, newPointX, newPointY)
-        })
-
-        return isPointSet
     }
 }
 

@@ -49,12 +49,7 @@ const Canvas = () => {
         }
 
         if (currentlyEditedElements) {
-            const editedElements = []
-            for (const editedElement of currentlyEditedElements) {
-                editedElements.push(editedElement)
-            }
-
-            canvasElements = canvasElements.concat(editedElements)
+            canvasElements = canvasElements.concat(currentlyEditedElements)
         }
 
         canvasElements.forEach(element => draw(context, element))
@@ -230,7 +225,7 @@ const Canvas = () => {
         if (currentlyEditedElements && selectedPoints) {
             const newCurrentlyEditedElements = []
             for (const editedElement of currentlyEditedElements) {
-                const newCurrentlyEditedElement = createEditedElement(editedElement)
+                const newCurrentlyEditedElement = ElementManipulator.copyElement(editedElement, true)
                 for (const selectedPoint of selectedPoints) {
                     newCurrentlyEditedElement.setPointById(selectedPoint.pointId, clientX, clientY)
                 }
@@ -243,12 +238,10 @@ const Canvas = () => {
         
         // should only enter if currentlyCreatedElement is defined and has all but its last attribute set
         if (!currentlyCreatedElement || !currentlyCreatedElement.isAlmostDefined) return
-
-        const point = createPoint(clientX, clientY)
         
         const newCurrentlyCreatedElement = createEditedElement(currentlyCreatedElement)
 
-        newCurrentlyCreatedElement.setLastAttribute(point)
+        newCurrentlyCreatedElement.setLastAttribute(clientX, clientY)
         setCurrentlyCreatedElement(newCurrentlyCreatedElement)
     }
 

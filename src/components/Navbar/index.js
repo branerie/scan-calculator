@@ -38,6 +38,24 @@ const Navbar = ({ tool, setTool, undo, redo }) => {
                         onChange={() => setTool({ type: 'draw', name: 'arc' })}
                     />
                 </label>
+
+                <label>
+                    Circle
+                    <input
+                        type='radio'
+                        checked={tool.name === 'circle'}
+                        onChange={() => setTool({ type: 'draw', name: 'circle' })}
+                    />
+                </label>
+
+                <label>
+                    Rectangle
+                    <input
+                        type='radio'
+                        checked={tool.name === 'rectangle'}
+                        onChange={() => setTool({ type: 'draw', name: 'rectangle' })}
+                    />
+                </label>
             </div>
             {/* <div>
                 <button onClick={undo}>Undo</button>
