@@ -139,7 +139,11 @@ class Arc extends Element {
             this.midLine = createLine(this.centerPoint.x, this.centerPoint.y, this.groupId)
         }
 
-        const point = createPoint((this.startLine.pointB.x + this.endLine.x) / 2, (this.startLine.pointB.y + this.endLine.y) / 2)
+        const point = createPoint(
+            (this.startLine.pointB.x + this.endLine.pointB.x) / 2, 
+            (this.startLine.pointB.y + this.endLine.pointB.y) / 2
+        )
+        
         this.midLine.pointB = point
         this.midLine.setLength(this.radius, false)
     }

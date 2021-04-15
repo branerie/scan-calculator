@@ -36,14 +36,12 @@ const useElementsHistory = (initialElements, initialGroups) => {
         // TODO: decide where to add id's to polyline elements:
         // on creation or after explode/trim?
         const elementPoints = newElement.getSnappingPoints()
-        for (const [pointType, pointValues] of Object.entries(elementPoints)) {
-            for (const pointValue of pointValues) {
-                pointsTree.current.insert(
-                    pointValue.x,
-                    buildPointsTreeDataObject(pointValue, newElement.id, pointType)
-                )
-            }
-        }
+        elementPoints.forEach(elementPoint => {
+            pointsTree.current.insert(
+                elementPoint.x,
+                buildPointsTreeDataObject(elementPoint, newElement.id, elementPoint.pointType)
+            )
+        })
 
         setElements([...elements, newElement])
         updateHistoryEvents({ action: 'add', element: newElement })
@@ -57,6 +55,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 return element
             }
 
+            element.isShown = true
             newHistoryEvents.push({ action: 'edit', element })
             return editedElements.find(ee => ee.id === element.id)
         })
@@ -76,18 +75,18 @@ const useElementsHistory = (initialElements, initialGroups) => {
             )
         })
 
-        setElements(newElements)
-
+        
         const newSelectedElements = selectedElements.map(se => {
             if (!editedElementIds.includes(se.id)) {
                 return se
             }
-
+            
             return editedElements.find(ee => ee.id === se.id)
         })
-
+        
         setSelectedElements(newSelectedElements)
         newHistoryEvents.forEach(nhe => updateHistoryEvents(nhe))
+        setElements(newElements)
 
         setSelectedPoints(null)
         setCurrentlyEditedElements(null)
@@ -103,14 +102,17 @@ const useElementsHistory = (initialElements, initialGroups) => {
         const newElements = [...elements]
         newElements.splice(elementIndex, 1)
 
-        const elementPoints = deletedElement.getSnappingPoints()
-        for (const pointValues of Object.values(elementPoints)) {
-            for (const pointValue of pointValues) {
-                pointsTree.current.remove(pointValue.x, { y: pointValue.y, elementId: pointValue.elementId })
-            }
+        const snappingPoints = deletedElement.getSnappingPoints()
+        for (const snappingPoint of snappingPoints) {
+            pointsTree.current.remove(
+                snappingPoint.x, 
+                { y: snappingPoint.y, elementId: snappingPoint.elementId },
+                snappingPoint.pointType
+            )
         }
 
         setElements(newElements)
+        
         updateHistoryEvents({ action: 'delete', element: deletedElement })
     }
 
@@ -179,6 +181,24 @@ const useElementsHistory = (initialElements, initialGroups) => {
 
                 return element
             })
+
+            const pointsAfterUndo = lastHistoryEvent.element.getSnappingPoints()
+            elementAfterEdit.getSnappingPoints().forEach(pointBeforeUndo => {
+                const pointAfterUndo = pointsAfterUndo.find(pau => pau.pointId === pointBeforeUndo.pointId)
+
+                pointsTree.current.replace(
+                    pointBeforeUndo.x,
+                    { pointId: pointBeforeUndo.pointId },
+                    pointAfterUndo.x,
+                    buildPointsTreeDataObject(pointAfterUndo, pointBeforeUndo.elementId, pointBeforeUndo.pointType)
+                )
+            })
+
+            const newSelectedElements = selectedElements.filter(se => se.id !== lastHistoryEvent.element.id)
+            if (newSelectedElements.length < selectedElements.length) {
+                newSelectedElements.push(lastHistoryEvent.element)
+                setSelectedElements(newSelectedElements)
+            }
 
             // change actionHistory by adding elementAfterEdit so it can be accessed using undo/redo
             const newActionHistory = [...actionHistory]

@@ -10,7 +10,6 @@ class ElementManipulator {
         const functionName = `copy${element.baseType.charAt(0).toUpperCase() + element.baseType.slice(1)}`
 
         const func = ElementManipulator[functionName]
-        console.log(func)
         return func(element, keepIds)
     }
     
@@ -21,7 +20,11 @@ class ElementManipulator {
     
             const newPointB = new Point(line.pointB.x, line.pointB.y)
             newPointB.pointId = line.pointB.pointId
+            
             const newLine = new Line(newPointA, newPointB, line.groupId)
+            newLine.midPoint = new Point(line.midPoint.x, line.midPoint.y)
+            newLine.midPoint.pointId = line.midPoint.pointId
+            
             newLine.id = line.id
             return newLine
         }
@@ -49,6 +52,7 @@ class ElementManipulator {
     static copyArc(arc, keepIds = false) {
         const newStartLine = ElementManipulator.copyLine(arc.startLine, keepIds)
         const newEndLine = ElementManipulator.copyLine(arc.endLine, keepIds)
+        const newMidLine = ElementManipulator.copyLine(arc.midLine, keepIds)
     
         if (keepIds) {
             const newCenterPoint = new Point(arc.centerPoint.x, arc.centerPoint.y)
@@ -57,6 +61,8 @@ class ElementManipulator {
             const newArc = new Arc(newCenterPoint, arc.groupId)
             newArc.startLine = newStartLine
             newArc.endLine = newEndLine
+            newArc.midLine = newMidLine
+            
             newArc.radius = arc.radius
             newArc.id = arc.id
             return newArc

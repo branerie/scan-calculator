@@ -1,7 +1,6 @@
 import { degreesToRadians } from './angle'
 
 const draw = (context, element) => {
-    console.log(element);
     context.beginPath()
     switch (element.type) {
 
@@ -42,36 +41,36 @@ const draw = (context, element) => {
     context.stroke()
 }
 
-const drawSnappingPoints = (snappingPoints, selectedPoints, context) => {
-    for (const [pointType, snappingPointValues] of Object.entries(snappingPoints)) {
-        switch (pointType) {
-            case 'endPoints':
-                snappingPointValues.forEach(endPoint => {
-                    let pointFill = 'blue'
-                    if (selectedPoints &&
-                        selectedPoints.some(p => p.pointId === endPoint.pointId)) {
-                        pointFill = 'red'
-                    }
+const drawSnappingPoints = (context, snappingPoints, selectedPoints) => {
+    for (const snappingPoint of snappingPoints) {
+        const pointFill = selectedPoints && selectedPoints.some(p => p.pointId === snappingPoint.pointId)
+                            ? 'red' 
+                            : 'blue'
 
-                    context.beginPath()
-                    context.moveTo(endPoint.x, endPoint.y)
-                    context.fillStyle = pointFill
-                    context.fillRect(
-                        endPoint.x - 4,
-                        endPoint.y - 4, 8, 8
-                    )
+        context.beginPath()
+        context.moveTo(snappingPoint.x, snappingPoint.y)
+        context.fillStyle = pointFill
 
-                    context.stroke()
-                })
+        switch (snappingPoint.pointType) {
+            case 'endPoint':
+            case 'midPoint':
+            case 'center':
+                context.fillRect(
+                    snappingPoint.x - 4,
+                    snappingPoint.y - 4, 8, 8
+                )
+
                 break
             default:
                 return
         }
-
+                
+        context.stroke()
     }
 }
 
 
 export {
-    draw
+    draw,
+    drawSnappingPoints
 }

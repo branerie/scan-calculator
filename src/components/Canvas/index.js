@@ -8,7 +8,7 @@ import ToolInputMapper from '../ToolInputMapper'
 import { createEditedElement, createElement, createPoint } from '../../utils/elementFactory'
 import ElementManipulator from '../../utils/elementManipulator'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA } from '../../utils/constants'
-import { draw } from '../../utils/canvas'
+import { draw, drawSnappingPoints } from '../../utils/canvas'
 
 let groupId = 1
 // const manipulator = new ElementManipulator()
@@ -62,25 +62,8 @@ const Canvas = () => {
         elementsWithHighlightedPoints.forEach(selectedElement => {
             if (!selectedElement.isShown) return
 
-            const { endPoints } = selectedElement.getSnappingPoints()
-
-            endPoints.forEach(endPoint => {
-                let pointFill = 'blue'
-                if (selectedPoints && 
-                    selectedPoints.some(p => p.pointId === endPoint.pointId)) {
-                    pointFill = 'red'
-                }
-
-                context.beginPath()
-                context.moveTo(endPoint.x, endPoint.y)
-                context.fillStyle = pointFill
-                context.fillRect(
-                    endPoint.x - 4,
-                    endPoint.y - 4, 8, 8
-                )
-
-                context.stroke()
-            })
+            const snappingPoints = selectedElement.getSnappingPoints()
+            drawSnappingPoints(context, snappingPoints, selectedPoints)
         })
     }, [elements, currentlyCreatedElement, selectedElements, selectedPoints, currentlyEditedElements])
 
@@ -124,7 +107,7 @@ const Canvas = () => {
                 setCurrentlyCreatedElement(null)
             }
         } else if (event.keyCode === 46) { // delete
-            if (!selectedElements || selectedElements.length === 0) return
+            if (!selectedElements || selectedElements.length === 0 || selectedPoints) return
 
             for (const selectedElement of selectedElements) {
                 deleteElement(selectedElement.id)
@@ -136,7 +119,8 @@ const Canvas = () => {
     [
         currentlyCreatedElement, 
         currentlyEditedElements, 
-        selectedElements, 
+        selectedElements,
+        selectedPoints,
         setCurrentlyCreatedElement, 
         setCurrentlyEditedElements,
         setElements, 
@@ -174,7 +158,6 @@ const Canvas = () => {
             const newElement = createElement(tool.name, clientX, clientY, newGroupId)
             setCurrentlyCreatedElement(newElement)
         } else if (tool.type === 'select') {
-
             if (currentlyEditedElements) {
                 return editElements(currentlyEditedElements)
             }
@@ -192,7 +175,7 @@ const Canvas = () => {
                 const editedElements = []
                 for (const point of nearbyPoints) {
                     const editedElement = selectedElements.find(se => se.id === point.elementId)
-                    if (editedElement && point.pointType === 'endPoints') {
+                    if (editedElement && point.pointType === 'endPoint') {
                         selectedPoints.push(point)
                         const copiedElement = ElementManipulator.copyElement(editedElement, true)
                         editedElements.push(copiedElement)

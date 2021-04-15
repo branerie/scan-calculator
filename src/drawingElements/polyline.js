@@ -29,8 +29,8 @@ class Polyline extends Element {
     }
 
     defineNextAttribute(definingPoint) {
-        const lineToDefine = this.elements[this.elements.length - 1]
-        lineToDefine.defineNextAttribute(definingPoint)
+        const elementToDefine = this.elements[this.elements.length - 1]
+        elementToDefine.defineNextAttribute(definingPoint)
 
         const line = createLine(definingPoint.x, definingPoint.y, this.groupId)
         this.elements.push(line)
@@ -39,18 +39,8 @@ class Polyline extends Element {
     getSnappingPoints() {
         return this.elements.reduce((acc, element) => {
             const snappingPoints = element.getSnappingPoints()
-            for (const [snappingPointType, snappingPointValues] of Object.entries(snappingPoints)) {
-                if (!acc[snappingPointType]) {
-                    acc[snappingPointType] = []
-                }
-
-                for (const point of snappingPointValues) {
-                    acc[snappingPointType].push({ ...point, elementId: this.groupId })
-                }
-            }
-
-            return acc
-        }, {})
+            return [...acc, ...snappingPoints]
+        }, [])
     }
 
     getNearestPoint(point) {
@@ -60,14 +50,20 @@ class Polyline extends Element {
     setLastAttribute(pointX, pointY) {
         this.#isFullyDefined = true
 
-        const lineToDefine = this.elements[this.elements.length - 1]
+        const elementToDefine = this.elements[this.elements.length - 1]
 
-        if (!lineToDefine.pointB) {
-            return lineToDefine.pointB = createPoint(pointX, pointY)
+        if (!elementToDefine.pointB) {
+            return elementToDefine.pointB = createPoint(pointX, pointY)
         }
 
-        lineToDefine.pointB.x = pointX
-        lineToDefine.pointB.y = pointY
+        elementToDefine.pointB.x = pointX
+        elementToDefine.pointB.y = pointY
+    }
+
+    setPointById(pointId, newPointX, newPointY) {
+        return this.elements.reduce((acc, element) => {
+            return acc || element.setPointById(pointId, newPointX, newPointY)
+        }, false)
     }
 
     getPointById(pointId) {

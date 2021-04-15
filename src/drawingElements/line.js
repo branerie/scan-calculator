@@ -10,6 +10,10 @@ class Line extends Element {
 
         this.pointA = pointA
         this.pointB = pointB
+
+        if (this.pointA && this.pointB) {
+            this.__updateMidPoint()
+        }
     }
 
     get basePoint() {
@@ -78,6 +82,12 @@ class Line extends Element {
 
         this.pointB.x = pointX
         this.pointB.y = pointY
+        this.__updateMidPoint()
+    }
+
+    setPointById(pointId, newPointX, newPointY) {
+        super.setPointById(pointId, newPointX, newPointY)
+        this.__updateMidPoint()
     }
 
     getPointById(pointId) {
@@ -93,18 +103,31 @@ class Line extends Element {
     }
 
     getSnappingPoints() {
-        // TODO: test snapping points 
-        const midPoint = createPoint((this.pointA.x + this.pointB.x) / 2, (this.pointA.y + this.pointB.y) / 2)
-
-        return {
-            endPoints: [{ ...this.pointA, elementId: this.id }, { ...this.pointB, elementId: this.id }],
-            midPoints: [{ ...midPoint, elementId: this.id }]
+        if (!this.isFullyDefined) {
+            return []
         }
+
+        if (!this.midPoint) {
+            this.__updateMidPoint()
+        }
+
+        return [
+            { ...this.pointA, elementId: this.id, pointType: 'endPoint' }, 
+            { ...this.pointB, elementId: this.id, pointType: 'endPoint' },
+            { ...this.midPoint, elementId: this.id, pointType: 'midPoint' }
+        ]
     }
 
-    // Should never have to be used for Line element
     defineNextAttribute(definingPoint) {
-        if (this.isFullyDefined) return
+        if (this.isFullyDefined) {
+            // needs to set mid point when line is part of a polyline which is currently created
+            // otherwise, the mid point is not set anywhere
+            if (!this.midPoint) {
+                this.__updateMidPoint()
+            }
+
+            return
+        }
 
         if (!this.pointA) {
             this.pointA = definingPoint
@@ -112,6 +135,7 @@ class Line extends Element {
         }
 
         this.pointB = definingPoint
+        this.__updateMidPoint()
     }
 
     getNearestPoint(point) {
@@ -135,13 +159,13 @@ class Line extends Element {
                 this.pointA.x = this.pointA.x > this.pointB.x
                     ? this.pointB.x + newLength
                     : this.pointB.x - newLength
-                return
+                return this.__updateMidPoint()
             }
 
             this.pointB.x = this.pointB.x > this.pointA.x
                 ? this.pointA.x + newLength
                 : this.pointA.x - newLength
-            return
+            return this.__updateMidPoint()
         }
 
         if (this.pointA.x === this.pointB.x) {
@@ -149,13 +173,13 @@ class Line extends Element {
                 this.pointA.y = this.pointA.y > this.pointB.y
                     ? this.pointB.y + newLength
                     : this.pointB.y - newLength
-                return
+                return this.__updateMidPoint()
             }
 
             this.pointB.y = this.pointB.y > this.pointA.y
                 ? this.pointA.y + newLength
                 : this.pointA.y - newLength
-            return
+            return this.__updateMidPoint()
         }
 
         const quadrant = getQuadrant(this.angle)
@@ -199,8 +223,19 @@ class Line extends Element {
             this.pointB.x = this.pointA.x + dX
             this.pointB.y = this.pointA.y + dY
         }
+
+        this.__updateMidPoint()
     }
 
+    __updateMidPoint() {
+        if (!this.midPoint) {
+            this.midPoint = createPoint((this.pointA.x + this.pointB.x) / 2, (this.pointA.y + this.pointB.y) / 2)
+            return
+        }
+
+        this.midPoint.x = (this.pointA.x + this.pointB.x) / 2
+        this.midPoint.y = (this.pointA.y + this.pointB.y) / 2
+    }
 }
 
 export default Line

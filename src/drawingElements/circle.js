@@ -45,11 +45,10 @@ class Circle extends Element {
     }
 
     getSnappingPoints() {
-        // TODO: test method
-        return {
-            center: [ { ...this.centerPoint, elementId: this.id } ],
-            endPoints: this.endPoints
-        }
+        return [ 
+            { ...this.centerPoint, elementId: this.id, pointType: 'center' },
+            ...this.endPoints.map(ep => ({ ...ep, elementId: this.id, pointType: 'endPoint' }))
+        ]
     }
 
     checkIfPointOnElement(point) {
