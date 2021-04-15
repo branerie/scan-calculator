@@ -1,6 +1,7 @@
 import { degreesToRadians } from './angle'
 
 const draw = (context, element) => {
+    console.log(element);
     context.beginPath()
     switch (element.type) {
 
@@ -24,7 +25,7 @@ const draw = (context, element) => {
             element.elements.forEach(e => draw(context, e))
             break
         case 'circle':
-            context.moveTo(element.centerPoint.x + element.radius , element.centerPoint.y)
+            context.moveTo(element.centerPoint.x + element.radius, element.centerPoint.y)
             context.arc(
                 element.centerPoint.x,
                 element.centerPoint.y,
@@ -40,6 +41,36 @@ const draw = (context, element) => {
 
     context.stroke()
 }
+
+const drawSnappingPoints = (snappingPoints, selectedPoints, context) => {
+    for (const [pointType, snappingPointValues] of Object.entries(snappingPoints)) {
+        switch (pointType) {
+            case 'endPoints':
+                snappingPointValues.forEach(endPoint => {
+                    let pointFill = 'blue'
+                    if (selectedPoints &&
+                        selectedPoints.some(p => p.pointId === endPoint.pointId)) {
+                        pointFill = 'red'
+                    }
+
+                    context.beginPath()
+                    context.moveTo(endPoint.x, endPoint.y)
+                    context.fillStyle = pointFill
+                    context.fillRect(
+                        endPoint.x - 4,
+                        endPoint.y - 4, 8, 8
+                    )
+
+                    context.stroke()
+                })
+                break
+            default:
+                return
+        }
+
+    }
+}
+
 
 export {
     draw

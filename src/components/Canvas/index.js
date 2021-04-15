@@ -29,7 +29,9 @@ const Canvas = () => {
         addElement, 
         editElements, 
         deleteElement, 
-        findNearbyPoints
+        findNearbyPoints,
+        undo,
+        redo
     } = useElementsHistory([])
 
     const [tool, setTool] = useState({ type: 'draw', name: 'line' })
@@ -83,6 +85,16 @@ const Canvas = () => {
     }, [elements, currentlyCreatedElement, selectedElements, selectedPoints, currentlyEditedElements])
 
     const handleKeyPress = useCallback((event) => {
+        if (event.metaKey || event.ctrlKey) {
+            if (event.key === 'z') {
+                undo()
+            } else if (event.key === 'y') {
+                redo()
+            }
+
+            return
+        }
+        
         if (event.keyCode === 27) { // escape
             if (currentlyCreatedElement) {
                 if (currentlyCreatedElement.baseType === 'polyline' && currentlyCreatedElement.elements.length > 1) {
@@ -132,38 +144,17 @@ const Canvas = () => {
         setSelectedPoints, 
         clearSelection, 
         addElement, 
-        deleteElement
+        deleteElement,
+        undo,
+        redo
     ])
-
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyPress)
         return () => document.removeEventListener('keydown', handleKeyPress)
     }, [handleKeyPress])
 
-    // useEffect(() => {
-    //     const undoRedoFunction = event => {
-    //         if (event.metaKey || event.ctrlKey) {
-    //             if (event.key === 'z') {
-    //                 undo()
-    //             } else if (event.key === 'y') {
-    //                 redo()
-    //             }
-    //         }
-    //     }
-
-    //     document.addEventListener('keydown', undoRedoFunction)
-    //     return () => {
-    //         document.removeEventListener('keydown', undoRedoFunction)
-    //     }
-    // }, [undo, redo])
-
     const handleMouseClick = (event) => {
-        if (!tool) {
-            // TODO: Handle element select
-            return
-        }
-
         const { clientX, clientY } = event
         const clickedPoint = createPoint(clientX, clientY)
         if (tool.type === 'draw') {
@@ -183,10 +174,17 @@ const Canvas = () => {
             const newElement = createElement(tool.name, clientX, clientY, newGroupId)
             setCurrentlyCreatedElement(newElement)
         } else if (tool.type === 'select') {
+
             if (currentlyEditedElements) {
                 return editElements(currentlyEditedElements)
             }
-            
+
+            if (event.shiftKey) {
+                const newlySelectedElements = selectedElements.filter(e => !e.checkIfPointOnElement(clickedPoint))
+                setSelectedElements(newlySelectedElements)
+                return
+            }
+
             if (selectedElements && selectedElements.length > 0) {
                 const nearbyPoints = findNearbyPoints(clientX, clientY, SELECT_DELTA)
 

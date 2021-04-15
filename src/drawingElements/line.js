@@ -1,5 +1,5 @@
 import { getPointDistance } from '../utils/point'
-import { getQuadrant, radiansToDegrees } from '../utils/angle'
+import { degreesToRadians, getQuadrant, radiansToDegrees } from '../utils/angle'
 import Element from './element'
 import { createPoint } from '../utils/elementFactory'
 
@@ -84,11 +84,11 @@ class Line extends Element {
         if (this.pointA.pointId === pointId) {
             return this.pointA
         }
-        
+
         if (this.pointB.pointId === pointId) {
             return this.pointB
         }
-    
+
         return null
     }
 
@@ -97,8 +97,8 @@ class Line extends Element {
         const midPoint = createPoint((this.pointA.x + this.pointB.x) / 2, (this.pointA.y + this.pointB.y) / 2)
 
         return {
-            endPoints: [ { ...this.pointA, elementId: this.id }, { ...this.pointB, elementId: this.id } ],
-            midPoint: [ { ...midPoint, elementId: this.id } ]
+            endPoints: [{ ...this.pointA, elementId: this.id }, { ...this.pointB, elementId: this.id }],
+            midPoints: [{ ...midPoint, elementId: this.id }]
         }
     }
 
@@ -128,6 +128,79 @@ class Line extends Element {
 
         return { elementId: this.id, nearestPoint: createPoint(intersectX, intersectY) }
     }
+
+    setLength(newLength, shouldMovePointA) {
+        if (this.pointA.y === this.pointB.y) {
+            if (shouldMovePointA) {
+                this.pointA.x = this.pointA.x > this.pointB.x
+                    ? this.pointB.x + newLength
+                    : this.pointB.x - newLength
+                return
+            }
+
+            this.pointB.x = this.pointB.x > this.pointA.x
+                ? this.pointA.x + newLength
+                : this.pointA.x - newLength
+            return
+        }
+
+        if (this.pointA.x === this.pointB.x) {
+            if (shouldMovePointA) {
+                this.pointA.y = this.pointA.y > this.pointB.y
+                    ? this.pointB.y + newLength
+                    : this.pointB.y - newLength
+                return
+            }
+
+            this.pointB.y = this.pointB.y > this.pointA.y
+                ? this.pointA.y + newLength
+                : this.pointA.y - newLength
+            return
+        }
+
+        const quadrant = getQuadrant(this.angle)
+
+        let angle,
+            dXMultiplier,
+            dYMultiplier
+        switch (quadrant) {
+            case 1:
+                angle = this.angle
+                dXMultiplier = 1
+                dXMultiplier = 1
+                break
+            case 2:
+                angle = 180 - this.angle
+                dXMultiplier = -1
+                dXMultiplier = 1
+                break
+            case 3:
+                angle = this.angle - 180
+                dXMultiplier = -1
+                dYMultiplier = -1
+                break
+            case 4:
+                angle = 360 - this.angle
+                dXMultiplier = 1
+                dYMultiplier = -1
+                break
+            default:
+                throw new Error(`Invalid angle quadrant: ${quadrant}`)
+        }
+
+        const angleRadians = degreesToRadians(angle)
+        const dX = Math.cos(angleRadians) * newLength * dXMultiplier
+        const dY = Math.sin(angleRadians) * newLength * dYMultiplier
+
+        if (shouldMovePointA) {
+            this.pointA.x = this.pointB.x - dX
+            this.pointA.y = this.pointB.y - dY
+        } else {
+            this.pointB.x = this.pointA.x + dX
+            this.pointB.y = this.pointA.y + dY
+        }
+    }
+
 }
 
 export default Line

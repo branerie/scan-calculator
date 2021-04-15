@@ -12,35 +12,13 @@ const createElement = (type, initialX, initialY, groupId = null) => {
     const initialPoint = new Point(initialX, initialY)
     initialPoint.pointId = nextPointId++
 
-    let element
-    if (type === 'point') {
-        element = initialPoint
-    } else if (type === 'line') {
-        element = new Line(initialPoint, null, groupId)
-    } else if (type === 'arc') {
-        element = new Arc(initialPoint, groupId)
-    } else if (type === 'polyline') {
-        element = new Polyline(initialPoint, groupId)
-    } else if (type === 'circle') {
-        element = new Circle(initialPoint)
-    } else if (type === 'rectangle') {
-        element = new Rectangle(initialPoint, null, groupId)
-    }
-
-    // element.id = nextId
-    // if (groupId) {
-    //     element.groupId = groupId
-    // }
-
-    // nextId++
-    return element
+    return createElementFromInitialPoint(type, initialPoint, groupId)
 }
 
 const createEditedElement = (element, payload) => {
-    const newElement = createElement(
+    const newElement = createElementFromInitialPoint(
         element.constructor.name.toLowerCase(),
-        element.basePoint.x,
-        element.basePoint.y
+        element.basePoint
     )
 
     for (const [key, value] of Object.entries(element)) {
@@ -70,6 +48,22 @@ const createLine = (initialPointX, initialPointY, groupId, lastPointX, lastPoint
     }
 
     return line
+}
+
+function createElementFromInitialPoint(type, initialPoint, groupId = null) {
+    if (type === 'point') {
+        return initialPoint
+    } else if (type === 'line') {
+        return new Line(initialPoint, null, groupId)
+    } else if (type === 'arc') {
+        return new Arc(initialPoint, groupId)
+    } else if (type === 'polyline') {
+        return new Polyline(initialPoint, groupId)
+    } else if (type === 'circle') {
+        return new Circle(initialPoint)
+    } else if (type === 'rectangle') {
+        return new Rectangle(initialPoint, null, groupId)
+    }
 }
 
 export {

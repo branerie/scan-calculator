@@ -57,7 +57,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 return element
             }
 
-            newHistoryEvents.push({ action: 'edit', oldElement: element })
+            newHistoryEvents.push({ action: 'edit', element })
             return editedElements.find(ee => ee.id === element.id)
         })
 
@@ -111,7 +111,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
         }
 
         setElements(newElements)
-        updateHistoryEvents({ action: 'delete', deletedElement })
+        updateHistoryEvents({ action: 'delete', element: deletedElement })
     }
 
     const undo = () => {
@@ -119,19 +119,25 @@ const useElementsHistory = (initialElements, initialGroups) => {
             return
         }
 
-        const newPointer = historyPointer === null ? actionHistory.length - 2 : historyPointer - 1
+        const newPointer = historyPointer === null ? actionHistory.length - 1 : historyPointer - 1
 
         setHistoryPointer(newPointer)
         updateElementsFromHistory(newPointer, true)
     }
 
     const redo = () => {
-        if (historyPointer === null || historyPointer === actionHistory.length - 1) {
+        if (historyPointer === null) {
             return
         }
+        
+        updateElementsFromHistory(historyPointer, false)
+        setHistoryPointer(pointer => {
+            if (pointer === actionHistory.length -1) {
+                return null
+            }
 
-        setHistoryPointer(pointer => pointer + 1)
-        updateElementsFromHistory(historyPointer + 1, false)
+            return pointer + 1
+        })
     }
 
     const findNearbyPoints = (mouseX, mouseY, delta) => {
@@ -159,28 +165,27 @@ const useElementsHistory = (initialElements, initialGroups) => {
 
         let newElements
         if (updateOperation === 'add') {
-            newElements = [...elements, lastHistoryEvent]
+            newElements = [...elements, lastHistoryEvent.element]
         } else if (updateOperation === 'edit') {
+            // gets new state of elements after undo/redo operation
+            // also, saves state of edited element in elementAfterEdit in order to put it in history
+            // to be able to get the element back to this state using redo/undo
             let elementAfterEdit = null
             newElements = elements.map(element => {
-                if (element.id === lastHistoryEvent.id) {
+                if (element.id === lastHistoryEvent.element.id) {
                     elementAfterEdit = element
-                    return lastHistoryEvent.oldElement
+                    return lastHistoryEvent.element
                 }
 
                 return element
             })
 
-            lastHistoryEvent.oldElement = elementAfterEdit
-            setActionHistory(actionHistory => actionHistory.map(event => {
-                if (event.action === 'edit' && event.oldElement.id === lastHistoryEvent.oldElement.id) {
-                    return lastHistoryEvent
-                }
-
-                return event
-            }))
+            // change actionHistory by adding elementAfterEdit so it can be accessed using undo/redo
+            const newActionHistory = [...actionHistory]
+            newActionHistory[lastEventIndex].element = elementAfterEdit
+            setActionHistory(newActionHistory)
         } else if (updateOperation === 'delete') {
-            newElements = elements.filter(e => e.id !== lastHistoryEvent.id)
+            newElements = elements.filter(e => e.id !== lastHistoryEvent.element.id)
         } else {
             throw new Error('Invalid event action')
         }

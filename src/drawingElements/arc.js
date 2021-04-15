@@ -1,10 +1,8 @@
-import { degreesToRadians, getQuadrant } from '../utils/angle'
 import { SELECT_DELTA } from '../utils/constants'
-import { createPoint } from '../utils/elementFactory'
+import { createLine, createPoint } from '../utils/elementFactory'
 import { getPointDistance } from '../utils/point'
 import Element from './element'
 import Line from './line'
-import Point from './point'
 
 class Arc extends Element {
     constructor(centerPoint, groupId = null) {
@@ -13,6 +11,7 @@ class Arc extends Element {
         this.centerPoint = centerPoint
         this.startLine = null
         this.endLine = null
+        this.midLine = null
     }
 
     get basePoint() {
@@ -37,11 +36,12 @@ class Arc extends Element {
     }
 
     getSnappingPoints() {
-        // TODO: test method
-        return {
-            center: [ { ...this.centerPoint, elementId: this.id } ],
-            endPoints: [ { ...this.startLine.pointB, elementId: this.id }, { ...this.endLine.pointB, elementId: this.id } ]
-        }
+        return [
+            { ...this.centerPoint, elementId: this.id, pointType: 'center' },
+            { ...this.startLine.pointB, elementId: this.id, pointType: 'endPoint' },
+            { ...this.endLine.pointB, elementId: this.id, pointType: 'endPoint' },
+            { ...this.midLine.pointB, elementId: this.id, pointType: 'midPoint' }
+        ]
     }
 
     checkIfPointOnElement(point) {
@@ -70,7 +70,9 @@ class Arc extends Element {
     }
 
     setLastAttribute(pointX, pointY) {
-        this.endLine = this.__getNewArcLineFromPoint(pointX, pointY)
+        this.endLine = createLine(this.centerPoint.x, this.centerPoint.y, this.groupId, pointX, pointY)
+        this.endLine.setLength(this.radius, false)
+        this.__updateMidLine()
     }
 
     defineNextAttribute(definingPoint) {
@@ -92,7 +94,7 @@ class Arc extends Element {
     }
 
     move(dX, dY) {
-        // TODO: startLine and endLine not moved
+        // TODO: startLine, midLine and endLine not moved
         this.centerPoint.x += dX
         this.centerPoint.y += dY
     }
@@ -114,75 +116,33 @@ class Arc extends Element {
     }
 
     setPointById(pointId, newPointX, newPointY) {
+        let lineToChange
         if (pointId === this.startLine.pointB.pointId) {
-            this.startLine = this.__getNewArcLineFromPoint(newPointX, newPointY)
-            this.startLine.pointB.pointId = pointId
-            return true
+            lineToChange = this.startLine
+        }
+        
+        if (pointId === this.endLine.pointB.pointId) {
+            lineToChange = this.endLine
         }
 
-        this.endLine = this.__getNewArcLineFromPoint(newPointX, newPointY)
-        this.endLine.pointB.pointId = pointId
+        if (!lineToChange) return false
 
+        lineToChange.pointB.x = newPointX
+        lineToChange.pointB.y = newPointY
+        lineToChange.setLength(this.radius, false)
+        this.__updateMidLine()
         return true
     }
 
-    __getNewArcLineFromPoint(pointX, pointY) {
-        if (this.centerPoint.y === pointY) {
-            const endPointX = this.centerPoint.x > pointX 
-                                        ? this.centerPoint.x - this.radius
-                                        : this.centerPoint.x + this.radius
-
-            return new Line(this.centerPoint, createPoint(endPointX, this.centerPoint.y))
-        }
-        
-        if (this.centerPoint.x === pointX) {
-            const endPointY = this.centerPoint.y > pointY
-                                        ? this.centerPoint.y - this.radius
-                                        : this.centerPoint.y + this.radius
-
-            return new Line(this.centerPoint, createPoint(this.centerPoint.x, endPointY))
+    __updateMidLine() {
+        if (!this.midLine) {
+            this.midLine = createLine(this.centerPoint.x, this.centerPoint.y, this.groupId)
         }
 
-        const line = new Line(this.centerPoint, new Point(pointX, pointY))
-
-        const quadrant = getQuadrant(line.angle)
-
-        let endAngle,
-            dXMultiplier,
-            dYMultiplier
-        switch(quadrant) {
-            case 1:
-                endAngle = line.angle
-                dXMultiplier = 1
-                dXMultiplier = 1
-                break
-            case 2:
-                endAngle = 180 - line.angle
-                dXMultiplier = -1
-                dXMultiplier = 1
-                break
-            case 3:
-                endAngle = line.angle - 180
-                dXMultiplier = -1
-                dYMultiplier = -1
-                break
-            case 4:
-                endAngle = 360 - line.angle
-                dXMultiplier = 1
-                dYMultiplier = -1
-                break
-            default:
-                throw new Error(`Invalid angle quadrant: ${quadrant}`)
-        }
-
-        const endAngleRadians = degreesToRadians(endAngle)
-        const dX = Math.cos(endAngleRadians) * this.radius * dXMultiplier
-        const dY = Math.sin(endAngleRadians) * this.radius * dYMultiplier
-
-        const endPoint = createPoint(this.centerPoint.x + dX, this.centerPoint.y + dY)
-
-        return new Line(this.centerPoint, endPoint)
-    } 
+        const point = createPoint((this.startLine.pointB.x + this.endLine.x) / 2, (this.startLine.pointB.y + this.endLine.y) / 2)
+        this.midLine.pointB = point
+        this.midLine.setLength(this.radius, false)
+    }
 }
 
 export default Arc
