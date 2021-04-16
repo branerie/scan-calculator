@@ -174,7 +174,7 @@ const Canvas = () => {
                 const selectedPoints = []
                 const editedElements = []
                 for (const point of nearbyPoints) {
-                    const editedElement = selectedElements.find(se => se.id === point.elementId)
+                    const editedElement = selectedElements.find(se => se.getPointById(point.pointId))
                     if (editedElement && point.pointType === 'endPoint') {
                         selectedPoints.push(point)
                         const copiedElement = ElementManipulator.copyElement(editedElement, true)
@@ -207,7 +207,6 @@ const Canvas = () => {
         if (currentlyEditedElements && selectedPoints) {
             const newCurrentlyEditedElements = []
             for (const editedElement of currentlyEditedElements) {
-                // const newCurrentlyEditedElement = ElementManipulator.copyElement(editedElement, true)
                 for (const selectedPoint of selectedPoints) {
                     editedElement.setPointById(selectedPoint.pointId, clientX, clientY)
                 }

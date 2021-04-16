@@ -37,10 +37,10 @@ class Arc extends Element {
 
     getSnappingPoints() {
         return [
-            { ...this.centerPoint, elementId: this.id, pointType: 'center' },
-            { ...this.startLine.pointB, elementId: this.id, pointType: 'endPoint' },
-            { ...this.endLine.pointB, elementId: this.id, pointType: 'endPoint' },
-            { ...this.midLine.pointB, elementId: this.id, pointType: 'midPoint' }
+            { ...this.centerPoint, pointType: 'center' },
+            { ...this.startLine.pointB, pointType: 'endPoint' },
+            { ...this.endLine.pointB, pointType: 'endPoint' },
+            { ...this.midLine.pointB, pointType: 'midPoint' }
         ]
     }
 
@@ -54,9 +54,9 @@ class Arc extends Element {
         const lineAngle = lineFromCenter.angle
         const startAngle = this.startLine.angle
         const endAngle = this.endLine.angle
-        const isInArc = startAngle < endAngle 
-                        ? lineAngle >= startAngle || lineAngle <= endAngle
-                        : lineAngle <= startAngle && lineAngle >= endAngle
+        const isInArc = startAngle < endAngle
+            ? lineAngle >= startAngle || lineAngle <= endAngle
+            : lineAngle <= startAngle && lineAngle >= endAngle
 
         if (isInArc) {
             return true
@@ -103,7 +103,7 @@ class Arc extends Element {
         if (this.centerPoint.pointId === pointId) {
             return this.centerPoint
         }
-        
+
         if (this.startLine.pointB.pointId === pointId) {
             return this.startLine.pointB
         }
@@ -111,7 +111,7 @@ class Arc extends Element {
         if (this.endLine.pointB.pointId === pointId) {
             return this.endLine.pointB
         }
-    
+
         return null
     }
 
@@ -120,7 +120,7 @@ class Arc extends Element {
         if (pointId === this.startLine.pointB.pointId) {
             lineToChange = this.startLine
         }
-        
+
         if (pointId === this.endLine.pointB.pointId) {
             lineToChange = this.endLine
         }
@@ -140,16 +140,24 @@ class Arc extends Element {
         }
 
         const point = createPoint(
-            (this.startLine.pointB.x + this.endLine.pointB.x) / 2, 
+            (this.startLine.pointB.x + this.endLine.pointB.x) / 2,
             (this.startLine.pointB.y + this.endLine.pointB.y) / 2
         )
-        
+
         if (this.midLine.pointB) {
             point.pointId = this.midLine.pointB.pointId
         }
-        
+
         this.midLine.pointB = point
-        this.midLine.setLength(this.radius, false)
+
+        const isStartLessThanEnd = this.startLine.angle < this.endLine.angle
+        const isBetweenLessThan180 = Math.abs(this.startLine.angle - this.endLine.angle) < 180
+
+        const newLength = isStartLessThanEnd !== isBetweenLessThan180
+            ? this.radius
+            : -this.radius
+
+        this.midLine.setLength(newLength, false)
     }
 }
 

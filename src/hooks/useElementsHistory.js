@@ -5,11 +5,10 @@ import { CANVAS_WIDTH } from '../utils/constants'
 
 let nextId = 1
 
-const buildPointsTreeDataObject = (point, elementId, pointType) => {
+const buildPointsTreeDataObject = (point, pointType) => {
     return {
         leafValue: point.x,
         y: point.y,
-        elementId: elementId,
         pointId: point.pointId,
         pointType
     }
@@ -39,7 +38,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
         elementPoints.forEach(elementPoint => {
             pointsTree.current.insert(
                 elementPoint.x,
-                buildPointsTreeDataObject(elementPoint, newElement.id, elementPoint.pointType)
+                buildPointsTreeDataObject(elementPoint, elementPoint.pointType)
             )
         })
 
@@ -71,7 +70,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 selectedPoint.leafValue,
                 { pointId: selectedPoint.pointId },
                 editedPoint.x,
-                buildPointsTreeDataObject(editedPoint, elementOfPoint.id, selectedPoint.pointType)
+                buildPointsTreeDataObject(editedPoint, selectedPoint.pointType)
             )
         })
 
@@ -106,7 +105,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
         for (const snappingPoint of snappingPoints) {
             pointsTree.current.remove(
                 snappingPoint.x, 
-                { y: snappingPoint.y, elementId: snappingPoint.elementId },
+                { y: snappingPoint.y, pointId: snappingPoint.pointId },
                 snappingPoint.pointType
             )
         }
@@ -190,7 +189,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
                     pointBeforeUndo.x,
                     { pointId: pointBeforeUndo.pointId },
                     pointAfterUndo.x,
-                    buildPointsTreeDataObject(pointAfterUndo, pointBeforeUndo.elementId, pointBeforeUndo.pointType)
+                    buildPointsTreeDataObject(pointAfterUndo, pointBeforeUndo.pointType)
                 )
             })
 

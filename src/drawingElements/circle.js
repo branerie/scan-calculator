@@ -46,8 +46,8 @@ class Circle extends Element {
 
     getSnappingPoints() {
         return [ 
-            { ...this.centerPoint, elementId: this.id, pointType: 'center' },
-            ...this.endPoints.map(ep => ({ ...ep, elementId: this.id, pointType: 'endPoint' }))
+            { ...this.centerPoint, pointType: 'center' },
+            ...this.endPoints.map(ep => ({ ...ep, pointType: 'endPoint' }))
         ]
     }
 

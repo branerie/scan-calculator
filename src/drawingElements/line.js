@@ -39,7 +39,7 @@ class Line extends Element {
 
     get angle() {
         const deltaX = this.pointB.x - this.pointA.x
-        const deltaY = this.pointA.y - this.pointB.y
+        const deltaY = this.pointB.y - this.pointA.y
 
         const angleInRadians = Math.atan(Math.abs(deltaY) / Math.abs(deltaX))
         const angle = radiansToDegrees(angleInRadians)
@@ -56,13 +56,13 @@ class Line extends Element {
                 // line is horizontal
                 return deltaX > 0 ? 0 : 180
             case 1:
-                return 360 - angle
-            case 2:
-                return 180 + angle
-            case 3:
-                return 180 - angle
-            case 4:
                 return angle
+            case 2:
+                return 180 - angle
+            case 3:
+                return 180 + angle
+            case 4:
+                return 360 - angle
             default:
                 throw new Error()
         }
@@ -112,9 +112,9 @@ class Line extends Element {
         }
 
         return [
-            { ...this.pointA, elementId: this.id, pointType: 'endPoint' }, 
-            { ...this.pointB, elementId: this.id, pointType: 'endPoint' },
-            { ...this.midPoint, elementId: this.id, pointType: 'midPoint' }
+            { ...this.pointA, pointType: 'endPoint' }, 
+            { ...this.pointB, pointType: 'endPoint' },
+            { ...this.midPoint, pointType: 'midPoint' }
         ]
     }
 
@@ -150,7 +150,7 @@ class Line extends Element {
         const intersectX = (perpendicularIntercept - lineIntercept) / (2 * slope)
         const intersectY = slope * intersectX + lineIntercept
 
-        return { elementId: this.id, nearestPoint: createPoint(intersectX, intersectY) }
+        return { nearestPoint: createPoint(intersectX, intersectY) }
     }
 
     setLength(newLength, shouldMovePointA) {
