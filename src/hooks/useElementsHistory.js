@@ -170,12 +170,12 @@ const useElementsHistory = (initialElements, initialGroups) => {
             newElements = [...elements, lastHistoryEvent.element]
         } else if (updateOperation === 'edit') {
             // gets new state of elements after undo/redo operation
-            // also, saves state of edited element in elementAfterEdit in order to put it in history
+            // also, saves state of edited element in elementBeforeUndo in order to put it in history
             // to be able to get the element back to this state using redo/undo
-            let elementAfterEdit = null
+            let elementBeforeUndo = null
             newElements = elements.map(element => {
                 if (element.id === lastHistoryEvent.element.id) {
-                    elementAfterEdit = element
+                    elementBeforeUndo = element
                     return lastHistoryEvent.element
                 }
 
@@ -183,7 +183,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
             })
 
             const pointsAfterUndo = lastHistoryEvent.element.getSnappingPoints()
-            elementAfterEdit.getSnappingPoints().forEach(pointBeforeUndo => {
+            elementBeforeUndo.getSnappingPoints().forEach(pointBeforeUndo => {
                 const pointAfterUndo = pointsAfterUndo.find(pau => pau.pointId === pointBeforeUndo.pointId)
 
                 pointsTree.current.replace(
@@ -200,12 +200,20 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 setSelectedElements(newSelectedElements)
             }
 
-            // change actionHistory by adding elementAfterEdit so it can be accessed using undo/redo
+            // change actionHistory by adding elementBeforeUndo so it can be accessed using undo/redo
             const newActionHistory = [...actionHistory]
-            newActionHistory[lastEventIndex].element = elementAfterEdit
+            newActionHistory[lastEventIndex].element = elementBeforeUndo
             setActionHistory(newActionHistory)
         } else if (updateOperation === 'delete') {
-            newElements = elements.filter(e => e.id !== lastHistoryEvent.element.id)
+            newElements = elements.filter(e => {
+                if (e.id === lastHistoryEvent.element.id) {
+                    const newSelectedElements = selectedElements.filter(se => se.id !== lastHistoryEvent.element.id)
+                    setSelectedElements(newSelectedElements)
+                    return false
+                }
+
+                return true
+            })
         } else {
             throw new Error('Invalid event action')
         }
