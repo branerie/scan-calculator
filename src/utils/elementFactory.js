@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import Arc from '../drawingElements/arc'
 import Circle from '../drawingElements/circle'
 import Line from '../drawingElements/line'
@@ -5,12 +6,9 @@ import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
 import Rectangle from '../drawingElements/rectangle'
 
-let nextPointId = 0
-
-// let nextId = 0
 const createElement = (type, initialX, initialY, groupId = null) => {
     const initialPoint = new Point(initialX, initialY)
-    initialPoint.pointId = nextPointId++
+    initialPoint.pointId = uuidv4()
 
     return createElementFromInitialPoint(type, initialPoint, groupId)
 }

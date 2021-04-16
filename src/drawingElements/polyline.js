@@ -15,6 +15,14 @@ class Polyline extends Element {
         return this.elements.length > 0 ? this.elements[0].basePoint : null
     }
 
+    get startPoint() {
+        return this.elements[0].startPoint
+    }
+
+    get endPoint() {
+        return this.elements[this.elements.length - 1].endPoint
+    }
+
     get isFullyDefined() {
         return this.#isFullyDefined
     }
@@ -22,6 +30,16 @@ class Polyline extends Element {
     /* Should return true if all but the last dimension of the element are defined */
     get isAlmostDefined() {
         return !!(this.elements[0].pointA)
+    }
+
+    get isClosed() {
+        if (this.elements.length < 2) return false
+        if (this.elements[0].startPoint.x !== this.elements[this.elements.length - 1].endPoint.x
+            || this.elements[0].startPoint.y !== this.elements[this.elements.length - 1].endPoint.y) {
+            return false
+        }
+
+        return true
     }
 
     checkIfPointOnElement(point) {
@@ -77,6 +95,39 @@ class Polyline extends Element {
         }
 
         return point
+    }
+
+    move(dX, dY) {
+        this.elements.forEach(e => e.move(dX, dY))
+    }
+
+    stretchByMidPoint(dX, dY, midPointId) {
+        const movedLineIndex = this.elements.findIndex(e => e.getPointById(midPointId))
+        if (movedLineIndex < 0) return false
+        
+        if (this.isClosed) {
+            if (movedLineIndex === 0) {
+                this.elements[this.elements.length - 1].pointB.x += dX
+                this.elements[this.elements.length - 1].pointB.y += dY
+            }
+
+            if (movedLineIndex === this.elements.length - 1) {
+                this.elements[0].pointA.x += dX
+                this.elements[0].pointA.y += dY
+            }
+        }
+
+        this.elements[movedLineIndex].move(dX, dY)
+
+        if (movedLineIndex > 0) {
+            this.elements[movedLineIndex - 1].pointB.x += dX
+            this.elements[movedLineIndex - 1].pointB.y += dY
+        }
+
+        if (movedLineIndex < this.elements.length - 1) {
+            this.elements[movedLineIndex + 1].pointA.x += dX
+            this.elements[movedLineIndex + 1].pointA.y += dY
+        }
     }
 }
 

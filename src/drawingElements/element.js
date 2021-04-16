@@ -26,6 +26,14 @@ class Element {
         throw new Error('Property isAlmostDefined is not implemented')
     }
 
+    get startPoint() {
+        throw new Error('Property startPoint is not implemented')
+    }
+
+    get endPoint() {
+        throw new Error('Property endPoint is not implemented')
+    } 
+
     getPointById(pointId) {
         throw new Error('Method getPointById is not implemented')
     }
@@ -55,6 +63,10 @@ class Element {
 
     setLastAttribute(pointX, pointY) {
         throw new Error('Method setLastAttribute is not implemented')
+    }
+
+    move(dX, dY) {
+        throw new Error('Method move is not implemented')
     }
 }
 

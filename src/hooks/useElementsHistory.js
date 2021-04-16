@@ -1,9 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import { createTree } from '../utils/pointsSearchTree'
 
 import { CANVAS_WIDTH } from '../utils/constants'
-
-let nextId = 1
 
 const buildPointsTreeDataObject = (point, pointType) => {
     return {
@@ -31,7 +30,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
     }, [])
 
     const addElement = (newElement) => {
-        newElement.id = nextId++
+        newElement.id = uuidv4()
         // TODO: decide where to add id's to polyline elements:
         // on creation or after explode/trim?
         const elementPoints = newElement.getSnappingPoints()
@@ -49,6 +48,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
     const editElements = (editedElements, shouldAddToHistory = true) => {
         const editedElementIds = editedElements.map(ee => ee.id)
         const newHistoryEvents = []
+        const elementPointsBeforeEdit = {}
         const newElements = elements.map(element => {
             if (!editedElementIds.includes(element.id)) {
                 return element
@@ -56,6 +56,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
 
             element.isShown = true
             newHistoryEvents.push({ action: 'edit', element })
+            elementPointsBeforeEdit[element.id] = element.getSnappingPoints()
             return editedElements.find(ee => ee.id === element.id)
         })
 
@@ -65,13 +66,17 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 throw new Error('Mismatch between selectedPoints and currentlyEditedElements.')
             }
 
-            const editedPoint = elementOfPoint.getPointById(selectedPoint.pointId)
-            pointsTree.current.replace(
-                selectedPoint.leafValue,
-                { pointId: selectedPoint.pointId },
-                editedPoint.x,
-                buildPointsTreeDataObject(editedPoint, selectedPoint.pointType)
-            )
+            const snappingPoints = elementOfPoint.getSnappingPoints()
+            snappingPoints.forEach(sp => {
+                const points = elementPointsBeforeEdit[elementOfPoint.id]
+                const pointBeforeEdit = points.find(p => p.pointId === sp.pointId)
+                pointsTree.current.replace(
+                    pointBeforeEdit.x,
+                    { pointId: sp.pointId },
+                    sp.x,
+                    buildPointsTreeDataObject(sp, sp.pointType)
+                )
+            })
         })
 
         
@@ -206,8 +211,10 @@ const useElementsHistory = (initialElements, initialGroups) => {
         } else if (updateOperation === 'delete') {
             newElements = elements.filter(e => {
                 if (e.id === lastHistoryEvent.element.id) {
-                    const newSelectedElements = selectedElements.filter(se => se.id !== lastHistoryEvent.element.id)
-                    setSelectedElements(newSelectedElements)
+                    if (selectedElements) {
+                        const newSelectedElements = selectedElements.filter(se => se.id !== lastHistoryEvent.element.id)
+                        setSelectedElements(newSelectedElements)
+                    }
                     return false
                 }
 

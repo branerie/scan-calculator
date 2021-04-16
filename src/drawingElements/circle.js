@@ -76,16 +76,6 @@ class Circle extends Element {
         this.setLastAttribute(definingPoint.x, definingPoint.y)
     }
 
-    move(dX, dY) {
-        this.centerPoint.x += dX
-        this.centerPoint.y += dY
-
-        this.endPoints.forEach(ep => {
-            ep.x += dX
-            ep.y += dY
-        })
-    }
-
     getPointById(pointId) {
         if (this.centerPoint.pointId === pointId) {
             return this.centerPoint
@@ -102,6 +92,16 @@ class Circle extends Element {
         }
 
         this.setLastAttribute(newPointX, newPointY)
+    }
+
+    move(dX, dY) {
+        this.centerPoint.x += dX
+        this.centerPoint.y += dY
+
+        this.endPoints.forEach(ep => {
+            ep.x += dX
+            ep.y += dY
+        })
     }
 
     __setEndPoints() {

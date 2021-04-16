@@ -18,6 +18,14 @@ class Arc extends Element {
         return this.centerPoint
     }
 
+    get startPoint() {
+        return this.startLine.pointB
+    }
+
+    get endPoint() {
+        return this.endLine.pointB
+    }
+
     get isFullyDefined() {
         return (
             this.centerPoint &&
@@ -93,12 +101,6 @@ class Arc extends Element {
         }
     }
 
-    move(dX, dY) {
-        // TODO: startLine, midLine and endLine not moved
-        this.centerPoint.x += dX
-        this.centerPoint.y += dY
-    }
-
     getPointById(pointId) {
         if (this.centerPoint.pointId === pointId) {
             return this.centerPoint
@@ -110,6 +112,10 @@ class Arc extends Element {
 
         if (this.endLine.pointB.pointId === pointId) {
             return this.endLine.pointB
+        }
+
+        if (this.midLine.pointB.pointId === pointId) {
+            return this.midLine.pointB
         }
 
         return null
@@ -132,6 +138,22 @@ class Arc extends Element {
         lineToChange.setLength(this.radius, false)
         this.__updateMidLine()
         return true
+    }
+
+    move(dX, dY) {
+        this.centerPoint.x += dX
+        this.centerPoint.y += dY
+
+        this.startLine.move(dX, dY)
+        this.endLine.move(dX, dY)
+        this.midLine.move(dX, dY)
+    }
+
+    setRadius(newRadius) {
+        this.startLine.setLength(newRadius, false)
+        this.endLine.setLength(newRadius, false)
+        this.midLine.setLength(newRadius,false)
+        this.radius = newRadius
     }
 
     __updateMidLine() {

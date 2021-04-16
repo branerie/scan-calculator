@@ -20,6 +20,14 @@ class Line extends Element {
         return this.pointA
     }
 
+    get startPoint() {
+        return this.pointA
+    }
+
+    get endPoint() {
+        return this.pointB
+    }
+
     get isFullyDefined() {
         return (
             this.pointA && (!!(this.pointA.x) || this.pointA.x === 0) &&
@@ -95,8 +103,12 @@ class Line extends Element {
             return this.pointA
         }
 
-        if (this.pointB.pointId === pointId) {
+        if (this.pointB && this.pointB.pointId === pointId) {
             return this.pointB
+        }
+
+        if (this.pointB && this.midPoint.pointId === pointId) {
+            return this.midPoint
         }
 
         return null
@@ -107,12 +119,10 @@ class Line extends Element {
             return []
         }
 
-        if (!this.midPoint) {
-            this.__updateMidPoint()
-        }
+        this.__updateMidPoint()
 
         return [
-            { ...this.pointA, pointType: 'endPoint' }, 
+            { ...this.pointA, pointType: 'endPoint' },
             { ...this.pointB, pointType: 'endPoint' },
             { ...this.midPoint, pointType: 'midPoint' }
         ]
@@ -225,6 +235,15 @@ class Line extends Element {
         }
 
         this.__updateMidPoint()
+    }
+
+    move(dX, dY) {
+        this.pointA.x += dX
+        this.pointA.y += dY
+        this.pointB.x += dX
+        this.pointB.y += dY
+        this.midPoint.x += dX
+        this.midPoint.y += dY
     }
 
     __updateMidPoint() {
