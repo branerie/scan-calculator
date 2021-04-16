@@ -80,8 +80,14 @@ class ElementManipulator {
             const newCenterPoint = new Point(circle.centerPoint.x, circle.centerPoint.y)
             newCenterPoint.pointId = circle.centerPoint.pointId
 
+            const newEndPoints = circle.endPoints.map(ep => {
+                const point = new Point(ep.x, ep.y)
+                point.pointId = ep.pointId
+                return point
+            })
+
             const newCircle = new Circle(newCenterPoint, circle.radius)
-            newCircle.endPoints = [...circle.endPoints]
+            newCircle.endPoints = [...newEndPoints]
             newCircle.id = circle.id
             return newCircle
         }
