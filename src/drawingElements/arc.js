@@ -144,6 +144,10 @@ class Arc extends Element {
             (this.startLine.pointB.y + this.endLine.pointB.y) / 2
         )
         
+        if (this.midLine.pointB) {
+            point.pointId = this.midLine.pointB.pointId
+        }
+        
         this.midLine.pointB = point
         this.midLine.setLength(this.radius, false)
     }

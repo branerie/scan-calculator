@@ -207,12 +207,12 @@ const Canvas = () => {
         if (currentlyEditedElements && selectedPoints) {
             const newCurrentlyEditedElements = []
             for (const editedElement of currentlyEditedElements) {
-                const newCurrentlyEditedElement = ElementManipulator.copyElement(editedElement, true)
+                // const newCurrentlyEditedElement = ElementManipulator.copyElement(editedElement, true)
                 for (const selectedPoint of selectedPoints) {
-                    newCurrentlyEditedElement.setPointById(selectedPoint.pointId, clientX, clientY)
+                    editedElement.setPointById(selectedPoint.pointId, clientX, clientY)
                 }
 
-                newCurrentlyEditedElements.push(newCurrentlyEditedElement)
+                newCurrentlyEditedElements.push(editedElement)
             }
             
             setCurrentlyEditedElements(newCurrentlyEditedElements)
