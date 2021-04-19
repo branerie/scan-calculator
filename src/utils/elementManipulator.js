@@ -4,10 +4,11 @@ import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
 import Circle from '../drawingElements/circle'
+import Rectangle from '../drawingElements/rectangle'
 
 class ElementManipulator {
     static copyElement(element, keepIds = false) {
-        const functionName = `copy${element.baseType.charAt(0).toUpperCase() + element.baseType.slice(1)}`
+        const functionName = `copy${element.type.charAt(0).toUpperCase() + element.type.slice(1)}`
 
         const func = ElementManipulator[functionName]
         return func(element, keepIds)
@@ -18,29 +19,31 @@ class ElementManipulator {
             const newPointA = new Point(line.pointA.x, line.pointA.y)
             newPointA.pointId = line.pointA.pointId
     
-            const newPointB = new Point(line.pointB.x, line.pointB.y)
-            newPointB.pointId = line.pointB.pointId
+            const newPointB = line.pointB ? ElementManipulator.copyPoint(line.pointB, keepIds) : null
+            const newLine = new Line(newPointA, { 
+                pointB: newPointB, 
+                groupId: line.groupId, 
+                id: line.id, 
+                midPointId: line.midPoint ? line.midPoint.pointId : null 
+            })
             
-            const newLine = new Line(newPointA, newPointB, line.groupId)
-            newLine.midPoint = new Point(line.midPoint.x, line.midPoint.y)
-            newLine.midPoint.pointId = line.midPoint.pointId
-            
-            newLine.id = line.id
             return newLine
         }
     
         const newLine = createElement('line', line.pointA.x, line.pointA.y, line.groupId)
-        newLine.setLastAttribute(createElement('point', line.pointB.x, line.pointB.y))
+
+        if (line.pointB) {
+            newLine.setLastAttribute(createElement('point', line.pointB.x, line.pointB.y))
+        }
+
         return newLine
     }
 
     static copyPolyline(polyline, keepIds = false) {
         let newPolyline
         if (keepIds) {
-            const newInitialPoint = new Point(polyline.basePoint.x, polyline.basePoint.y)
-            newInitialPoint.pointId = polyline.basePoint.pointId
-            newPolyline = new Polyline(newInitialPoint, polyline.groupId)
-            newPolyline.id = polyline.id
+            const newInitialPoint = ElementManipulator.copyPoint(polyline.basePoint, keepIds)
+            newPolyline = new Polyline(newInitialPoint, { id: polyline.id, groupId: polyline.groupId })
         } else {
             newPolyline = createElement('polyline', polyline.basePoint.x, polyline.basePoint.y)
         }
@@ -48,53 +51,67 @@ class ElementManipulator {
         newPolyline.elements = polyline.elements.map(e => ElementManipulator.copyElement(e, keepIds))
         return newPolyline
     }
+
+    static copyRectangle(rectangle, keepIds = false) {
+        const initialPoint = rectangle.elements[0].pointA
+
+        let newRectangle
+        if (keepIds) {
+            const newInitialPoint = ElementManipulator.copyPoint(initialPoint, keepIds)
+            newRectangle = new Rectangle(newInitialPoint, { id: rectangle.id, groupId: rectangle.groupId }) 
+        } else {
+            newRectangle = createElement('rectangle', initialPoint.x, initialPoint.y)
+        }
+
+        newRectangle.elements = rectangle.elements.map(line => ElementManipulator.copyLine(line, keepIds))
+        return newRectangle
+    } 
     
     static copyArc(arc, keepIds = false) {
-        const newStartLine = ElementManipulator.copyLine(arc.startLine, keepIds)
-        const newEndLine = ElementManipulator.copyLine(arc.endLine, keepIds)
-        const newMidLine = ElementManipulator.copyLine(arc.midLine, keepIds)
-    
+        const newStartLine = arc.startLine ? ElementManipulator.copyLine(arc.startLine, keepIds) : null
+        const newEndLine = arc.endLine ? ElementManipulator.copyLine(arc.endLine, keepIds) : null
+        const newMidLine = arc.midLine ? ElementManipulator.copyLine(arc.midLine, keepIds) : null
+
+        let newCenterPoint
         if (keepIds) {
-            const newCenterPoint = new Point(arc.centerPoint.x, arc.centerPoint.y)
+            newCenterPoint = new Point(arc.centerPoint.x, arc.centerPoint.y)
             newCenterPoint.pointId = arc.centerPoint.pointId
-    
-            const newArc = new Arc(newCenterPoint, arc.groupId)
-            newArc.startLine = newStartLine
-            newArc.endLine = newEndLine
-            newArc.midLine = newMidLine
-            
-            newArc.radius = arc.radius
-            newArc.id = arc.id
-            return newArc
+        } else {
+            newCenterPoint = createElement('point', arc.centerPoint.x, arc.centerPoint.y)
         }
     
-        const newArc = createElement('arc', arc.centerPoint.x, arc.centerPoint.y, arc.groupId)
-        newArc.startLine = newStartLine
-        newArc.endLine = newEndLine
-        newArc.radius = arc.radius
+        const newArc = new Arc(
+            newCenterPoint, 
+            { 
+                groupId: arc.groupId,
+                id: arc.id,
+                radius: arc.radius,
+                startLine: newStartLine,
+                endLine: newEndLine,
+                midLine: newMidLine
+            }
+        )
+
         return newArc
     }
 
     static copyCircle(circle, keepIds = false) {
+        const newCenterPoint = ElementManipulator.copyPoint(circle.centerPoint, keepIds)
+        const newEndPoints = circle.endPoints 
+                                ? circle.endPoints.map(ep => ElementManipulator.copyPoint(ep, keepIds))
+                                : null
+
+        const newCircle = new Circle(newCenterPoint, { radius: circle.radius, endPoints: newEndPoints, id: circle.id })
+        return newCircle
+    }
+
+    static copyPoint(point, keepIds = false) {
+        const newPoint = new Point(point.x, point.y)
         if (keepIds) {
-            const newCenterPoint = new Point(circle.centerPoint.x, circle.centerPoint.y)
-            newCenterPoint.pointId = circle.centerPoint.pointId
-
-            const newEndPoints = circle.endPoints.map(ep => {
-                const point = new Point(ep.x, ep.y)
-                point.pointId = ep.pointId
-                return point
-            })
-
-            const newCircle = new Circle(newCenterPoint, circle.radius)
-            newCircle.endPoints = [...newEndPoints]
-            newCircle.id = circle.id
-            return newCircle
+            newPoint.pointId = point.pointId
         }
 
-        const newCircle = createElement('circle', circle.centerPoint.x, circle.centerPoint.y)
-        newCircle.radius = circle.radius
-        return newCircle
+        return newPoint
     }
 }
 

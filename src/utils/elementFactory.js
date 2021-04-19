@@ -42,7 +42,7 @@ const createLine = (initialPointX, initialPointY, groupId, lastPointX, lastPoint
     const line = createElement('line', initialPointX, initialPointY, groupId)
 
     if ((lastPointX || lastPointX === 0) && (lastPointY || lastPointY === 0)) {
-        line.pointB = createPoint(lastPointX, lastPointY)
+        line.setPointB(lastPointX, lastPointY)
     }
 
     return line
@@ -52,15 +52,15 @@ function createElementFromInitialPoint(type, initialPoint, groupId = null) {
     if (type === 'point') {
         return initialPoint
     } else if (type === 'line') {
-        return new Line(initialPoint, null, groupId)
+        return new Line(initialPoint, { groupId })
     } else if (type === 'arc') {
-        return new Arc(initialPoint, groupId)
+        return new Arc(initialPoint, { groupId })
     } else if (type === 'polyline') {
-        return new Polyline(initialPoint, groupId)
+        return new Polyline(initialPoint, { groupId })
     } else if (type === 'circle') {
         return new Circle(initialPoint)
     } else if (type === 'rectangle') {
-        return new Rectangle(initialPoint, null, groupId)
+        return new Rectangle(initialPoint, { groupId })
     }
 }
 

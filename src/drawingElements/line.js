@@ -4,50 +4,62 @@ import Element from './element'
 import { createPoint } from '../utils/elementFactory'
 
 class Line extends Element {
-    constructor(pointA, pointB, groupId = null) {
-        super(groupId)
+    #pointA
+    #pointB
+    #midPoint
+
+    constructor(pointA, { pointB = null, id = null, groupId = null, midPointId = null } = {}) {
+        super(id, groupId)
         // TODO: check if both points are the same point
 
-        this.pointA = pointA
-        this.pointB = pointB
-
-        if (this.pointA && this.pointB) {
+        this.#pointA = pointA
+        this.#pointB = pointB
+        if (pointB) {
             this.__updateMidPoint()
+
+            if (midPointId) {
+                this.#midPoint.pointId = midPointId
+            }
         }
     }
 
     get basePoint() {
-        return this.pointA
+        return this.#pointA
     }
 
-    get startPoint() {
-        return this.pointA
-    }
+    get startPoint() { return this.pointA }
+    get endPoint() { return this.pointB }
 
-    get endPoint() {
-        return this.pointB
-    }
+    get pointA() { return this.#pointA ? { ...this.#pointA } : null }
+    get pointB() { return this.#pointB ? { ...this.#pointB } : null }
+    get midPoint() { return this.#midPoint ? { ...this.#midPoint } : null }
 
     get isFullyDefined() {
         return (
-            this.pointA && (!!(this.pointA.x) || this.pointA.x === 0) &&
-            this.pointA && (!!(this.pointA.y) || this.pointA.y === 0) &&
-            this.pointB && (!!(this.pointB.x) || this.pointB.x === 0) &&
-            this.pointB && (!!(this.pointB.y) || this.pointB.y === 0)
+            this.#pointA && (!!(this.#pointA.x) || this.#pointA.x === 0) &&
+            this.#pointA && (!!(this.#pointA.y) || this.#pointA.y === 0) &&
+            this.#pointB && (!!(this.#pointB.x) || this.#pointB.x === 0) &&
+            this.#pointB && (!!(this.#pointB.y) || this.#pointB.y === 0)
         )
     }
 
-    get isAlmostDefined() {
-        return (!!this.pointA)
-    }
+    get isAlmostDefined() { return (!!this.#pointA) }
 
     get length() {
-        return getPointDistance(this.pointA, this.pointB)
+        if (!this.#pointA || !this.#pointB) {
+            throw new Error('Cannot get length of line until it is fully defined')
+        }
+
+        return getPointDistance(this.#pointA, this.#pointB)
     }
 
     get angle() {
-        const deltaX = this.pointB.x - this.pointA.x
-        const deltaY = this.pointB.y - this.pointA.y
+        if (!this.#pointA || !this.#pointB) {
+            throw new Error('Cannot get angle of line until it is fully defined')
+        }
+
+        const deltaX = this.#pointB.x - this.#pointA.x
+        const deltaY = this.#pointB.y - this.#pointA.y
 
         const angleInRadians = Math.atan(Math.abs(deltaY) / Math.abs(deltaX))
         const angle = radiansToDegrees(angleInRadians)
@@ -76,21 +88,40 @@ class Line extends Element {
         }
     }
 
+    setPointA(x, y) {
+        this.#pointA.x = x
+        this.#pointA.y = y
+        this.__updateMidPoint()
+    }
+
+    setPointB(x, y) { 
+        if (!this.#pointB) {
+            this.#pointB = createPoint(x, y)
+        } else {
+            this.#pointB.x = x
+            this.#pointB.y = y
+        }
+
+        this.__updateMidPoint()
+    }
+
     checkIfPointOnElement(point) {
-        const pointDistA = getPointDistance(this.pointA, point)
-        const pointDistB = getPointDistance(this.pointB, point)
+        if (!this.#pointA || !this.#pointB) {
+            throw new Error('Cannot use method \'checkIfPointOnElement\' before line is fully defined.')
+        }
+
+        const pointDistA = getPointDistance(this.#pointA, point)
+        const pointDistB = getPointDistance(this.#pointB, point)
 
         return Math.abs((pointDistA + pointDistB) - this.length) < 0.3
     }
 
     setLastAttribute(pointX, pointY) {
-        if (!this.pointB) {
-            return this.pointB = createPoint(pointX, pointY)
+        if (!this.#pointB) {
+            return this.#pointB = createPoint(pointX, pointY)
         }
 
-        this.pointB.x = pointX
-        this.pointB.y = pointY
-        this.__updateMidPoint()
+        this.setPointB(pointX, pointY)
     }
 
     setPointById(pointId, newPointX, newPointY) {
@@ -99,16 +130,16 @@ class Line extends Element {
     }
 
     getPointById(pointId) {
-        if (this.pointA.pointId === pointId) {
-            return this.pointA
+        if (this.#pointA.pointId === pointId) {
+            return this.#pointA
         }
 
-        if (this.pointB && this.pointB.pointId === pointId) {
-            return this.pointB
+        if (this.#pointB && this.#pointB.pointId === pointId) {
+            return this.#pointB
         }
 
-        if (this.pointB && this.midPoint.pointId === pointId) {
-            return this.midPoint
+        if (this.#pointB && this.#midPoint.pointId === pointId) {
+            return this.#midPoint
         }
 
         return null
@@ -119,12 +150,12 @@ class Line extends Element {
             return []
         }
 
-        this.__updateMidPoint()
+        // this.__updateMidPoint()
 
         return [
-            { ...this.pointA, pointType: 'endPoint' },
-            { ...this.pointB, pointType: 'endPoint' },
-            { ...this.midPoint, pointType: 'midPoint' }
+            { ...this.#pointA, pointType: 'endPoint' },
+            { ...this.#pointB, pointType: 'endPoint' },
+            { ...this.#midPoint, pointType: 'midPoint' }
         ]
     }
 
@@ -132,27 +163,27 @@ class Line extends Element {
         if (this.isFullyDefined) {
             // needs to set mid point when line is part of a polyline which is currently created
             // otherwise, the mid point is not set anywhere
-            if (!this.midPoint) {
+            if (!this.#midPoint) {
                 this.__updateMidPoint()
             }
 
             return
         }
 
-        if (!this.pointA) {
-            this.pointA = definingPoint
+        if (!this.#pointA) {
+            this.#pointA = definingPoint
             return
         }
 
-        this.pointB = definingPoint
+        this.#pointB = definingPoint
         this.__updateMidPoint()
     }
 
     getNearestPoint(point) {
         // m = (y2 - y1) / (x2 - x1)
-        const slope = (this.pointB.y - this.pointA.y) / (this.pointB.x - this.pointA.x)
+        const slope = (this.#pointB.y - this.#pointA.y) / (this.#pointB.x - this.#pointA.x)
         // b = y - m * x
-        const lineIntercept = this.pointA.y - slope * this.pointA.x
+        const lineIntercept = this.#pointA.y - slope * this.#pointA.x
 
         // find perpendicular intercept from input point
         const perpendicularIntercept = point.y + slope * point.x
@@ -164,31 +195,35 @@ class Line extends Element {
     }
 
     setLength(newLength, shouldMovePointA) {
-        if (this.pointA.y === this.pointB.y) {
+        if (!this.#pointA || !this.#pointB) {
+            throw new Error('Cannot set length of a line that is not fully defined')
+        }
+
+        if (this.#pointA.y === this.#pointB.y) {
             if (shouldMovePointA) {
-                this.pointA.x = this.pointA.x > this.pointB.x
-                    ? this.pointB.x + newLength
-                    : this.pointB.x - newLength
-                return this.__updateMidPoint()
+                this.#pointA.x = this.#pointA.x > this.#pointB.x
+                    ? this.#pointB.x + newLength
+                    : this.#pointB.x - newLength
+            } else {
+                this.#pointB.x = this.#pointB.x > this.#pointA.x
+                    ? this.#pointA.x + newLength
+                    : this.#pointA.x - newLength
             }
 
-            this.pointB.x = this.pointB.x > this.pointA.x
-                ? this.pointA.x + newLength
-                : this.pointA.x - newLength
             return this.__updateMidPoint()
         }
 
-        if (this.pointA.x === this.pointB.x) {
+        if (this.#pointA.x === this.#pointB.x) {
             if (shouldMovePointA) {
-                this.pointA.y = this.pointA.y > this.pointB.y
-                    ? this.pointB.y + newLength
-                    : this.pointB.y - newLength
-                return this.__updateMidPoint()
+                this.#pointA.y = this.#pointA.y > this.#pointB.y
+                    ? this.#pointB.y + newLength
+                    : this.#pointB.y - newLength
+            } else {
+                this.#pointB.y = this.#pointB.y > this.#pointA.y
+                    ? this.#pointA.y + newLength
+                    : this.#pointA.y - newLength
             }
 
-            this.pointB.y = this.pointB.y > this.pointA.y
-                ? this.pointA.y + newLength
-                : this.pointA.y - newLength
             return this.__updateMidPoint()
         }
 
@@ -227,33 +262,31 @@ class Line extends Element {
         const dY = Math.sin(angleRadians) * newLength * dYMultiplier
 
         if (shouldMovePointA) {
-            this.pointA.x = this.pointB.x - dX
-            this.pointA.y = this.pointB.y - dY
-        } else {
-            this.pointB.x = this.pointA.x + dX
-            this.pointB.y = this.pointA.y + dY
+            return this.setPointA(this.#pointB.x - dX, this.#pointB.y - dY)
         }
-
-        this.__updateMidPoint()
+            
+        this.setPointB(this.#pointA.x + dX, this.#pointA.y + dY)
     }
 
     move(dX, dY) {
-        this.pointA.x += dX
-        this.pointA.y += dY
-        this.pointB.x += dX
-        this.pointB.y += dY
-        this.midPoint.x += dX
-        this.midPoint.y += dY
+        this.#pointA.x += dX
+        this.#pointA.y += dY
+        this.#pointB.x += dX
+        this.#pointB.y += dY
+        this.#midPoint.x += dX
+        this.#midPoint.y += dY
     }
 
     __updateMidPoint() {
-        if (!this.midPoint) {
-            this.midPoint = createPoint((this.pointA.x + this.pointB.x) / 2, (this.pointA.y + this.pointB.y) / 2)
+        if (!this.#pointA || !this.#pointB) return
+
+        if (!this.#midPoint) {
+            this.#midPoint = createPoint((this.#pointA.x + this.#pointB.x) / 2, (this.#pointA.y + this.#pointB.y) / 2)
             return
         }
 
-        this.midPoint.x = (this.pointA.x + this.pointB.x) / 2
-        this.midPoint.y = (this.pointA.y + this.pointB.y) / 2
+        this.#midPoint.x = (this.#pointA.x + this.#pointB.x) / 2
+        this.#midPoint.y = (this.#pointA.y + this.#pointB.y) / 2
     }
 }
 

@@ -4,10 +4,10 @@ import { createLine, createPoint } from '../utils/elementFactory'
 class Polyline extends Element {
     #isFullyDefined
 
-    constructor(initialPoint, groupId) {
-        super(groupId)
+    constructor(initialPoint, { id = null, groupId = null, elements = null }) {
+        super(id, groupId)
 
-        this.elements = [createLine(initialPoint.x, initialPoint.y, groupId)]
+        this.elements = elements ? elements : [createLine(initialPoint.x, initialPoint.y, groupId)]
         this.#isFullyDefined = false
     }
 
@@ -70,12 +70,7 @@ class Polyline extends Element {
 
         const elementToDefine = this.elements[this.elements.length - 1]
 
-        if (!elementToDefine.pointB) {
-            return elementToDefine.pointB = createPoint(pointX, pointY)
-        }
-
-        elementToDefine.pointB.x = pointX
-        elementToDefine.pointB.y = pointY
+        elementToDefine.setPointB(pointX, pointY)
     }
 
     setPointById(pointId, newPointX, newPointY) {
@@ -97,9 +92,7 @@ class Polyline extends Element {
         return point
     }
 
-    move(dX, dY) {
-        this.elements.forEach(e => e.move(dX, dY))
-    }
+    move(dX, dY) { this.elements.forEach(e => e.move(dX, dY)) }
 
     stretchByMidPoint(dX, dY, midPointId) {
         const movedLineIndex = this.elements.findIndex(e => e.getPointById(midPointId))
@@ -107,26 +100,26 @@ class Polyline extends Element {
         
         if (this.isClosed) {
             if (movedLineIndex === 0) {
-                this.elements[this.elements.length - 1].pointB.x += dX
-                this.elements[this.elements.length - 1].pointB.y += dY
+                const lastElement = this.elements[this.elements.length - 1]
+                lastElement.setPointB(lastElement.pointB.x + dX, lastElement.pointB.y + dY)
             }
 
             if (movedLineIndex === this.elements.length - 1) {
-                this.elements[0].pointA.x += dX
-                this.elements[0].pointA.y += dY
+                const firstElement = this.elements[0]
+                firstElement.setPointA(firstElement.pointA.x + dX, firstElement.pointA.y + dY)
             }
         }
 
         this.elements[movedLineIndex].move(dX, dY)
 
         if (movedLineIndex > 0) {
-            this.elements[movedLineIndex - 1].pointB.x += dX
-            this.elements[movedLineIndex - 1].pointB.y += dY
+            const previousElement = this.elements[movedLineIndex - 1]
+            previousElement.setPointB(previousElement.pointB.x + dX, previousElement.pointB.y + dY)
         }
 
         if (movedLineIndex < this.elements.length - 1) {
-            this.elements[movedLineIndex + 1].pointA.x += dX
-            this.elements[movedLineIndex + 1].pointA.y += dY
+            const nextElement = this.elements[movedLineIndex + 1]
+            nextElement.setPointA(nextElement.pointA.x + dX, nextElement.pointA.y + dY)
         }
     }
 }

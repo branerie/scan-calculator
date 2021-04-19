@@ -1,5 +1,6 @@
 class Element {
-    constructor(groupId) {
+    constructor(id, groupId) {
+        this.id = id
         this.groupId = groupId
         this.isShown = true
     }
@@ -10,7 +11,7 @@ class Element {
 
     get baseType() {
         const baseType = Object.getPrototypeOf(this.constructor).name
-        return baseType !== 'Element' ? baseType : this.type 
+        return baseType !== 'Element' ? baseType.toLowerCase() : this.type 
     }
 
     get type() {

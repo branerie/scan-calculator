@@ -1,7 +1,8 @@
 import { degreesToRadians } from './angle'
 
-const draw = (context, element) => {
+const draw = (context, element, currentScale) => {
     context.beginPath()
+    context.lineWidth = 1 / currentScale
     switch (element.type) {
 
         case 'line':

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import useElementsHistory from '../../hooks/useElementsHistory'
@@ -11,9 +11,13 @@ import ElementManipulator from '../../utils/elementManipulator'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA } from '../../utils/constants'
 import { draw, drawSnappingPoints } from '../../utils/canvas'
 import { getPointDistance } from '../../utils/point'
+import Rectangle from '../../drawingElements/rectangle'
+import Point from '../../drawingElements/point'
+import Line from '../../drawingElements/line'
 
 let groupId = 1
-// const manipulator = new ElementManipulator()
+const VIEW_ZOOM_STEP_UP = 1.2
+const VIEW_ZOOM_STEP_DOWN = 1 / 1.2
 
 const Canvas = () => {
     const {
@@ -38,13 +42,60 @@ const Canvas = () => {
 
     const [tool, setTool] = useState({ type: 'draw', name: 'line' })
     const [inputValues, setInputValue] = useForm({})
+    const [currentTranslate, setCurrentTranslate] = useState([0, 0])
+    const [currentScale, setCurrentScale] = useState(1)
+    const context = useRef(null)
+    const mouseDrag = useRef(null)
+
+    const getAbsoluteMouseCoordinates = (event) => {
+        const { clientX, clientY } = event
+        const [translateX, translateY] = currentTranslate
+
+        return [(clientX - translateX) / currentScale , (clientY - translateY) / currentScale]
+    }
+
+    const panView = useCallback((startX, startY, endX, endY) => {
+        const deltaX = endX - startX 
+        const deltaY = endY - startY
+        // context.current.translate(deltaX, deltaY)
+
+        const [currentTranslateX, currentTranslateY] = currentTranslate
+        setCurrentTranslate([currentTranslateX + deltaX, currentTranslateY + deltaY])
+
+        mouseDrag.current = [endX, endY]
+    }, [currentTranslate])
+
+    const zoomView = useCallback((centerX, centerY, isZoomOut) => {
+        const scaleStep = isZoomOut ? VIEW_ZOOM_STEP_DOWN : VIEW_ZOOM_STEP_UP
+
+        // context.current.scale(scaleStep, scaleStep)
+        
+        return setCurrentScale(Math.min(Math.max(currentScale * scaleStep, 0.05), 15))
+    }, [currentScale])
 
     // const [isUsingTool, setIsUsingTool] = useState(false)
 
     useLayoutEffect(() => {
         const canvas = document.getElementById('canvas')
-        const context = canvas.getContext('2d')
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+        context.current = canvas.getContext('2d')
+        context.current.save()
+    }, [])
+
+    useLayoutEffect(() => {
+        context.current.resetTransform()
+
+        context.current.clearRect(0, 0, context.current.canvas.width, context.current.canvas.height)
+
+        context.current.translate(currentTranslate[0], currentTranslate[1])
+        context.current.scale(currentScale, currentScale)
+
+        const rect = new Rectangle(new Point(0, 0), {
+            pointB:  new Point(context.current.canvas.width, context.current.canvas.height)
+        })
+        draw(context.current, rect, currentScale)
+
+        const line = new Line(new Point(0, 0), { pointB: new Point(50, 50) })
+        draw(context.current, line, currentScale)
 
         let canvasElements = elements.filter(e => e.isShown)
 
@@ -56,7 +107,7 @@ const Canvas = () => {
             canvasElements = canvasElements.concat(currentlyEditedElements)
         }
 
-        canvasElements.forEach(element => draw(context, element))
+        canvasElements.forEach(element => draw(context.current, element, currentScale))
 
         if (!selectedElements) return
 
@@ -65,9 +116,9 @@ const Canvas = () => {
             if (!selectedElement.isShown) return
 
             const snappingPoints = selectedElement.getSnappingPoints()
-            drawSnappingPoints(context, snappingPoints, selectedPoints)
+            drawSnappingPoints(context.current, snappingPoints, selectedPoints)
         })
-    }, [elements, currentlyCreatedElement, selectedElements, selectedPoints, currentlyEditedElements])
+    }, [elements, currentlyCreatedElement, selectedElements, selectedPoints, currentlyEditedElements, currentTranslate, currentScale])
 
     const handleKeyPress = useCallback((event) => {
         if (event.metaKey || event.ctrlKey) {
@@ -144,8 +195,13 @@ const Canvas = () => {
         return () => document.removeEventListener('keydown', handleKeyPress)
     }, [handleKeyPress])
 
+    const handleMouseMiddleClick = () => {
+        mouseDrag.current = null
+    }
+
     const handleMouseClick = (event) => {
-        const { clientX, clientY } = event
+        const [clientX, clientY] = getAbsoluteMouseCoordinates(event)
+        
         const clickedPoint = createPoint(clientX, clientY)
         if (tool.type === 'draw') {
             if (currentlyCreatedElement) {
@@ -197,6 +253,9 @@ const Canvas = () => {
                 }
             }
 
+            console.log(clientX)
+            console.log(clientY)
+
             const oldSelectedElements = selectedElements || []
             const newlySelectedElements = elements.filter(e =>
                 e.checkIfPointOnElement(clickedPoint) &&
@@ -206,9 +265,14 @@ const Canvas = () => {
     }
 
     const handleMouseMove = (event) => {
+        if (mouseDrag.current && event.buttons === 4) {
+            const { clientX, clientY } = event
+            panView(mouseDrag.current[0], mouseDrag.current[1], clientX, clientY)
+        }
+
         if (!currentlyEditedElements && !currentlyCreatedElement) return
 
-        const { clientX, clientY } = event
+        const [clientX, clientY] = getAbsoluteMouseCoordinates(event)
 
         if (currentlyEditedElements && selectedPoints) {
             const newCurrentlyEditedElements = []
@@ -230,7 +294,7 @@ const Canvas = () => {
                                 break
                             case 'arc':
                                 const newRadius = getPointDistance(editedElement.centerPoint, { x: clientX, y: clientY })
-                                editedElement.setRadius(newRadius)
+                                editedElement.radius = newRadius
                                 break
                             default:
                                 // should not reach here
@@ -253,13 +317,22 @@ const Canvas = () => {
             setCurrentlyEditedElements(newCurrentlyEditedElements)
         }
 
-        // should only enter if currentlyCreatedElement is defined and has all but its last attribute set
+        // should only pass through if currentlyCreatedElement is defined and has all but its last attribute set
         if (!currentlyCreatedElement || !currentlyCreatedElement.isAlmostDefined) return
 
-        const newCurrentlyCreatedElement = createEditedElement(currentlyCreatedElement)
-
+        const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, true)
         newCurrentlyCreatedElement.setLastAttribute(clientX, clientY)
+
         setCurrentlyCreatedElement(newCurrentlyCreatedElement)
+    }
+
+    const handleMouseWheel = (event) => {
+        const { deltaY } = event
+        const { clientX, clientY } = event
+
+        if (deltaY !== 0) {
+            zoomView(clientX, clientY, deltaY > 0)
+        }
     }
 
     return (
@@ -270,6 +343,13 @@ const Canvas = () => {
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
                 onClick={handleMouseClick}
+                onAuxClick={handleMouseMiddleClick}
+                onMouseDown={(event) => {
+                    if (event.button === 1) {
+                        mouseDrag.current = [event.clientX, event.clientY]
+                    }
+                }}
+                onWheel={handleMouseWheel}
                 onMouseMove={handleMouseMove}
 
             // onMouseDown={handleMouseDown}

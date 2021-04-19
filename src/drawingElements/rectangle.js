@@ -2,8 +2,8 @@ import { createLine } from '../utils/elementFactory'
 import Polyline from './polyline'
 
 class Rectangle extends Polyline {
-    constructor(pointA, pointB, groupId = null) {
-        super(pointA, groupId)
+    constructor(pointA, { pointB = null, id = null, groupId = null }) {
+        super(pointA, { id, groupId })
 
         if (pointB) {
             this.elements = [
