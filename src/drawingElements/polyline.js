@@ -54,9 +54,9 @@ class Polyline extends Element {
         this.elements.push(line)
     }
 
-    getSnappingPoints() {
+    getSelectionPoints() {
         return this.elements.reduce((acc, element) => {
-            const snappingPoints = element.getSnappingPoints()
+            const snappingPoints = element.getSelectionPoints()
             return [...acc, ...snappingPoints]
         }, [])
     }

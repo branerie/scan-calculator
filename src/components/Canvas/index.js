@@ -8,8 +8,8 @@ import ToolInputMapper from '../ToolInputMapper'
 
 import { createElement, createPoint } from '../../utils/elementFactory'
 import ElementManipulator from '../../utils/elementManipulator'
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA, MAX_NUM_ERROR } from '../../utils/constants'
-import { draw, drawSnappingPoints } from '../../utils/canvas'
+import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA, SNAP_DELTA, MAX_NUM_ERROR } from '../../utils/constants'
+import { draw, drawSelectionPoints, drawSnappedPoint } from '../../utils/canvas'
 import { getPointDistance } from '../../utils/point'
 import { useMainContext } from '../../MainContext'
 
@@ -23,15 +23,10 @@ const Canvas = () => {
     const {
         elements,
         setElements,
-        selectedElements,
-        setSelectedElements,
-        selectedPoints,
-        setSelectedPoints,
         currentlyCreatedElement,
         setCurrentlyCreatedElement,
         currentlyEditedElements,
         setCurrentlyEditedElements,
-        clearSelection,
         addElement,
         editElements,
         deleteElement,
@@ -42,7 +37,22 @@ const Canvas = () => {
 
     const [tool, setTool] = useState({ type: 'draw', name: 'line' })
     const [inputValues, setInputValue] = useForm({})
-    const { currentTranslate, setCurrentTranslate, currentScale, setCurrentScale } = useMainContext()
+    const { 
+        currentTranslate, 
+        setCurrentTranslate, 
+        currentScale, 
+        setCurrentScale,
+        selectedElements, 
+        addSelectedElements, 
+        setSelectedElements,
+        hasSelectedElement,
+        selectedPoints, 
+        setSelectedPoints,
+        clearSelectedPoints,
+        clearSelection
+    } = useMainContext()
+    const [options, setOptions] = useState({ snap: true, ortho: false })
+    const [snappedPoint, setSnappedPoint] = useState(null)
     const context = useRef(null)
     const mouseDrag = useRef(null)
 
@@ -97,14 +107,10 @@ const Canvas = () => {
         context.current.translate(currentTranslate[0], currentTranslate[1])
         context.current.scale(currentScale, currentScale)
 
-        let canvasElements = elements.filter(e => e.isShown && selectedElements.has(e))
+        let canvasElements = elements.filter(e => e.isShown && !hasSelectedElement(e))
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
             canvasElements.push(currentlyCreatedElement)
-        }
-
-        if (currentlyEditedElements) {
-            canvasElements = canvasElements.concat(currentlyEditedElements)
         }
 
         canvasElements.forEach(element => draw(context.current, element, currentScale))
@@ -115,9 +121,15 @@ const Canvas = () => {
         elementsWithHighlightedPoints.forEach(selectedElement => {
             if (!selectedElement.isShown) return
 
-            const snappingPoints = selectedElement.getSnappingPoints()
-            drawSnappingPoints(context.current, snappingPoints, selectedPoints, currentScale)
+            draw(context.current, selectedElement, currentScale, true)
+
+            const selectionPoints = selectedElement.getSelectionPoints()
+            drawSelectionPoints(context.current, selectionPoints, selectedPoints, currentScale)
         })
+
+        if (snappedPoint) {
+            drawSnappedPoint(context.current, snappedPoint, currentScale)
+        }
     }, 
     [
         elements, 
@@ -126,7 +138,9 @@ const Canvas = () => {
         selectedPoints, 
         currentlyEditedElements, 
         currentTranslate,
-        currentScale
+        currentScale,
+        hasSelectedElement,
+        snappedPoint
     ])
 
     const handleKeyPress = useCallback((event) => {
@@ -148,6 +162,7 @@ const Canvas = () => {
                     return
                 }
 
+                setSnappedPoint(null)
                 return setCurrentlyCreatedElement(null)
             }
 
@@ -155,17 +170,22 @@ const Canvas = () => {
                 selectedElements.forEach(e => e.isShown = true)
                 setCurrentlyEditedElements(null)
                 setElements([...elements])
-                return setSelectedPoints(null)
+                setSnappedPoint(null)
+                return clearSelectedPoints()
             }
 
             if (selectedElements && selectedElements.length > 0) {
                 clearSelection()
             }
+
+            setSnappedPoint(null)
         } else if (event.keyCode === 13) { // enter
             if (currentlyCreatedElement && currentlyCreatedElement.baseType === 'polyline') {
                 if (currentlyCreatedElement.type === 'polyline') {
                     currentlyCreatedElement.elements.pop()
                 }
+
+                setSnappedPoint(null)
 
                 currentlyCreatedElement.elements.forEach(e => e.id = uuidv4())
                 addElement(currentlyCreatedElement)
@@ -183,21 +203,22 @@ const Canvas = () => {
         }
     },
         [
-            currentlyCreatedElement,
-            currentlyEditedElements,
-            selectedElements,
-            selectedPoints,
-            setCurrentlyCreatedElement,
-            setCurrentlyEditedElements,
-            setElements,
-            elements,
-            setSelectedPoints,
-            clearSelection,
-            addElement,
-            deleteElement,
-            undo,
-            redo
-        ])
+            undo, 
+            redo, 
+            currentlyCreatedElement, 
+            currentlyEditedElements, 
+            selectedElements, 
+            setCurrentlyCreatedElement, 
+            setCurrentlyEditedElements, 
+            setElements, 
+            elements, 
+            clearSelectedPoints, 
+            clearSelection, 
+            addElement, 
+            selectedPoints, 
+            deleteElement
+        ]
+    )
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyPress)
@@ -216,6 +237,7 @@ const Canvas = () => {
             if (currentlyCreatedElement) {
 
                 if (currentlyCreatedElement.isFullyDefined && currentlyCreatedElement.type !== 'polyline') {
+                    setSnappedPoint(null)
                     addElement(currentlyCreatedElement)
 
                     setCurrentlyCreatedElement(null)
@@ -258,28 +280,51 @@ const Canvas = () => {
                 if (editedElements.length > 0) {
                     setSelectedPoints(selectedPoints)
                     setCurrentlyEditedElements(editedElements)
-                    setElements([...elements])
+
+                    // setElements([...elements])
+                    setSelectedElements([...selectedElements])
                     return
                 }
             }
 
-            const oldSelectedElements = selectedElements || []
             const newlySelectedElements = elements.filter(e =>
-                e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale) &&
-                !oldSelectedElements.some(se => se.id === e.id))
-            setSelectedElements([...oldSelectedElements, ...newlySelectedElements])
+                e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale))
+            addSelectedElements(newlySelectedElements)
         }
     }
 
     const handleMouseMove = (event) => {
         if (mouseDrag.current && event.buttons === 4) {
             const { clientX, clientY } = event
-            panView(mouseDrag.current[0], mouseDrag.current[1], clientX, clientY)
+            return panView(mouseDrag.current[0], mouseDrag.current[1], clientX, clientY)
+        }
+
+        const [clientX, clientY] = getAbsoluteMouseCoordinates(event)
+        if (options.snap) {
+            let nearbyPoints = findNearbyPoints(clientX, clientY, SNAP_DELTA / currentScale)
+            if (currentlyEditedElements) {
+                nearbyPoints = nearbyPoints.filter(nbp => 
+                    !currentlyEditedElements.some(cee => cee.getPointById(nbp.pointId)))
+            }
+            
+            const clickedPoint = createPoint(clientX, clientY)
+
+            let nearestSnappingPoint = nearbyPoints.length > 0 ? nearbyPoints[0] : null
+            let nearestDistance = nearestSnappingPoint ? getPointDistance(clickedPoint, nearestSnappingPoint) : null
+            for (let pointIndex = 1; pointIndex < nearbyPoints.length; pointIndex++) {
+                const nearbyPoint = nearbyPoints[pointIndex]
+                const nearbyPointDistance = getPointDistance(clickedPoint, nearbyPoint)
+
+                if (nearbyPointDistance < nearestDistance) {
+                    nearestSnappingPoint = nearbyPoint
+                    nearestDistance = nearbyPointDistance
+                }
+            }
+
+            setSnappedPoint(nearestSnappingPoint)
         }
 
         if (!currentlyEditedElements && !currentlyCreatedElement) return
-
-        const [clientX, clientY] = getAbsoluteMouseCoordinates(event)
 
         if (currentlyEditedElements && selectedPoints) {
             const newCurrentlyEditedElements = []

@@ -61,7 +61,7 @@ class Arc extends Element {
         )
     }
 
-    getSnappingPoints() {
+    getSelectionPoints() {
         return [
             { ...this.#centerPoint, pointType: 'center' },
             { ...this.#startLine.pointB, pointType: 'endPoint' },

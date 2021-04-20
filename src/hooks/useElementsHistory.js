@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { createTree } from '../utils/pointsSearchTree'
 
 import { CANVAS_WIDTH } from '../utils/constants'
+import { useMainContext } from '../MainContext'
 
 const buildPointsTreeDataObject = (point, pointType) => {
     return {
@@ -18,22 +19,23 @@ const useElementsHistory = (initialElements, initialGroups) => {
     const [elements, setElements] = useState(initialElements || [])
     const [historyPointer, setHistoryPointer] = useState(null)
     const [actionHistory, setActionHistory] = useState([])
-    const [selectedElements, setSelectedElements] = useState(null)
-    const [selectedPoints, setSelectedPoints] = useState(null)
     const [currentlyCreatedElement, setCurrentlyCreatedElement] = useState(null)
     const [currentlyEditedElements, setCurrentlyEditedElements] = useState(null)
     const pointsTree = useRef(createTree(CANVAS_WIDTH))
-
-    const clearSelection = useCallback(() => {
-        setSelectedElements(null)
-        setSelectedPoints(null)
-    }, [])
+    const { 
+        selectedElements, 
+        selectedPoints, 
+        addSelectedElements, 
+        removeSelectedElements, 
+        hasSelectedElement,
+        clearSelectedPoints 
+    } = useMainContext() 
 
     const addElement = (newElement) => {
         newElement.id = uuidv4()
         // TODO: decide where to add id's to polyline elements:
         // on creation or after explode/trim?
-        const elementPoints = newElement.getSnappingPoints()
+        const elementPoints = newElement.getSelectionPoints()
         elementPoints.forEach(elementPoint => {
             pointsTree.current.insert(
                 elementPoint.x,
@@ -56,7 +58,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
 
             element.isShown = true
             newHistoryEvents.push({ action: 'edit', element })
-            elementPointsBeforeEdit[element.id] = element.getSnappingPoints()
+            elementPointsBeforeEdit[element.id] = element.getSelectionPoints()
             return editedElements.find(ee => ee.id === element.id)
         })
 
@@ -66,7 +68,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 throw new Error('Mismatch between selectedPoints and currentlyEditedElements.')
             }
 
-            const snappingPoints = elementOfPoint.getSnappingPoints()
+            const snappingPoints = elementOfPoint.getSelectionPoints()
             snappingPoints.forEach(sp => {
                 const points = elementPointsBeforeEdit[elementOfPoint.id]
                 const pointBeforeEdit = points.find(p => p.pointId === sp.pointId)
@@ -78,21 +80,12 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 )
             })
         })
-
         
-        const newSelectedElements = selectedElements.map(se => {
-            if (!editedElementIds.includes(se.id)) {
-                return se
-            }
-            
-            return editedElements.find(ee => ee.id === se.id)
-        })
-        
-        setSelectedElements(newSelectedElements)
+        addSelectedElements(editedElements)
         newHistoryEvents.forEach(nhe => updateHistoryEvents(nhe))
         setElements(newElements)
 
-        setSelectedPoints(null)
+        clearSelectedPoints()
         setCurrentlyEditedElements(null)
     }
 
@@ -106,7 +99,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
         const newElements = [...elements]
         newElements.splice(elementIndex, 1)
 
-        const snappingPoints = deletedElement.getSnappingPoints()
+        const snappingPoints = deletedElement.getSelectionPoints()
         for (const snappingPoint of snappingPoints) {
             pointsTree.current.remove(
                 snappingPoint.x, 
@@ -147,12 +140,20 @@ const useElementsHistory = (initialElements, initialGroups) => {
     }
 
     const findNearbyPoints = (mouseX, mouseY, delta) => {
-        const filteredPoints = pointsTree.current.find(
-            Math.max(mouseX - delta, 0),
-            Math.min(mouseX + delta, CANVAS_WIDTH)
-        )
+        const filteredPoints = pointsTree.current.find(mouseX - delta, mouseX + delta)
 
-        return filteredPoints.filter(point => Math.abs(point.y - mouseY) <= delta)
+        const nearbyPoints = []
+        for (const point of filteredPoints) {
+            if (Math.abs(point.y - mouseY) <= delta) {
+                const nearbyPoint = { ...point }
+                nearbyPoint.x = point.leafValue
+                delete nearbyPoint.leafValue
+
+                nearbyPoints.push(nearbyPoint)
+            }
+        }
+
+        return nearbyPoints
     }
 
     function updateElementsFromHistory(lastEventIndex, isUndo) {
@@ -186,8 +187,8 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 return element
             })
 
-            const pointsAfterUndo = lastHistoryEvent.element.getSnappingPoints()
-            elementBeforeUndo.getSnappingPoints().forEach(pointBeforeUndo => {
+            const pointsAfterUndo = lastHistoryEvent.element.getSelectionPoints()
+            elementBeforeUndo.getSelectionPoints().forEach(pointBeforeUndo => {
                 const pointAfterUndo = pointsAfterUndo.find(pau => pau.pointId === pointBeforeUndo.pointId)
 
                 pointsTree.current.replace(
@@ -198,10 +199,8 @@ const useElementsHistory = (initialElements, initialGroups) => {
                 )
             })
 
-            const newSelectedElements = selectedElements.filter(se => se.id !== lastHistoryEvent.element.id)
-            if (newSelectedElements.length < selectedElements.length) {
-                newSelectedElements.push(lastHistoryEvent.element)
-                setSelectedElements(newSelectedElements)
+            if (hasSelectedElement(lastHistoryEvent.element)) {
+                addSelectedElements(lastHistoryEvent.element)
             }
 
             // change actionHistory by adding elementBeforeUndo so it can be accessed using undo/redo
@@ -212,8 +211,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
             newElements = elements.filter(e => {
                 if (e.id === lastHistoryEvent.element.id) {
                     if (selectedElements) {
-                        const newSelectedElements = selectedElements.filter(se => se.id !== lastHistoryEvent.element.id)
-                        setSelectedElements(newSelectedElements)
+                        removeSelectedElements(lastHistoryEvent.element)
                     }
                     return false
                 }
@@ -240,15 +238,10 @@ const useElementsHistory = (initialElements, initialGroups) => {
     return {
         elements,
         setElements,
-        selectedElements,
-        setSelectedElements,
         currentlyCreatedElement,
         setCurrentlyCreatedElement,
         currentlyEditedElements,
         setCurrentlyEditedElements,
-        selectedPoints,
-        setSelectedPoints,
-        clearSelection,
         addElement,
         editElements,
         deleteElement,

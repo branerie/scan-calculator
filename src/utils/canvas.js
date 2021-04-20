@@ -1,9 +1,18 @@
 import { degreesToRadians } from './angle'
 
 const SELECT_POINT_SQUARE_HALF_SIDE = 4
+const SNAP_POINT_SQUARE_HALF_SIDE = 8
+const SNAP_POINT_CIRCLE_RADIUS = 8
+// const SNAP_MID_POINT_TRIANGLE_HALF_SIDE = 10
+const LINE_DASH_LINE_SIZE = 15
+const LINE_DASH_SPACE_SIZE = 10
 
-const draw = (context, element, currentScale) => {
+const draw = (context, element, currentScale, isSelected = false) => {
     context.beginPath()
+    if (isSelected) {
+        context.setLineDash([LINE_DASH_LINE_SIZE / currentScale, LINE_DASH_SPACE_SIZE / currentScale])
+    }
+
     context.lineWidth = 1 / currentScale
     switch (element.type) {
 
@@ -32,8 +41,8 @@ const draw = (context, element, currentScale) => {
                 element.centerPoint.x,
                 element.centerPoint.y,
                 element.radius,
-                degreesToRadians(0),
-                degreesToRadians(360),
+                0,
+                2 * Math.PI,
                 true
             )
             break
@@ -42,42 +51,77 @@ const draw = (context, element, currentScale) => {
     }
 
     context.stroke()
+    context.setLineDash([])
 }
 
-const drawSnappingPoints = (context, snappingPoints, selectedPoints, currentScale) => {
-    for (const snappingPoint of snappingPoints) {
-        const pointFill = selectedPoints && selectedPoints.some(p => p.pointId === snappingPoint.pointId)
-                            ? 'red' 
-                            : 'blue'
+const drawSelectionPoints = (context, selectionPoints, selectedPoints, currentScale) => {
+    for (const selectionPoint of selectionPoints) {
+        const pointFill = selectedPoints && selectedPoints.some(p => p.pointId === selectionPoint.pointId)
+            ? 'red'
+            : 'blue'
 
         context.beginPath()
-        context.moveTo(snappingPoint.x, snappingPoint.y)
+        // context.moveTo(selectionPoint.x, selectionPoint.y)
         context.fillStyle = pointFill
 
-        switch (snappingPoint.pointType) {
-            case 'endPoint':
-            case 'midPoint':
-            case 'center':
-                const scaledHalfSquareSide = SELECT_POINT_SQUARE_HALF_SIDE / currentScale
+        const scaledHalfSquareSide = SELECT_POINT_SQUARE_HALF_SIDE / currentScale
 
-                context.fillRect(
-                    snappingPoint.x - scaledHalfSquareSide,
-                    snappingPoint.y - scaledHalfSquareSide, 
-                    scaledHalfSquareSide * 2, 
-                    scaledHalfSquareSide * 2
-                )
+        context.fillRect(
+            selectionPoint.x - scaledHalfSquareSide,
+            selectionPoint.y - scaledHalfSquareSide,
+            scaledHalfSquareSide * 2,
+            scaledHalfSquareSide * 2
+        )
 
-                break
-            default:
-                return
-        }
-                
         context.stroke()
     }
 }
 
+const drawSnappedPoint = (context, snappedPoint, currentScale) => {
+    context.beginPath()
+    context.strokeWidth = 2 / currentScale
+    context.strokeStyle = '#479440'
+    switch (snappedPoint.pointType) {
+        case 'endPoint':
+            const scaledHalfSquareSide = SNAP_POINT_SQUARE_HALF_SIDE / currentScale
+            context.strokeRect(
+                snappedPoint.x - scaledHalfSquareSide,
+                snappedPoint.y - scaledHalfSquareSide,
+                scaledHalfSquareSide * 2,
+                scaledHalfSquareSide * 2
+                )
+                break
+        case 'center':
+        case 'midPoint':
+            const scaledRadius = SNAP_POINT_CIRCLE_RADIUS / currentScale
+            context.moveTo(snappedPoint.x + scaledRadius, snappedPoint.y)
+            context.arc(
+                snappedPoint.x,
+                snappedPoint.y,
+                scaledRadius,
+                0,
+                2 * Math.PI,
+                true
+            )
+            // TRIANGLE:
+            // const scaledHalfTriangleSide = SNAP_MID_POINT_TRIANGLE_HALF_SIDE / currentScale
+            // const height = scaledHalfTriangleSide * Math.sqrt(3)
+
+            // context.moveTo(snappedPoint.x - scaledHalfTriangleSide, snappedPoint.y + height / 3)
+            // context.lineTo(snappedPoint.x + scaledHalfTriangleSide, snappedPoint.y + height / 3)
+            // context.lineTo(snappedPoint.x, snappedPoint.y - height * 2 / 3)
+            // context.lineTo(snappedPoint.x - scaledHalfTriangleSide, snappedPoint.y + height / 3)
+            break
+        default:
+            break
+    }
+
+    context.stroke()
+    context.strokeStyle = '#000000'
+}
 
 export {
     draw,
-    drawSnappingPoints
+    drawSelectionPoints,
+    drawSnappedPoint
 }

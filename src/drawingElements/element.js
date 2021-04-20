@@ -50,8 +50,8 @@ class Element {
         return true
     }
 
-    getSnappingPoints() {
-        throw new Error('Method getSnappingPoints is not implemented')
+    getSelectionPoints() {
+        throw new Error('Method getSelectionPoints is not implemented')
     }
 
     checkIfPointOnElement(point, maxDiff) {

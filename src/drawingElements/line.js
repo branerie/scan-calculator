@@ -153,7 +153,7 @@ class Line extends Element {
         return null
     }
 
-    getSnappingPoints() {
+    getSelectionPoints() {
         if (!this.isFullyDefined) {
             return []
         }
@@ -196,15 +196,23 @@ class Line extends Element {
         } else {
             // m = (y2 - y1) / (x2 - x1)
             const slope = (this.#pointB.y - this.#pointA.y) / (this.#pointB.x - this.#pointA.x)
+
             // b = y - m * x
-            const lineIntercept = this.#pointA.y - slope * this.#pointA.x
+            const lineIntercept = this.#pointA.y - this.#pointA.x * slope
 
-            // find perpendicular intercept from input point
-            const perpendicularIntercept = point.y + slope * point.x
+            // mp = -1 / m (slope of perpendicular)
+            const perpendicularIntercept = point.y + point.x / slope
 
-            const intersectX = (perpendicularIntercept - lineIntercept) / (2 * slope)
-            const intersectY = slope * intersectX + lineIntercept
+            const intersectX = slope * (perpendicularIntercept - lineIntercept) / (slope ** 2 + 1)
+            const intersectY = intersectX * slope + lineIntercept
+ 
+            // // find perpendicular intercept from input point (bp)
+            // const perpendicularIntercept = point.y + slope * point.x
 
+            // // xi = (bp - b) / (2 * m)
+            // const intersectX = (perpendicularIntercept - lineIntercept) / (2 * slope)
+            // // yi = m * x + b 
+            // const intersectY = slope * intersectX + lineIntercept
 
             nearestPoint = createPoint(intersectX, intersectY)
         }
@@ -216,6 +224,7 @@ class Line extends Element {
             const distanceFromStart = getPointDistance(this.#pointA, nearestPoint)
             const distanceFromEnd = getPointDistance(this.#pointB, nearestPoint)
 
+            // TODO: does not check if point lies on extension of line or is just really far away
             if (distanceFromStart > this.length) {
                 return { x: this.#pointB.x, y: this.#pointB.y }
             }

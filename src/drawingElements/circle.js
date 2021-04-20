@@ -39,7 +39,7 @@ class Circle extends Element {
 
     get isAlmostDefined() { return !!(this.#centerPoint) }
 
-    getSnappingPoints() {
+    getSelectionPoints() {
         return [ 
             { ...this.#centerPoint, pointType: 'center' },
             ...this.#endPoints.map(ep => ({ ...ep, pointType: 'endPoint' }))
