@@ -2,6 +2,7 @@ import { getPointDistance } from '../utils/point'
 import { degreesToRadians, getQuadrant, radiansToDegrees } from '../utils/angle'
 import Element from './element'
 import { createPoint } from '../utils/elementFactory'
+import Point from './point'
 
 class Line extends Element {
     #pointA
@@ -53,6 +54,9 @@ class Line extends Element {
         return getPointDistance(this.#pointA, this.#pointB)
     }
 
+    get isVertical() { return this.#pointA.x === this.#pointB.x }
+    get isHorizontal() { return this.#pointA.y === this.#pointB.y }
+
     get angle() {
         if (!this.#pointA || !this.#pointB) {
             throw new Error('Cannot get angle of line until it is fully defined')
@@ -94,7 +98,7 @@ class Line extends Element {
         this.__updateMidPoint()
     }
 
-    setPointB(x, y) { 
+    setPointB(x, y) {
         if (!this.#pointB) {
             this.#pointB = createPoint(x, y)
         } else {
@@ -105,15 +109,19 @@ class Line extends Element {
         this.__updateMidPoint()
     }
 
-    checkIfPointOnElement(point) {
+    checkIfPointOnElement(point, maxDiff) {
         if (!this.#pointA || !this.#pointB) {
             throw new Error('Cannot use method \'checkIfPointOnElement\' before line is fully defined.')
         }
 
-        const pointDistA = getPointDistance(this.#pointA, point)
-        const pointDistB = getPointDistance(this.#pointB, point)
+        // const pointDistA = getPointDistance(this.#pointA, point)
+        // const pointDistB = getPointDistance(this.#pointB, point)
 
-        return Math.abs((pointDistA + pointDistB) - this.length) < 0.3
+        // return Math.abs((pointDistA + pointDistB) - this.length) < 0.3
+        const nearestPoint = this.getNearestPoint(point)
+        const perpendicular = new Line(point, { pointB: nearestPoint })
+
+        return perpendicular.length < maxDiff
     }
 
     setLastAttribute(pointX, pointY) {
@@ -179,19 +187,45 @@ class Line extends Element {
         this.__updateMidPoint()
     }
 
-    getNearestPoint(point) {
-        // m = (y2 - y1) / (x2 - x1)
-        const slope = (this.#pointB.y - this.#pointA.y) / (this.#pointB.x - this.#pointA.x)
-        // b = y - m * x
-        const lineIntercept = this.#pointA.y - slope * this.#pointA.x
+    getNearestPoint(point, shouldUseLineExtension = false) {
+        let nearestPoint = null
+        if (this.isVertical || this.isHorizontal) {
+            nearestPoint = this.isVertical
+                ? new Point(this.#pointA.x, point.y)
+                : new Point(point.x, this.#pointA.y)
+        } else {
+            // m = (y2 - y1) / (x2 - x1)
+            const slope = (this.#pointB.y - this.#pointA.y) / (this.#pointB.x - this.#pointA.x)
+            // b = y - m * x
+            const lineIntercept = this.#pointA.y - slope * this.#pointA.x
 
-        // find perpendicular intercept from input point
-        const perpendicularIntercept = point.y + slope * point.x
+            // find perpendicular intercept from input point
+            const perpendicularIntercept = point.y + slope * point.x
 
-        const intersectX = (perpendicularIntercept - lineIntercept) / (2 * slope)
-        const intersectY = slope * intersectX + lineIntercept
+            const intersectX = (perpendicularIntercept - lineIntercept) / (2 * slope)
+            const intersectY = slope * intersectX + lineIntercept
 
-        return { nearestPoint: createPoint(intersectX, intersectY) }
+
+            nearestPoint = createPoint(intersectX, intersectY)
+        }
+
+        if (!shouldUseLineExtension) {
+            // return pointA or pointB (whichever is nearest) if point from perpendicular to line
+            // is outside the line
+
+            const distanceFromStart = getPointDistance(this.#pointA, nearestPoint)
+            const distanceFromEnd = getPointDistance(this.#pointB, nearestPoint)
+
+            if (distanceFromStart > this.length) {
+                return { x: this.#pointB.x, y: this.#pointB.y }
+            }
+
+            if (distanceFromEnd > this.length) {
+                return { x: this.#pointA.x, y: this.#pointA.y }
+            }
+        }
+
+        return nearestPoint
     }
 
     setLength(newLength, shouldMovePointA) {
@@ -264,7 +298,7 @@ class Line extends Element {
         if (shouldMovePointA) {
             return this.setPointA(this.#pointB.x - dX, this.#pointB.y - dY)
         }
-            
+
         this.setPointB(this.#pointA.x + dX, this.#pointA.y + dY)
     }
 

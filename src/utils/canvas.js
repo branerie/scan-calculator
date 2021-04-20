@@ -1,5 +1,7 @@
 import { degreesToRadians } from './angle'
 
+const SELECT_POINT_SQUARE_HALF_SIDE = 4
+
 const draw = (context, element, currentScale) => {
     context.beginPath()
     context.lineWidth = 1 / currentScale
@@ -42,7 +44,7 @@ const draw = (context, element, currentScale) => {
     context.stroke()
 }
 
-const drawSnappingPoints = (context, snappingPoints, selectedPoints) => {
+const drawSnappingPoints = (context, snappingPoints, selectedPoints, currentScale) => {
     for (const snappingPoint of snappingPoints) {
         const pointFill = selectedPoints && selectedPoints.some(p => p.pointId === snappingPoint.pointId)
                             ? 'red' 
@@ -56,9 +58,13 @@ const drawSnappingPoints = (context, snappingPoints, selectedPoints) => {
             case 'endPoint':
             case 'midPoint':
             case 'center':
+                const scaledHalfSquareSide = SELECT_POINT_SQUARE_HALF_SIDE / currentScale
+
                 context.fillRect(
-                    snappingPoint.x - 4,
-                    snappingPoint.y - 4, 8, 8
+                    snappingPoint.x - scaledHalfSquareSide,
+                    snappingPoint.y - scaledHalfSquareSide, 
+                    scaledHalfSquareSide * 2, 
+                    scaledHalfSquareSide * 2
                 )
 
                 break

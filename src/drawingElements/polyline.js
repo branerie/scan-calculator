@@ -42,8 +42,8 @@ class Polyline extends Element {
         return true
     }
 
-    checkIfPointOnElement(point) {
-        return this.elements.some(e => e.checkIfPointOnElement(point))
+    checkIfPointOnElement(point, maxDiff) {
+        return this.elements.some(e => e.checkIfPointOnElement(point, maxDiff))
     }
 
     defineNextAttribute(definingPoint) {

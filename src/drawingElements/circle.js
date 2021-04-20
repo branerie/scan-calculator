@@ -1,4 +1,3 @@
-import { SELECT_DELTA } from '../utils/constants'
 import { createPoint } from '../utils/elementFactory'
 import { getPointDistance } from '../utils/point'
 import Element from './element'
@@ -47,9 +46,9 @@ class Circle extends Element {
         ]
     }
 
-    checkIfPointOnElement(point) {
+    checkIfPointOnElement(point, maxDiff) {
         const distanceFromCenter = getPointDistance(this.#centerPoint, point)
-        if (Math.abs(this.#radius - distanceFromCenter) > SELECT_DELTA) {
+        if (Math.abs(this.#radius - distanceFromCenter) > maxDiff) {
             return false
         }
 

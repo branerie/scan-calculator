@@ -11,9 +11,7 @@ import ElementManipulator from '../../utils/elementManipulator'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA, MAX_NUM_ERROR } from '../../utils/constants'
 import { draw, drawSnappingPoints } from '../../utils/canvas'
 import { getPointDistance } from '../../utils/point'
-import Rectangle from '../../drawingElements/rectangle'
-import Point from '../../drawingElements/point'
-import Line from '../../drawingElements/line'
+import { useMainContext } from '../../MainContext'
 
 let groupId = 1
 const VIEW_ZOOM_STEP_UP = 1.2
@@ -44,8 +42,7 @@ const Canvas = () => {
 
     const [tool, setTool] = useState({ type: 'draw', name: 'line' })
     const [inputValues, setInputValue] = useForm({})
-    const [currentTranslate, setCurrentTranslate] = useState([0, 0])
-    const [currentScale, setCurrentScale] = useState(1)
+    const { currentTranslate, setCurrentTranslate, currentScale, setCurrentScale } = useMainContext()
     const context = useRef(null)
     const mouseDrag = useRef(null)
 
@@ -65,7 +62,7 @@ const Canvas = () => {
         setCurrentTranslate([currentTranslateX + deltaX, currentTranslateY + deltaY])
 
         mouseDrag.current = [endX, endY]
-    }, [currentTranslate])
+    }, [currentTranslate, setCurrentTranslate])
 
     const zoomView = useCallback((centerX, centerY, isZoomOut) => {
         const scaleStep = isZoomOut ? VIEW_ZOOM_STEP_DOWN : VIEW_ZOOM_STEP_UP
@@ -82,7 +79,7 @@ const Canvas = () => {
         setCurrentScale(newScale)
         setCurrentTranslate([(currentTranslateX + dX), (currentTranslateY + dY)])
         return
-    }, [currentScale, currentTranslate])
+    }, [currentScale, currentTranslate, setCurrentScale, setCurrentTranslate])
 
     // const [isUsingTool, setIsUsingTool] = useState(false)
 
@@ -97,18 +94,10 @@ const Canvas = () => {
 
         context.current.clearRect(0, 0, context.current.canvas.width, context.current.canvas.height)
 
+        context.current.translate(currentTranslate[0], currentTranslate[1])
         context.current.scale(currentScale, currentScale)
-        context.current.translate(currentTranslate[0] / currentScale, currentTranslate[1] / currentScale)
 
-        const rect = new Rectangle(new Point(0, 0), {
-            pointB: new Point(context.current.canvas.width, context.current.canvas.height)
-        })
-        draw(context.current, rect, currentScale)
-
-        const line = new Line(new Point(0, 0), { pointB: new Point(200, 200) })
-        draw(context.current, line, currentScale)
-
-        let canvasElements = elements.filter(e => e.isShown)
+        let canvasElements = elements.filter(e => e.isShown && selectedElements.has(e))
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
             canvasElements.push(currentlyCreatedElement)
@@ -127,9 +116,18 @@ const Canvas = () => {
             if (!selectedElement.isShown) return
 
             const snappingPoints = selectedElement.getSnappingPoints()
-            drawSnappingPoints(context.current, snappingPoints, selectedPoints)
+            drawSnappingPoints(context.current, snappingPoints, selectedPoints, currentScale)
         })
-    }, [elements, currentlyCreatedElement, selectedElements, selectedPoints, currentlyEditedElements, currentTranslate, currentScale])
+    }, 
+    [
+        elements, 
+        currentlyCreatedElement, 
+        selectedElements, 
+        selectedPoints, 
+        currentlyEditedElements, 
+        currentTranslate,
+        currentScale
+    ])
 
     const handleKeyPress = useCallback((event) => {
         if (event.metaKey || event.ctrlKey) {
@@ -236,7 +234,8 @@ const Canvas = () => {
             }
 
             if (event.shiftKey) {
-                const newlySelectedElements = selectedElements.filter(e => !e.checkIfPointOnElement(clickedPoint))
+                const newlySelectedElements = selectedElements.filter(e => 
+                    !e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale))
                 setSelectedElements(newlySelectedElements)
                 return
             }
@@ -266,7 +265,7 @@ const Canvas = () => {
 
             const oldSelectedElements = selectedElements || []
             const newlySelectedElements = elements.filter(e =>
-                e.checkIfPointOnElement(clickedPoint) &&
+                e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale) &&
                 !oldSelectedElements.some(se => se.id === e.id))
             setSelectedElements([...oldSelectedElements, ...newlySelectedElements])
         }

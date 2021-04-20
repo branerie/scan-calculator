@@ -54,7 +54,7 @@ class Element {
         throw new Error('Method getSnappingPoints is not implemented')
     }
 
-    checkIfPointOnElement(point) {
+    checkIfPointOnElement(point, maxDiff) {
         throw new Error('Method checkIfPointOnElement is not implemented')
     }
 
