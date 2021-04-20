@@ -200,7 +200,8 @@ class Line extends Element {
             // b = y - m * x
             const lineIntercept = this.#pointA.y - this.#pointA.x * slope
 
-            // mp = -1 / m (slope of perpendicular)
+            // mp = - 1 / m (slope of perpendicular)
+            // bp = yp - mp * xp = yp + (xp / m)
             const perpendicularIntercept = point.y + point.x / slope
 
             const intersectX = slope * (perpendicularIntercept - lineIntercept) / (slope ** 2 + 1)
