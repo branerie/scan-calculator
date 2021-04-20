@@ -6,9 +6,9 @@ import useForm from '../../hooks/useForm'
 import Navbar from '../Navbar'
 import ToolInputMapper from '../ToolInputMapper'
 
-import { createEditedElement, createElement, createPoint } from '../../utils/elementFactory'
+import { createElement, createPoint } from '../../utils/elementFactory'
 import ElementManipulator from '../../utils/elementManipulator'
-import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA } from '../../utils/constants'
+import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA, MAX_NUM_ERROR } from '../../utils/constants'
 import { draw, drawSnappingPoints } from '../../utils/canvas'
 import { getPointDistance } from '../../utils/point'
 import Rectangle from '../../drawingElements/rectangle'
@@ -18,6 +18,8 @@ import Line from '../../drawingElements/line'
 let groupId = 1
 const VIEW_ZOOM_STEP_UP = 1.2
 const VIEW_ZOOM_STEP_DOWN = 1 / 1.2
+const VIEW_ZOOM_MAX_SCALE = VIEW_ZOOM_STEP_UP ** 15
+const VIEW_ZOOM_MIN_SCALE = VIEW_ZOOM_STEP_DOWN ** 15
 
 const Canvas = () => {
     const {
@@ -51,11 +53,11 @@ const Canvas = () => {
         const { clientX, clientY } = event
         const [translateX, translateY] = currentTranslate
 
-        return [(clientX - translateX) / currentScale , (clientY - translateY) / currentScale]
+        return [(clientX - translateX) / currentScale, (clientY - translateY) / currentScale]
     }
 
     const panView = useCallback((startX, startY, endX, endY) => {
-        const deltaX = endX - startX 
+        const deltaX = endX - startX
         const deltaY = endY - startY
         // context.current.translate(deltaX, deltaY)
 
@@ -68,10 +70,19 @@ const Canvas = () => {
     const zoomView = useCallback((centerX, centerY, isZoomOut) => {
         const scaleStep = isZoomOut ? VIEW_ZOOM_STEP_DOWN : VIEW_ZOOM_STEP_UP
 
-        // context.current.scale(scaleStep, scaleStep)
+        const newScale = Math.min(Math.max(currentScale * scaleStep, VIEW_ZOOM_MIN_SCALE), VIEW_ZOOM_MAX_SCALE)
+        if (Math.abs(currentScale - newScale) < MAX_NUM_ERROR ) return
+
+        const [currentTranslateX, currentTranslateY] = currentTranslate
+        const newCenterX = centerX - currentTranslateX
+        const newCenterY = centerY - currentTranslateY
+        const dX = (1 - scaleStep) * newCenterX
+        const dY = (1 - scaleStep) * newCenterY
         
-        return setCurrentScale(Math.min(Math.max(currentScale * scaleStep, 0.05), 15))
-    }, [currentScale])
+        setCurrentScale(newScale)
+        setCurrentTranslate([(currentTranslateX + dX), (currentTranslateY + dY)])
+        return
+    }, [currentScale, currentTranslate])
 
     // const [isUsingTool, setIsUsingTool] = useState(false)
 
@@ -86,15 +97,15 @@ const Canvas = () => {
 
         context.current.clearRect(0, 0, context.current.canvas.width, context.current.canvas.height)
 
-        context.current.translate(currentTranslate[0], currentTranslate[1])
         context.current.scale(currentScale, currentScale)
+        context.current.translate(currentTranslate[0] / currentScale, currentTranslate[1] / currentScale)
 
         const rect = new Rectangle(new Point(0, 0), {
-            pointB:  new Point(context.current.canvas.width, context.current.canvas.height)
+            pointB: new Point(context.current.canvas.width, context.current.canvas.height)
         })
         draw(context.current, rect, currentScale)
 
-        const line = new Line(new Point(0, 0), { pointB: new Point(50, 50) })
+        const line = new Line(new Point(0, 0), { pointB: new Point(200, 200) })
         draw(context.current, line, currentScale)
 
         let canvasElements = elements.filter(e => e.isShown)
@@ -201,7 +212,7 @@ const Canvas = () => {
 
     const handleMouseClick = (event) => {
         const [clientX, clientY] = getAbsoluteMouseCoordinates(event)
-        
+
         const clickedPoint = createPoint(clientX, clientY)
         if (tool.type === 'draw') {
             if (currentlyCreatedElement) {
@@ -252,9 +263,6 @@ const Canvas = () => {
                     return
                 }
             }
-
-            console.log(clientX)
-            console.log(clientY)
 
             const oldSelectedElements = selectedElements || []
             const newlySelectedElements = elements.filter(e =>
