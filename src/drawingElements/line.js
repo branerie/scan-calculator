@@ -24,10 +24,7 @@ class Line extends Element {
         }
     }
 
-    get basePoint() {
-        return this.#pointA
-    }
-
+    get basePoint() { return this.#pointA }
     get startPoint() { return this.pointA }
     get endPoint() { return this.pointB }
 

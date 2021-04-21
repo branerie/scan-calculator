@@ -15,7 +15,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test-server": "mocha --recursive"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -35,5 +36,6 @@
   "prettier": {
     "printWidth": 100,
     "arrowParens": "avoid"
-  }
+  },
+  "devDependencies": {}
 }
