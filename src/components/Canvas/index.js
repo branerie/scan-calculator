@@ -35,7 +35,7 @@ const Canvas = () => {
         redo
     } = useElementsHistory([])
 
-    const [tool, setTool] = useState({ type: 'draw', name: 'line' })
+    const [tool, setTool] = useState({ type: 'select', name: 'select' })
     const [inputValues, setInputValue] = useForm({})
     const { 
         currentTranslate, 
@@ -56,8 +56,7 @@ const Canvas = () => {
     const context = useRef(null)
     const mouseDrag = useRef(null)
 
-    const getAbsoluteMouseCoordinates = (event) => {
-        const { clientX, clientY } = event
+    const getRealMouseCoordinates = (clientX, clientY) => {
         const [translateX, translateY] = currentTranslate
 
         return [(clientX - translateX) / currentScale, (clientY - translateY) / currentScale]
@@ -115,6 +114,10 @@ const Canvas = () => {
 
         canvasElements.forEach(element => draw(context.current, element, currentScale))
 
+        if (snappedPoint) {
+            drawSnappedPoint(context.current, snappedPoint, currentScale)
+        }
+
         if (!selectedElements) return
 
         const elementsWithHighlightedPoints = selectedElements.concat(currentlyEditedElements || [])
@@ -127,9 +130,6 @@ const Canvas = () => {
             drawSelectionPoints(context.current, selectionPoints, selectedPoints, currentScale)
         })
 
-        if (snappedPoint) {
-            drawSnappedPoint(context.current, snappedPoint, currentScale)
-        }
     }, 
     [
         elements, 
@@ -156,7 +156,7 @@ const Canvas = () => {
 
         if (event.keyCode === 27) { // escape
             if (currentlyCreatedElement) {
-                if (currentlyCreatedElement.baseType === 'polyline' && currentlyCreatedElement.elements.length > 1) {
+                if (currentlyCreatedElement.type === 'polyline' && currentlyCreatedElement.elements.length > 1) {
                     currentlyCreatedElement.elements.pop()
 
                     return
@@ -165,6 +165,8 @@ const Canvas = () => {
                 setSnappedPoint(null)
                 return setCurrentlyCreatedElement(null)
             }
+
+            setTool({ type: 'select', name: 'select'})
 
             if (currentlyEditedElements) {
                 selectedElements.forEach(e => e.isShown = true)
@@ -191,6 +193,7 @@ const Canvas = () => {
                 addElement(currentlyCreatedElement)
 
                 setCurrentlyCreatedElement(null)
+                setTool({ type: 'select', name: 'select'})
             }
         } else if (event.keyCode === 46) { // delete
             if (!selectedElements || selectedElements.length === 0 || selectedPoints) return
@@ -230,9 +233,9 @@ const Canvas = () => {
     }
 
     const handleMouseClick = (event) => {
-        const [clientX, clientY] = getAbsoluteMouseCoordinates(event)
+        const [clientX, clientY] = getRealMouseCoordinates(event.clientX, event.clientY)
 
-        const clickedPoint = createPoint(clientX, clientY)
+        const clickedPoint = snappedPoint ? snappedPoint : createPoint(clientX, clientY)
         if (tool.type === 'draw') {
             if (currentlyCreatedElement) {
 
@@ -248,13 +251,9 @@ const Canvas = () => {
             }
 
             const newGroupId = tool.name === 'polyline' || tool.name === 'rectangle' ? groupId++ : null
-            const newElement = createElement(tool.name, clientX, clientY, newGroupId)
+            const newElement = createElement(tool.name, clickedPoint.x, clickedPoint.y, newGroupId)
             setCurrentlyCreatedElement(newElement)
         } else if (tool.type === 'select') {
-            if (currentlyEditedElements) {
-                return editElements(currentlyEditedElements)
-            }
-
             if (event.shiftKey) {
                 const newlySelectedElements = selectedElements.filter(e => 
                     !e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale))
@@ -280,9 +279,8 @@ const Canvas = () => {
                 if (editedElements.length > 0) {
                     setSelectedPoints(selectedPoints)
                     setCurrentlyEditedElements(editedElements)
-
-                    // setElements([...elements])
                     setSelectedElements([...selectedElements])
+                    setTool({ type: 'edit', name: 'edit' })
                     return
                 }
             }
@@ -290,6 +288,11 @@ const Canvas = () => {
             const newlySelectedElements = elements.filter(e =>
                 e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale))
             addSelectedElements(newlySelectedElements)
+        } else if (tool.type === 'edit') {
+            if (currentlyEditedElements) {
+                setTool({ type: 'select', name: 'select'})
+                return editElements(currentlyEditedElements)
+            }
         }
     }
 
@@ -299,12 +302,36 @@ const Canvas = () => {
             return panView(mouseDrag.current[0], mouseDrag.current[1], clientX, clientY)
         }
 
-        const [clientX, clientY] = getAbsoluteMouseCoordinates(event)
-        if (options.snap) {
+        const [clientX, clientY] = getRealMouseCoordinates(event.clientX, event.clientY)
+        if (options.snap && tool.type !== 'select') {
             let nearbyPoints = findNearbyPoints(clientX, clientY, SNAP_DELTA / currentScale)
+
+            if (currentlyCreatedElement && (currentlyCreatedElement.type === 'polyline' || currentlyCreatedElement === 'arc')) {
+                let snappingPoints
+                if (currentlyCreatedElement.type === 'polyline') {
+                    snappingPoints = []
+                    for (let i = 0; i < currentlyCreatedElement.elements.length - 1; i++) {
+                        const element = currentlyCreatedElement.elements[i]
+                        snappingPoints = snappingPoints.concat(element.getSelectionPoints())
+                    }
+                } else {
+                    snappingPoints = currentlyCreatedElement.getSelectionPoints()
+                }
+                const newNearbyPoints = snappingPoints.filter(sp => 
+                    getPointDistance(sp, {x: clientX, y: clientY}) < SNAP_DELTA / currentScale)
+                nearbyPoints = nearbyPoints.concat(newNearbyPoints)
+            }
+            
             if (currentlyEditedElements) {
                 nearbyPoints = nearbyPoints.filter(nbp => 
-                    !currentlyEditedElements.some(cee => cee.getPointById(nbp.pointId)))
+                    !currentlyEditedElements.some(cee => {
+                        if (cee.baseType === 'polyline') {
+                            const elementsWithEditedPoints = cee.elements.filter(e => selectedPoints.some(sp => e.getPointById(sp.pointId)))
+                            return elementsWithEditedPoints.some(ewep => ewep.getPointById(nbp.pointId))
+                        }
+                        
+                        return cee.getPointById(nbp.pointId)
+                    }))
             }
             
             const clickedPoint = createPoint(clientX, clientY)
@@ -326,6 +353,8 @@ const Canvas = () => {
 
         if (!currentlyEditedElements && !currentlyCreatedElement) return
 
+        const mousePoint = snappedPoint ? snappedPoint : createPoint(clientX, clientY)
+        
         if (currentlyEditedElements && selectedPoints) {
             const newCurrentlyEditedElements = []
             for (const editedElement of currentlyEditedElements) {
@@ -333,8 +362,8 @@ const Canvas = () => {
                     const movedPoint = editedElement.getPointById(selectedPoint.pointId)
                     if (!movedPoint) continue
 
-                    const dX = clientX - movedPoint.x
-                    const dY = clientY - movedPoint.y
+                    const dX = mousePoint.x - movedPoint.x
+                    const dY = mousePoint.y - movedPoint.y
 
                     if (selectedPoint.pointType === 'midPoint') {
                         switch (editedElement.baseType) {
@@ -345,7 +374,7 @@ const Canvas = () => {
                                 editedElement.stretchByMidPoint(dX, dY, selectedPoint.pointId)
                                 break
                             case 'arc':
-                                const newRadius = getPointDistance(editedElement.centerPoint, { x: clientX, y: clientY })
+                                const newRadius = getPointDistance(editedElement.centerPoint, mousePoint)
                                 editedElement.radius = newRadius
                                 break
                             default:
@@ -360,7 +389,7 @@ const Canvas = () => {
                         editedElement.move(dX, dY)
                     }
 
-                    editedElement.setPointById(selectedPoint.pointId, clientX, clientY)
+                    editedElement.setPointById(selectedPoint.pointId, mousePoint.x, mousePoint.y)
                 }
 
                 newCurrentlyEditedElements.push(editedElement)
@@ -373,7 +402,7 @@ const Canvas = () => {
         if (!currentlyCreatedElement || !currentlyCreatedElement.isAlmostDefined) return
 
         const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, true)
-        newCurrentlyCreatedElement.setLastAttribute(clientX, clientY)
+        newCurrentlyCreatedElement.setLastAttribute(mousePoint.x, mousePoint.y)
 
         setCurrentlyCreatedElement(newCurrentlyCreatedElement)
     }
@@ -384,6 +413,21 @@ const Canvas = () => {
 
         if (deltaY !== 0) {
             zoomView(clientX, clientY, deltaY > 0)
+        }
+    }
+
+    const changeTool = (tool) => {
+        setTool(tool)
+        clearSelection()
+        if (currentlyCreatedElement) {
+            setCurrentlyCreatedElement(null)
+        }
+
+        if (currentlyEditedElements) {
+            const newSelectedElements = [...selectedElements]
+            newSelectedElements.forEach(se => se.isShown = true)
+            setSelectedElements(newSelectedElements)
+            setCurrentlyEditedElements(null)
         }
     }
 
@@ -411,7 +455,9 @@ const Canvas = () => {
             </canvas>
             <Navbar
                 tool={tool}
-                setTool={setTool}
+                changeTool={changeTool}
+                options={options}
+                setOptions={setOptions}
             />
 
             { tool &&

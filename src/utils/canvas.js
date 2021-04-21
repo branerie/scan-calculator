@@ -8,6 +8,7 @@ const LINE_DASH_LINE_SIZE = 15
 const LINE_DASH_SPACE_SIZE = 10
 
 const draw = (context, element, currentScale, isSelected = false) => {
+    console.log(element);
     context.beginPath()
     if (isSelected) {
         context.setLineDash([LINE_DASH_LINE_SIZE / currentScale, LINE_DASH_SPACE_SIZE / currentScale])
@@ -33,8 +34,8 @@ const draw = (context, element, currentScale, isSelected = false) => {
             break
         case 'polyline':
         case 'rectangle':
-            element.elements.forEach(e => draw(context, e))
-            break
+            element.elements.forEach(e => draw(context, e, currentScale,  isSelected))
+            return
         case 'circle':
             context.moveTo(element.centerPoint.x + element.radius, element.centerPoint.y)
             context.arc(
