@@ -111,10 +111,6 @@ class Line extends Element {
             throw new Error('Cannot use method \'checkIfPointOnElement\' before line is fully defined.')
         }
 
-        // const pointDistA = getPointDistance(this.#pointA, point)
-        // const pointDistB = getPointDistance(this.#pointB, point)
-
-        // return Math.abs((pointDistA + pointDistB) - this.length) < 0.3
         const nearestPoint = this.getNearestPoint(point)
         const perpendicular = new Line(point, { pointB: nearestPoint })
 
