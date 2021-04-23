@@ -208,7 +208,7 @@ class Line extends Element {
             // // yi = m * x + b 
             // const intersectY = slope * intersectX + lineIntercept
 
-            nearestPoint = createPoint(intersectX, intersectY)
+            nearestPoint = new Point(intersectX, intersectY)
         }
 
         if (!shouldUseLineExtension) {
