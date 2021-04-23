@@ -1,5 +1,5 @@
 import { createLine } from '../utils/elementFactory'
-import { getPointDistance } from '../utils/point'
+import { getPointDistance, getRotatedPointAroundPivot } from '../utils/point'
 import Element from './element'
 import Line from './line'
 
@@ -81,7 +81,7 @@ class Arc extends Element {
         const startAngle = this.#startLine.angle
         const endAngle = this.#endLine.angle
         const isInArc = startAngle < endAngle
-            ? lineAngle >= startAngle || lineAngle <= endAngle
+            ? lineAngle <= startAngle || lineAngle >= endAngle
             : lineAngle <= startAngle && lineAngle >= endAngle
 
         if (isInArc) {
@@ -191,12 +191,20 @@ class Arc extends Element {
             this.#midLine = createLine(this.#centerPoint.x, this.#centerPoint.y, this.groupId)
         }
 
+        const angleStartToEnd = Math.abs(this.#startLine.angle - this.#endLine.angle)
+
+        if (angleStartToEnd === 180) {
+            const midLineEndPoint = getRotatedPointAroundPivot(this.#startLine.pointB, this.#centerPoint, 90)
+            this.#midLine.setPointB(midLineEndPoint.x, midLineEndPoint.y)
+            return
+        }
+
         const midPointX = (this.#startLine.pointB.x + this.#endLine.pointB.x) / 2
         const midPointY = (this.#startLine.pointB.y + this.#endLine.pointB.y) / 2
         this.#midLine.setPointB(midPointX, midPointY)
 
         const isStartLessThanEnd = this.#startLine.angle < this.#endLine.angle
-        const isBetweenLessThan180 = Math.abs(this.#startLine.angle - this.#endLine.angle) < 180
+        const isBetweenLessThan180 = angleStartToEnd < 180
 
         const newLength = isStartLessThanEnd !== isBetweenLessThan180
             ? this.#radius

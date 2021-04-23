@@ -8,6 +8,7 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                     Select
                     <input
                         type='radio'
+                        name='select'
                         checked={tool.name === 'select'}
                         onChange={() => changeTool({ type: 'select', name: 'select' })}
                     />
@@ -16,6 +17,7 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                     Line
                     <input
                         type='radio'
+                        name='line'
                         checked={tool.name === 'line'}
                         onChange={() => changeTool({ type: 'draw', name: 'line' })}
                     />
@@ -25,6 +27,7 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                     Polyline
                     <input
                         type='radio'
+                        name='polyline'
                         checked={tool.name === 'polyline'}
                         onChange={() => changeTool({ type: 'draw', name: 'polyline' })}
                     />
@@ -34,6 +37,7 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                     Arc
                     <input
                         type='radio'
+                        name='arc'
                         checked={tool.name === 'arc'}
                         onChange={() => changeTool({ type: 'draw', name: 'arc' })}
                     />
@@ -43,6 +47,7 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                     Circle
                     <input
                         type='radio'
+                        name='circle'
                         checked={tool.name === 'circle'}
                         onChange={() => changeTool({ type: 'draw', name: 'circle' })}
                     />
@@ -52,6 +57,7 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                     Rectangle
                     <input
                         type='radio'
+                        name='rectangle'
                         checked={tool.name === 'rectangle'}
                         onChange={() => changeTool({ type: 'draw', name: 'rectangle' })}
                     />
@@ -61,6 +67,7 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                     Snapping
                     <input
                         type='checkbox'
+                        name='snapping'
                         checked={options.snap}
                         onChange={() => setOptions((options) => ({ ...options, snap: !options.snap }))}
                     />

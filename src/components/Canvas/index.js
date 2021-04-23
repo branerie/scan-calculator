@@ -124,6 +124,8 @@ const Canvas = () => {
         elementsWithHighlightedPoints.forEach(selectedElement => {
             if (!selectedElement.isShown) return
 
+            console.log(selectedElement.angle)
+
             draw(context.current, selectedElement, currentScale, true)
 
             const selectionPoints = selectedElement.getSelectionPoints()

@@ -28,8 +28,8 @@ class Line extends Element {
     get startPoint() { return this.pointA }
     get endPoint() { return this.pointB }
 
-    get pointA() { return this.#pointA ? { ...this.#pointA } : null }
-    get pointB() { return this.#pointB ? { ...this.#pointB } : null }
+    get pointA() {return this.#pointA}//{ return this.#pointA ? { ...this.#pointA } : null }
+    get pointB() {return this.#pointB}//{ return this.#pointB ? { ...this.#pointB } : null }
     get midPoint() { return this.#midPoint ? { ...this.#midPoint } : null }
 
     get isFullyDefined() {

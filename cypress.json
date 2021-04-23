@@ -1,0 +1,15 @@
+{
+    "ignoreTestFiles": [
+        "**/__snapshots__/*",
+        "**/__image_snapshots__/*"
+    ],
+    "env": {
+        "cypress-plugin-snapshots": {
+            "imageConfig": {
+                "threshold": 0.0005
+            }
+        }
+    },
+    "viewportWidth": 1800,
+    "viewportHeight": 1080
+}
