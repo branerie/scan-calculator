@@ -236,7 +236,12 @@ const Canvas = () => {
 
     const handleMouseClick = (event) => {
         const [clientX, clientY] = getRealMouseCoordinates(event.clientX, event.clientY)
-
+        /* ************************************************ */
+        const ul = document.getElementById('clicks')
+        const newLi = document.createElement('li')
+        newLi.textContent = `(${clientX}, ${clientY})`
+        ul.appendChild(newLi)
+        /* ************************************************ */
         const clickedPoint = snappedPoint ? snappedPoint : createPoint(clientX, clientY)
         if (tool.type === 'draw') {
             if (currentlyCreatedElement) {
@@ -465,6 +470,7 @@ const Canvas = () => {
             { tool &&
                 <ToolInputMapper inputValues={inputValues} setInputValue={setInputValue} toolName={tool.name} />
             }
+            <ul id="clicks"></ul>
         </>
     )
 }

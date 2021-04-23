@@ -48,7 +48,7 @@ describe('line', () => {
     describe('checkIfPointOnElement', () => {
         it('should return true when point is close to line', () => {
             const line = new Line(new Point(100, 100), { pointB: new Point(200, 100) })
-            const pointOnLine = new Point(130,100)
+            const pointOnLine = new Point(130, 100)
             const pointCloseToLine = new Point(130, 103)
             
             expect(line.checkIfPointOnElement(pointOnLine, SELECT_DELTA)).toEqual(true)
@@ -59,8 +59,8 @@ describe('line', () => {
         
         it('should return false when point is outside SELECT_DELTA range', () => {
             const line = new Line(new Point(100, 100), { pointB: new Point(200, 100) })
-            const point1 = new Point(130,104)
-            const point2 = new Point(130,96)
+            const point1 = new Point(130, 104)
+            const point2 = new Point(130, 96)
             const point3 = new Point(96, 100)
             const point4 = new Point(100, 104)
 
@@ -141,12 +141,12 @@ describe('line', () => {
             const point2 = new Point(120, 150)
             const point3 = new Point(250, 250)
             
-            expect(horizontalLine.getNearestPoint(point1)).toEqual({"x": 100, "y": 100})
-            expect(horizontalLine.getNearestPoint(point2)).toEqual({"x": 120, "y": 100})
-            expect(horizontalLine.getNearestPoint(point3)).toEqual({"x": 200, "y": 100})
-            expect(verticalLine.getNearestPoint(point1)).toEqual({"x": 100, "y": 100})
-            expect(verticalLine.getNearestPoint(point2)).toEqual({"x": 100, "y": 150})
-            expect(verticalLine.getNearestPoint(point3)).toEqual({"x": 100, "y": 200})
+            expect(horizontalLine.getNearestPoint(point1)).toEqual({ x: 100, y: 100 })
+            expect(horizontalLine.getNearestPoint(point2)).toEqual({ x: 120, y: 100 })
+            expect(horizontalLine.getNearestPoint(point3)).toEqual({ x: 200, y: 100 })
+            expect(verticalLine.getNearestPoint(point1)).toEqual({ x: 100, y: 100 })
+            expect(verticalLine.getNearestPoint(point2)).toEqual({ x: 100, y: 150 })
+            expect(verticalLine.getNearestPoint(point3)).toEqual({ x: 100, y: 200 })
         })
         
         it('should return nearest point on slanted line', () => {
@@ -155,9 +155,9 @@ describe('line', () => {
             const point2 = new Point(100, 200)
             const point3 = new Point(250, 250)
             
-            expect(line.getNearestPoint(point1)).toEqual({"x": 100, "y": 100})
-            expect(line.getNearestPoint(point2)).toEqual({"x": 150, "y": 150})
-            expect(line.getNearestPoint(point3)).toEqual({"x": 200, "y": 200})
+            expect(line.getNearestPoint(point1)).toEqual({ x: 100, y: 100 })
+            expect(line.getNearestPoint(point2)).toEqual({ x: 150, y: 150 })
+            expect(line.getNearestPoint(point3)).toEqual({ x: 200, y: 200 })
         })
         
         it('should return nearest point on extension of horizontal and vertical line', () => {
@@ -166,10 +166,10 @@ describe('line', () => {
             const point1 = new Point(50, 50)
             const point2 = new Point(250, 250)
             
-            expect(horizontalLine.getNearestPoint(point1, true)).toEqual({"x": 50, "y": 100})
-            expect(horizontalLine.getNearestPoint(point2, true)).toEqual({"x": 250, "y": 100})
-            expect(verticalLine.getNearestPoint(point1, true)).toEqual({"x": 100, "y": 50})
-            expect(verticalLine.getNearestPoint(point2, true)).toEqual({"x": 100, "y": 250})
+            expect(horizontalLine.getNearestPoint(point1, true)).toEqual({ x: 50, y: 100 })
+            expect(horizontalLine.getNearestPoint(point2, true)).toEqual({ x: 250, y: 100 })
+            expect(verticalLine.getNearestPoint(point1, true)).toEqual({ x: 100, y: 50 })
+            expect(verticalLine.getNearestPoint(point2, true)).toEqual({ x: 100, y: 250 })
         })
         
         it('should return nearest point on extension of slanted line', () => {
@@ -177,8 +177,8 @@ describe('line', () => {
             const point1 = new Point(0, 100)
             const point2 = new Point(200, 300)
             
-            expect(line.getNearestPoint(point1, true)).toEqual({"x": 50, "y": 50})
-            expect(line.getNearestPoint(point2, true)).toEqual({"x": 250, "y": 250})
+            expect(line.getNearestPoint(point1, true)).toEqual({ x: 50, y: 50 })
+            expect(line.getNearestPoint(point2, true)).toEqual({ x: 250, y: 250 })
         })
     })
     
@@ -217,7 +217,6 @@ describe('line', () => {
             expect(Math.round(line.pointA.y)).toEqual(50)
             expect(Math.round(line.pointB.x)).toEqual(70)
             expect(Math.round(line.pointB.y)).toEqual(90)
-
         })
     })
 

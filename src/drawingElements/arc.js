@@ -1,3 +1,4 @@
+import { MAX_NUM_ERROR } from '../utils/constants'
 import { createLine } from '../utils/elementFactory'
 import { getPointDistance, getRotatedPointAroundPivot } from '../utils/point'
 import Element from './element'
@@ -17,7 +18,7 @@ class Arc extends Element {
         endLine = null,
         midLine = null, 
         id = null 
-    }) {
+    } = {}) {
         super(id, groupId)
 
         this.#centerPoint = centerPoint
@@ -25,6 +26,40 @@ class Arc extends Element {
         this.#startLine = startLine
         this.#endLine = endLine
         this.#midLine = midLine
+
+        if (startLine) {
+            if (getPointDistance(centerPoint, startLine.pointA) > 0) {
+                this.#startLine.setPointA(this.#centerPoint)
+            }
+
+            if (!this.#radius) {
+                this.#radius = getPointDistance(centerPoint, startLine.pointB)
+            }
+
+            if (Math.abs(getPointDistance(centerPoint, startLine.pointB) - this.#radius) > MAX_NUM_ERROR) {
+                throw new Error(`Inconsistent arc - the end of startLine and the end of endLine must lie the same distance from 
+                the arc center (its radius)`)
+            }
+        }
+
+        if (endLine) {
+            if (getPointDistance(centerPoint, endLine.pointA) > 0) {
+                this.#endLine.setPointA(this.#centerPoint)
+            }
+
+            if (!this.#radius) {
+                this.#radius = getPointDistance(centerPoint, endLine.pointB)
+            }
+
+            if (Math.abs(getPointDistance(centerPoint, endLine.pointB) - this.#radius) > MAX_NUM_ERROR) {
+                throw new Error(`Inconsistent arc - the end of startLine and the end of endLine must lie the same distance from 
+                the arc center (its radius)`)
+            }
+        }
+
+        if (startLine && endLine) {
+            this.__updateMidLine()
+        }
     }
 
     get basePoint() { return this.#centerPoint }
@@ -159,22 +194,6 @@ class Arc extends Element {
         }
 
         return true
-    }
-
-    setLineId(lineName, lineId) {
-        switch(lineName) {
-            case 'startLine':
-                this.#startLine.id = lineId
-                break
-            case 'endLine':
-                this.#startLine.id = lineId
-                break
-            case 'midLine':
-                this.#startLine.id = lineId
-                break
-            default:
-                return
-        }
     }
 
     move(dX, dY) {
