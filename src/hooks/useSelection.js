@@ -1,6 +1,6 @@
 import { useReducer } from 'react'
 
-const elementsDispatch = (state, action) => {
+const selectionReducer = (state, action) => {
     switch (action.type) {
         case 'addElements': {
             const newElements = { ...state.elements }
@@ -71,7 +71,7 @@ const elementsDispatch = (state, action) => {
 }
 
 const useSelection = () => {
-    const [selection, selectionDispatch] = useReducer(elementsDispatch, { elements: {}, points: {} })
+    const [selection, selectionDispatch] = useReducer(selectionReducer, { elements: {}, points: {} })
 
     const addSelectedElements = (elements) => selectionDispatch({ type: 'addElements', values: elements })
     const removeSelectedElements = (elements) => selectionDispatch({ type: 'removeElements', values: elements })
@@ -86,7 +86,7 @@ const useSelection = () => {
     const clearSelectedPoints = () => selectionDispatch({ type: 'clearPoints' })
 
     return {
-        selectedElements: Object.keys(selection.elements).length > 0 ? Object.values(selection.elements): null,
+        selectedElements: Object.keys(selection.elements).length > 0 ? Object.values(selection.elements) : null,
         selectedPoints: selection.points.length > 0 ? selection.points: null,
         addSelectedElements,
         removeSelectedElements,

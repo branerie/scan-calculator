@@ -11,7 +11,7 @@ import ElementManipulator from '../../utils/elementManipulator'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA, SNAP_DELTA, MAX_NUM_ERROR } from '../../utils/constants'
 import { draw, drawSelectionPoints, drawSnappedPoint } from '../../utils/canvas'
 import { getPointDistance } from '../../utils/point'
-import { useMainContext } from '../../MainContext'
+import { useMainContext } from '../../contexts/MainContext'
 
 let groupId = 1
 const VIEW_ZOOM_STEP_UP = 1.2
@@ -173,7 +173,7 @@ const Canvas = () => {
             if (currentlyEditedElements) {
                 selectedElements.forEach(e => e.isShown = true)
                 setCurrentlyEditedElements(null)
-                setElements([...elements])
+                setElements(e => [...e])
                 setSnappedPoint(null)
                 return clearSelectedPoints()
             }
@@ -216,7 +216,6 @@ const Canvas = () => {
             setCurrentlyCreatedElement, 
             setCurrentlyEditedElements, 
             setElements, 
-            elements, 
             clearSelectedPoints, 
             clearSelection, 
             addElement, 
@@ -236,12 +235,7 @@ const Canvas = () => {
 
     const handleMouseClick = (event) => {
         const [clientX, clientY] = getRealMouseCoordinates(event.clientX, event.clientY)
-        /* ************************************************ */
-        const ul = document.getElementById('clicks')
-        const newLi = document.createElement('li')
-        newLi.textContent = `(${clientX}, ${clientY})`
-        ul.appendChild(newLi)
-        /* ************************************************ */
+
         const clickedPoint = snappedPoint ? snappedPoint : createPoint(clientX, clientY)
         if (tool.type === 'draw') {
             if (currentlyCreatedElement) {
@@ -264,7 +258,7 @@ const Canvas = () => {
             if (event.shiftKey) {
                 const newlySelectedElements = selectedElements.filter(e => 
                     !e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale))
-                setSelectedElements(newlySelectedElements)
+                 setSelectedElements(newlySelectedElements)
                 return
             }
 
@@ -278,7 +272,7 @@ const Canvas = () => {
                     if (editedElement) {
                         selectedPoints.push(point)
                         const copiedElement = ElementManipulator.copyElement(editedElement, true)
-                        editedElements.push(copiedElement)
+                       editedElements.push(copiedElement)
                         editedElement.isShown = false
                     }
                 }

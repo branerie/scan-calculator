@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { createTree } from '../utils/pointsSearchTree'
 
 import { CANVAS_WIDTH } from '../utils/constants'
-import { useMainContext } from '../MainContext'
+import { useMainContext } from '../contexts/MainContext'
 
 const buildPointsTreeDataObject = (point, pointType) => {
     return {
@@ -43,7 +43,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
             )
         })
 
-        setElements([...elements, newElement])
+        setElements(oldElements => [...oldElements, newElement])
         updateHistoryEvents({ action: 'add', element: newElement })
     }
 
@@ -131,7 +131,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
         
         updateElementsFromHistory(historyPointer, false)
         setHistoryPointer(pointer => {
-            if (pointer === actionHistory.length -1) {
+            if (pointer === actionHistory.length - 1) {
                 return null
             }
 
@@ -173,6 +173,14 @@ const useElementsHistory = (initialElements, initialGroups) => {
         let newElements
         if (updateOperation === 'add') {
             newElements = [...elements, lastHistoryEvent.element]
+
+            const elementPoints = lastHistoryEvent.element.getSelectionPoints()
+            elementPoints.forEach(elementPoint => {
+                pointsTree.current.insert(
+                    elementPoint.x,
+                    buildPointsTreeDataObject(elementPoint, elementPoint.pointType)
+                )
+            })
         } else if (updateOperation === 'edit') {
             // gets new state of elements after undo/redo operation
             // also, saves state of edited element in elementBeforeUndo in order to put it in history
@@ -218,6 +226,16 @@ const useElementsHistory = (initialElements, initialGroups) => {
 
                 return true
             })
+
+            // remove selection points of deleted element
+            const snappingPoints = lastHistoryEvent.element.getSelectionPoints()
+            for (const snappingPoint of snappingPoints) {
+                pointsTree.current.remove(
+                    snappingPoint.x,
+                    { y: snappingPoint.y, pointId: snappingPoint.pointId },
+                    snappingPoint.pointType
+                )
+            }
         } else {
             throw new Error('Invalid event action')
         }
