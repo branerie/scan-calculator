@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 
+const DELETE_KEY_CODE = 46
 const ENTER_KEY_CODE = 13
 const ESCAPE_KEY_CODE = 27
 
@@ -19,6 +20,11 @@ const pressEscape = () => {
     canvas.trigger('keydown', { keyCode: ESCAPE_KEY_CODE })
 }
 
+const pressDelete = () => {
+    const canvas = cy.get('canvas')
+    canvas.trigger('keydown', { keyCode: DELETE_KEY_CODE })
+}
+
 const selectDrawingTool = (toolName) => {
     cy.get(`input[name="${toolName}"]`).click()
 }
@@ -32,9 +38,27 @@ const moveMouse = (clientX, clientY) => {
     canvas.trigger('mousemove', { clientX, clientY })
 }
 
+const mousePan = (startX, startY, endX, endY) => {
+    const canvas = cy.get('canvas')
+    canvas.trigger('mousedown', { clientX: startX, clientY: startY, button: 1 })
+    canvas.trigger('mousemove', { clientX: endX, clientY: endY, buttons: 4 })
+
+    canvas.trigger('auxclick', { clientX: endX, clientY: endY })
+}
+
+const zoom = (nSteps, clientX, clientY, isZoomOut = true) => {
+    const canvas = cy.get('canvas')
+    for (let i = 0; i < nSteps; i++) {
+        canvas.trigger('wheel', { deltaY: isZoomOut ? 1 : -1, clientX, clientY })
+    }
+}
+
 export {
     click,
     moveMouse,
+    mousePan,
+    zoom,
+    pressDelete,
     pressEnter,
     pressEscape,
     selectDrawingTool,

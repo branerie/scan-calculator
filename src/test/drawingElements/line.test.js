@@ -87,14 +87,26 @@ describe('line', () => {
             pointA.pointId = 1
             const pointB = new Point(200, 100)
             pointB.pointId = 2
+
             const line = new Line(pointA, { pointB })
-            line.setPointById(1, 50, 60)
-            line.setPointById(2, 70, 80)
+            expect(line.setPointById(1, 50, 60)).toEqual(true)
+            expect(line.setPointById(2, 70, 80)).toEqual(true)
             
             expect(line.pointA.x).toEqual(50)
             expect(line.pointA.y).toEqual(60)
             expect(line.pointB.x).toEqual(70)
             expect(line.pointB.y).toEqual(80)
+        })
+
+        it('should return false if point does not exist', () => {
+            const pointA = new Point(100, 100)
+            pointA.pointId = 1
+            const pointB = new Point(200, 100)
+            pointB.pointId = 2
+
+            const line = new Line(pointA, { pointB })
+
+            expect(line.setPointById(3, 500, 500)).toEqual(false)
         })
     })
     
@@ -108,6 +120,16 @@ describe('line', () => {
             
             expect(line.getPointById(1)).toEqual({ x: 100, y: 200, pointId: 1 })
             expect(line.getPointById(2)).toEqual({ x: 300, y: 400, pointId: 2 })
+        })
+
+        it('should return null if point does not exist', () => {
+            const pointA = new Point(100, 100)
+            pointA.pointId = 1
+            const pointB = new Point(200, 100)
+            pointB.pointId = 2
+
+            const line = new Line(pointA, { pointB })
+            expect(line.getPointById(3)).toEqual(null)
         })
     })
     

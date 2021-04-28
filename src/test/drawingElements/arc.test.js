@@ -1,7 +1,7 @@
-import Arc from "../../drawingElements/arc"
-import Line from "../../drawingElements/line"
-import Point from "../../drawingElements/point"
-import { SELECT_DELTA } from "../../utils/constants"
+import Arc from '../../drawingElements/arc'
+import Line from '../../drawingElements/line'
+import Point from '../../drawingElements/point'
+import { SELECT_DELTA } from '../../utils/constants'
 
 describe('arc', () => {
     describe('radius.setter', () =>{
@@ -23,7 +23,59 @@ describe('arc', () => {
     })
 
     describe('getSelectionPoints', () => {
-        it('should retrieve correct selection points', () => {
+        it('should retrieve correct selection points (arc angle < 180 degrees)', () => {
+            const startLine = new Line(new Point(378, 387), { pointB: new Point(524, 330) })
+            const endLine = new Line(new Point(378, 387), { pointB: new Point(458, 284) })
+            endLine.setLength(startLine.length, false)
+
+            const arc = new Arc(new Point(378, 387), { startLine, endLine })
+
+            const selectionPoints = arc.getSelectionPoints()
+            expect(selectionPoints.length).toEqual(4)
+
+            const centerPoint = selectionPoints.find(sp => sp.pointType === 'center')
+            expect(centerPoint.x).toEqual(378)
+            expect(centerPoint.y).toEqual(387)
+
+            const [startPoint, endPoint] = selectionPoints.filter(sp => sp.pointType === 'endPoint')
+            expect(startPoint.x).toEqual(524)
+            expect(startPoint.y).toEqual(330)
+
+            expect(endPoint.x).toEqual(endLine.pointB.x)
+            expect(endPoint.y).toEqual(endLine.pointB.y)
+
+            const midPoint = selectionPoints.find(sp => sp.pointType === 'midPoint')
+            expect(Math.abs(midPoint.x - 504) < 1).toEqual(true)
+            expect(Math.abs(midPoint.y - 293) < 1).toEqual(true)
+        })
+
+        it('should retrieve correct selection points (arc angle > 180 degrees)', () => {
+            const startLine = new Line(new Point(568, 407), { pointB: new Point(737, 299) })
+            const endLine = new Line(new Point(568, 407), { pointB: new Point(748, 357) })
+            endLine.setLength(startLine.length, false)
+
+            const arc = new Arc(new Point(568, 407), { startLine, endLine })
+
+            const selectionPoints = arc.getSelectionPoints()
+            expect(selectionPoints.length).toEqual(4)
+
+            const centerPoint = selectionPoints.find(sp => sp.pointType === 'center')
+            expect(centerPoint.x).toEqual(568)
+            expect(centerPoint.y).toEqual(407)
+
+            const [startPoint, endPoint] = selectionPoints.filter(sp => sp.pointType === 'endPoint')
+            expect(startPoint.x).toEqual(737)
+            expect(startPoint.y).toEqual(299)
+
+            expect(endPoint.x).toEqual(endLine.pointB.x)
+            expect(endPoint.y).toEqual(endLine.pointB.y)
+
+            const midPoint = selectionPoints.find(sp => sp.pointType === 'midPoint')
+            expect(Math.abs(midPoint.x - 384) < 1).toEqual(true)
+            expect(Math.abs(midPoint.y - 488) < 1).toEqual(true)
+        })
+
+        it('should retrieve correct selection points (180-degree arc)', () => {
             const arc = new Arc(new Point(50, 50), { 
                 startLine: new Line(new Point(50, 50), { pointB: new Point(50, 100) }),
                 endLine: new Line(new Point(50, 50), { pointB: new Point(50, 0) }),
