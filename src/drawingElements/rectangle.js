@@ -2,7 +2,7 @@ import { createLine } from '../utils/elementFactory'
 import Polyline from './polyline'
 
 class Rectangle extends Polyline {
-    constructor(pointA, { pointB = null, id = null, groupId = null }) {
+    constructor(pointA, { pointB = null, id = null, groupId = null } = {}) {
         super(pointA, { id, groupId })
 
         if (pointB) {
@@ -24,6 +24,10 @@ class Rectangle extends Polyline {
     }
 
     setLastAttribute(pointX, pointY) {
+        if (this.elements.length === 0) {
+            throw new Error('Cannot setLastAttribute without initial base point')
+        }
+
         const firstLine = this.elements[0]
         firstLine.setLastAttribute(pointX, firstLine.pointA.y)
         this.elements = [

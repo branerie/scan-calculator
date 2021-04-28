@@ -34,10 +34,12 @@ class Line extends Element {
 
     get isFullyDefined() {
         return (
-            this.#pointA && (!!(this.#pointA.x) || this.#pointA.x === 0) &&
-            this.#pointA && (!!(this.#pointA.y) || this.#pointA.y === 0) &&
-            this.#pointB && (!!(this.#pointB.x) || this.#pointB.x === 0) &&
-            this.#pointB && (!!(this.#pointB.y) || this.#pointB.y === 0)
+            !!(this.#pointA) &&
+            !!(this.#pointB) && 
+            (!!(this.#pointA.x) || this.#pointA.x === 0) &&
+            (!!(this.#pointA.y) || this.#pointA.y === 0) &&
+            (!!(this.#pointB.x) || this.#pointB.x === 0) &&
+            (!!(this.#pointB.y) || this.#pointB.y === 0)
         )
     }
 
@@ -126,8 +128,10 @@ class Line extends Element {
     }
 
     setPointById(pointId, newPointX, newPointY) {
-        super.setPointById(pointId, newPointX, newPointY)
+        const settingResult = super.setPointById(pointId, newPointX, newPointY)
         this.__updateMidPoint()
+        
+        return settingResult
     }
 
     getPointById(pointId) {

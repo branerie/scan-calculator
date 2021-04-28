@@ -75,17 +75,24 @@ class Circle extends Element {
             return this.#centerPoint
         }
         
-        return this.#endPoints.find(ep => ep.pointId === pointId)
+        const endPoint = this.#endPoints.find(ep => ep.pointId === pointId)
+        return endPoint ? endPoint : null
     }
 
     setPointById(pointId, newPointX, newPointY) {
         const point = this.getPointById(pointId)
-
-        if (point === this.#centerPoint) {
-            return this.move(newPointX - point.x, newPointY - point.y)
+        if (!point) {
+            return false
         }
 
+        if (point === this.#centerPoint) {
+            this.move(newPointX - point.x, newPointY - point.y)
+            return true
+        }
+
+        // point must be an end point
         this.setLastAttribute(newPointX, newPointY)
+        return true
     }
 
     move(dX, dY) {

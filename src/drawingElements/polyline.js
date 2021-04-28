@@ -1,10 +1,10 @@
 import Element from './element'
-import { createLine, createPoint } from '../utils/elementFactory'
+import { createLine } from '../utils/elementFactory'
 
 class Polyline extends Element {
     #isFullyDefined
 
-    constructor(initialPoint, { id = null, groupId = null, elements = null }) {
+    constructor(initialPoint, { id = null, groupId = null, elements = null } = {}) {
         super(id, groupId)
 
         this.elements = elements ? elements : [createLine(initialPoint.x, initialPoint.y, groupId)]
@@ -121,6 +121,8 @@ class Polyline extends Element {
             const nextElement = this.elements[movedLineIndex + 1]
             nextElement.setPointA(nextElement.pointA.x + dX, nextElement.pointA.y + dY)
         }
+
+        return true
     }
 }
 
