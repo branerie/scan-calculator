@@ -1,4 +1,4 @@
-import React, { useState, useContext, createContext } from 'react'
+import React, { useState, useContext, createContext, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import useElements from '../hooks/useElements'
@@ -15,49 +15,106 @@ export default function ElementsContextProvider({ children }) {
     const [historyPointer, setHistoryPointer] = useState(null)
     const [actionHistory, setActionHistory] = useState([])
 
-    const elementsState = useElements()
-    const selectionState = useSelection()
-    const { addSelectionPoints, removeSelectionPoints, replaceSelectionPoints, findNearbyPoints } = useSelectionPoints()
+    const {
+        elements,
+        currentlyCreatedElement,
+        currentlyEditedElements,
+        snappedPoint,
+        addCurrentlyCreatedElement,
+        removeCurrentlyCreatedElement,
+        startEditingElements,
+        stopEditingElements,
+        addElement: addElementToState,
+        completeEditingElements,
+        getElementById,
+        removeElements,
+        changeElements,
+        setSnappedPoint,
+        clearSnappedPoint
+    } = useElements()
 
-    const addElement = (newElement) => {
+    const {
+        selectedElements,
+        selectedPoints,
+        addSelectedElements,
+        setSelectedElements,
+        hasSelectedElement,
+        removeSelectedElements,
+        clearSelection,
+        setSelectedPoints,
+        clearSelectedPoints
+    } = useSelection()
+
+    const {
+        addSelectionPoints,
+        removeSelectionPoints,
+        replaceSelectionPoints,
+        findNearbyPoints
+    } = useSelectionPoints()
+
+    const updateHistoryEvents = useCallback((newEvent) => {
+        let newActionHistory = actionHistory
+        if (historyPointer !== null) {
+            newActionHistory = actionHistory.slice(0, historyPointer + 1)
+            setHistoryPointer(null)
+        }
+
+        setActionHistory([...newActionHistory, newEvent])
+    }, [actionHistory, historyPointer])
+
+    const addElement = useCallback((newElement) => {
         newElement.id = uuidv4()
 
         const elementPoints = newElement.getSelectionPoints()
         addSelectionPoints(elementPoints)
 
-        elementsState.addElement(newElement)
+        addElementToState(newElement)
         updateHistoryEvents({ action: 'add', elements: [newElement] })
-    }
+    }, [addElementToState, addSelectionPoints, updateHistoryEvents])
 
-    const editElements = () => {
+    const editElements = useCallback(() => {
         const elementPointsBeforeEdit = {}
-
-        elementsState.currentlyEditedElements.forEach(cee => {
-            elementPointsBeforeEdit[cee.id] = cee.getSelectionPoints()
+        currentlyEditedElements.forEach(cee => {
+            const elementBeforeEdit = getElementById(cee.id)
+            elementPointsBeforeEdit[cee.id] = elementBeforeEdit.getSelectionPoints()
         })
 
         // update selection points for edited elements
-        selectionState.selectedPoints.forEach(selectedPoint => {
-            const elementOfPoint = elementsState.currentlyEditedElements.find(cee => cee.getPointById(selectedPoint.pointId))
+        selectedPoints.forEach(selectedPoint => {
+            const elementOfPoint = currentlyEditedElements.find(cee => cee.getPointById(selectedPoint.pointId))
             if (!elementOfPoint) {
                 throw new Error('Mismatch between selectedPoints and currentlyEditedElements.')
             }
 
-            const selectionPointsAfterEdit = elementOfPoint.getSelectionPointsAfterEdit()
+            const selectionPointsAfterEdit = elementOfPoint.getSelectionPoints()
             const selectionPointsBeforeEdit = elementPointsBeforeEdit[elementOfPoint.id]
 
             replaceSelectionPoints(selectionPointsAfterEdit, selectionPointsBeforeEdit)
         })
 
-        const elementsBeforeEdit = elementsState.currentlyEditedElements.map(cee => elementsState.getElementById(cee.id))
+        const elementsBeforeEdit = currentlyEditedElements.map(cee => {
+            const elementBeforeEdit = getElementById(cee.id)
+            elementBeforeEdit.isShown = true
+            return elementBeforeEdit
+        })
+
         updateHistoryEvents({ action: 'edit', elements: elementsBeforeEdit })
 
-        const editedElements = elementsState.completeEditingElements()
-        selectionState.addSelectedElements(editedElements)
-        selectionState.clearSelectedPoints()
-    }
+        const editedElements = completeEditingElements()
+        addSelectedElements(editedElements)
+        clearSelectedPoints()
+    }, [
+        addSelectedElements,
+        clearSelectedPoints,
+        completeEditingElements,
+        currentlyEditedElements,
+        getElementById,
+        replaceSelectionPoints,
+        selectedPoints,
+        updateHistoryEvents
+    ])
 
-    const deleteElements = (deletedElements) => {
+    const deleteElements = useCallback((deletedElements) => {
         // remove selection points of deleted elements
         for (const deletedElement of deletedElements) {
             const selectionPoints = deletedElement.getSelectionPoints()
@@ -65,36 +122,10 @@ export default function ElementsContextProvider({ children }) {
         }
 
         updateHistoryEvents({ action: 'delete', elements: deletedElements })
-        elementsState.removeElements(deletedElements)
-    }
+        removeElements(deletedElements)
+    }, [removeElements, removeSelectionPoints, updateHistoryEvents])
 
-    const undo = () => {
-        if (historyPointer === 0) {
-            return
-        }
-
-        const newPointer = historyPointer === null ? actionHistory.length - 1 : historyPointer - 1
-
-        setHistoryPointer(newPointer)
-        updateElementsFromHistory(newPointer, true)
-    }
-
-    const redo = () => {
-        if (historyPointer === null) {
-            return
-        }
-
-        updateElementsFromHistory(historyPointer, false)
-        setHistoryPointer(pointer => {
-            if (pointer === actionHistory.length - 1) {
-                return null
-            }
-
-            return pointer + 1
-        })
-    }
-
-    function updateElementsFromHistory(lastEventIndex, isUndo) {
+    const updateElementsFromHistory = useCallback((lastEventIndex, isUndo) => {
         const lastHistoryEvent = actionHistory[lastEventIndex]
         let updateOperation = lastHistoryEvent.action
 
@@ -109,13 +140,12 @@ export default function ElementsContextProvider({ children }) {
         }
 
         if (updateOperation === 'add') {
-            // TODO: For now we can only add one element at a time. Could we ever need to add multiple at a time? 
-            const element = lastHistoryEvent.elements[0]
-
-            const elementPoints = element.getSelectionPoints()
-            addSelectionPoints(elementPoints)
-
-            elementsState.addElement(element)
+            for (const element of lastHistoryEvent.elements) {
+                const elementPoints = element.getSelectionPoints()
+                addSelectionPoints(elementPoints)
+                addElementToState(element)
+            }
+            
             return
         }
 
@@ -123,9 +153,10 @@ export default function ElementsContextProvider({ children }) {
             // save state of edited elements in elementsBeforeUndo in order to put it in history
             // to be able to get the elements back to this state using redo/undo
             const elementsBeforeUndo = []
+            const elementsAfterUndo = lastHistoryEvent.elements
 
-            for (const elementAfterUndo of lastHistoryEvent.elements) {
-                const elementBeforeUndo = elementsState.getElementById(elementAfterUndo.id)
+            for (const elementAfterUndo of elementsAfterUndo) {
+                const elementBeforeUndo = getElementById(elementAfterUndo.id)
                 elementsBeforeUndo.push(elementBeforeUndo)
 
                 const pointsAfterUndo = elementAfterUndo.getSelectionPoints()
@@ -135,8 +166,15 @@ export default function ElementsContextProvider({ children }) {
 
             // if edited element is still selected, updates the selected element with the new element state
             // after undo/redo
-            if (selectionState.hasSelectedElement(lastHistoryEvent.element)) {
-                selectionState.addSelectedElements(lastHistoryEvent.element)
+            const updatedSelectedElements = []
+            for (const elementAfterUndo of elementsAfterUndo) {
+                if (hasSelectedElement(elementAfterUndo)) {
+                    updatedSelectedElements.push(elementAfterUndo)
+                }
+            }
+
+            if (updatedSelectedElements.length > 0) {
+                addSelectedElements(updatedSelectedElements)
             }
 
             // change actionHistory by adding elementsBeforeUndo so it can be accessed using undo/redo
@@ -144,7 +182,7 @@ export default function ElementsContextProvider({ children }) {
             newActionHistory[lastEventIndex].elements = elementsBeforeUndo
             setActionHistory(newActionHistory)
 
-            elementsState.changeElements(lastHistoryEvent.elements)
+            changeElements(elementsAfterUndo)
             return
         }
 
@@ -157,30 +195,78 @@ export default function ElementsContextProvider({ children }) {
                 removeSelectionPoints(selectionPoints)
             }
 
-            elementsState.removeElements(elementsToRemove)
-            selectionState.removeSelectedElements(elementsToRemove)
+            removeElements(elementsToRemove)
+            removeSelectedElements(elementsToRemove)
             return
         }
 
         throw new Error('Invalid event action')
-    }
+    }, [
+        actionHistory,
+        addElementToState,
+        addSelectedElements,
+        addSelectionPoints,
+        changeElements,
+        getElementById,
+        hasSelectedElement,
+        removeElements,
+        removeSelectedElements,
+        removeSelectionPoints,
+        replaceSelectionPoints
+    ])
 
-    function updateHistoryEvents(newEvent) {
-        let newActionHistory = actionHistory
-        if (historyPointer !== null) {
-            newActionHistory = actionHistory.slice(0, historyPointer + 1)
-            setHistoryPointer(null)
+    const undo = useCallback(() => {
+        if (historyPointer === 0) {
+            return
         }
 
-        setActionHistory([...newActionHistory, newEvent])
-    }
+        const newPointer = historyPointer === null ? actionHistory.length - 1 : historyPointer - 1
+
+        setHistoryPointer(newPointer)
+        updateElementsFromHistory(newPointer, true)
+    }, [actionHistory.length, historyPointer, updateElementsFromHistory])
+
+    const redo = useCallback(() => {
+        if (historyPointer === null) {
+            return
+        }
+
+        updateElementsFromHistory(historyPointer, false)
+        setHistoryPointer(pointer => {
+            if (pointer === actionHistory.length - 1) {
+                return null
+            }
+
+            return pointer + 1
+        })
+    }, [actionHistory.length, historyPointer, updateElementsFromHistory])
 
     return (
         <Context.Provider value={{
             // TODO: which of the methods of the two states below do we need further down?
             // some names clash, such as elementsState.addElement with addElement here
-            ...elementsState,
-            ...selectionState,
+
+            // elements
+            elements,
+            currentlyCreatedElement,
+            currentlyEditedElements,
+            snappedPoint,
+            addCurrentlyCreatedElement,
+            removeCurrentlyCreatedElement,
+            startEditingElements,
+            stopEditingElements,
+            setSnappedPoint,
+            clearSnappedPoint,
+            // selection
+            selectedElements,
+            addSelectedElements,
+            setSelectedElements,
+            hasSelectedElement,
+            selectedPoints,
+            setSelectedPoints,
+            clearSelectedPoints,
+            clearSelection,
+            // history
             addElement,
             editElements,
             deleteElements,

@@ -1,12 +1,15 @@
 import React from 'react'
 import Canvas from './components/Canvas'
-import MainContextProvider from './contexts/MainContext'
+import ElementsContextProvider from './contexts/ElementsContext'
+import ToolsContextProvider from './contexts/ToolsContext'
 
 const App = () => {
     return (
-        <MainContextProvider>
-            <Canvas/>
-        </MainContextProvider>
+        <ToolsContextProvider>
+            <ElementsContextProvider>
+                <Canvas/>
+            </ElementsContextProvider>
+        </ToolsContextProvider>
     )
 }
 

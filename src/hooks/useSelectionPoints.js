@@ -14,7 +14,7 @@ const buildPointsTreeDataObject = (point, pointType) => {
 const usePointsTree = () => {
     const pointsTree = useRef(createTree(CANVAS_WIDTH))
 
-    const addPoints = useCallback((elementPoints) => {
+    const addSelectionPoints = useCallback((elementPoints) => {
         elementPoints.forEach(elementPoint => {
             pointsTree.current.insert(
                 elementPoint.x,
@@ -23,7 +23,7 @@ const usePointsTree = () => {
         })
     }, [])
 
-    const removePoints = useCallback((elementPoints) => {
+    const removeSelectionPoints = useCallback((elementPoints) => {
             elementPoints.forEach(elementPoint => {
                 pointsTree.current.remove(
                     elementPoint.x,
@@ -33,7 +33,7 @@ const usePointsTree = () => {
             })
     }, [])
 
-    const replacePoints = useCallback((pointsAfterReplace, pointsBeforeReplace) => {
+    const replaceSelectionPoints = useCallback((pointsAfterReplace, pointsBeforeReplace) => {
         pointsAfterReplace.forEach(par => {
                 const pointBeforeEdit = pointsBeforeReplace.find(pbr => pbr.pointId === par.pointId)
                 pointsTree.current.replace(
@@ -63,9 +63,9 @@ const usePointsTree = () => {
     }, [])
 
     return {
-        addPoints,
-        removePoints,
-        replacePoints,
+        addSelectionPoints,
+        removeSelectionPoints,
+        replaceSelectionPoints,
         findNearbyPoints
     }
 }

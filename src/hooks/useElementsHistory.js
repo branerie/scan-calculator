@@ -1,9 +1,9 @@
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { createTree } from '../utils/pointsSearchTree'
 
 import { CANVAS_WIDTH } from '../utils/constants'
-import { useMainContext } from '../contexts/MainContext'
+import { useElementsContext } from '../contexts/ElementsContext'
 
 const buildPointsTreeDataObject = (point, pointType) => {
     return {
@@ -29,7 +29,7 @@ const useElementsHistory = (initialElements, initialGroups) => {
         removeSelectedElements, 
         hasSelectedElement,
         clearSelectedPoints 
-    } = useMainContext() 
+    } = useElementsContext() 
 
     const addElement = (newElement) => {
         newElement.id = uuidv4()

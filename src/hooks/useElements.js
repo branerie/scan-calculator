@@ -14,8 +14,8 @@ const elementsReducer = (state, action) => {
         }
         case 'changeElements': {
             const newElements = { ...state.elements }
-            action.elementsAfterChange.forEach(eae => {
-                newElements[eae.id] = eae
+            action.elementsAfterChange.forEach(eac => {
+                newElements[eac.id] = eac
             })
 
             return { ...state, elements: newElements }
@@ -30,7 +30,7 @@ const elementsReducer = (state, action) => {
             for (const elementId of elementIds) {
                 delete newElements[elementId]
 
-                if (elementId in newCurrentlyEditedElements) {
+                if (newCurrentlyEditedElements && elementId in newCurrentlyEditedElements) {
                     if (newCurrentlyEditedElements === currentlyEditedElements) {
                         newCurrentlyEditedElements = { ...newCurrentlyEditedElements }
                     }
@@ -111,12 +111,12 @@ const useElements = () => {
     })
 
     const addElement = (element) => elementsDispatch({ type: 'addElement', value: element })
-    const removeElements = (removedElements) =>  elementsDispatch({ type: 'removeElement', removedElements })
+    const removeElements = (removedElements) =>  elementsDispatch({ type: 'removeElements', removedElements })
     const changeElements = (elementsAfterChange) => elementsDispatch({ type: 'changeElements', elementsAfterChange })
     const setElements = (newElements) => elementsDispatch({ type: 'setElements', newElements })
     const addCurrentlyCreatedElement = (createdElement) => elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
     const removeCurrentlyCreatedElement = () => elementsDispatch({ type: 'removeCurrentlyCreated' })
-    const startEditingElements = (editedElements) => elementsDispatch({ type: 'removeCurrentlyCreated', editedElements })
+    const startEditingElements = (editedElements) => elementsDispatch({ type: 'startEditingElements', editedElements })
     const stopEditingElements = () => elementsDispatch({ type: 'stopEditingElements' })
 
     const completeEditingElements = () => {
@@ -126,16 +126,18 @@ const useElements = () => {
         return editedElements
     }
 
-    const getElementById = (elementId) => elementsState[elementId]
+    const getElementById = (elementId) => elementsState.elements[elementId]
 
     const setSnappedPoint = (snappedPoint) => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
     const clearSnappedPoint = () => elementsDispatch({ type: 'clearSnappedPoint' })
 
     return {
-
         elements: Object.values(elementsState.elements),
-        currentlyEditedElements: Object.values(elementsState.currentlyEditedElements),
+        currentlyEditedElements: elementsState.currentlyEditedElements 
+                                    ? Object.values(elementsState.currentlyEditedElements)
+                                    : null,
         currentlyCreatedElement: elementsState.currentlyCreatedElement,
+        snappedPoint: elementsState.snappedPoint,
         addElement,
         removeElements,
         changeElements,

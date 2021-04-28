@@ -11,7 +11,8 @@ import ElementManipulator from '../../utils/elementManipulator'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SELECT_DELTA, SNAP_DELTA, MAX_NUM_ERROR } from '../../utils/constants'
 import { draw, drawSelectionPoints, drawSnappedPoint } from '../../utils/canvas'
 import { getPointDistance } from '../../utils/point'
-import { useMainContext } from '../../contexts/MainContext'
+import { useToolsContext } from '../../contexts/ToolsContext'
+import { useElementsContext } from '../../contexts/ElementsContext'
 
 let groupId = 1
 const VIEW_ZOOM_STEP_UP = 1.2
@@ -20,39 +21,61 @@ const VIEW_ZOOM_MAX_SCALE = VIEW_ZOOM_STEP_UP ** 15
 const VIEW_ZOOM_MIN_SCALE = VIEW_ZOOM_STEP_DOWN ** 15
 
 const Canvas = () => {
+    // const {
+    //     // elements,
+    //     setElements,
+    //     // currentlyCreatedElement,
+    //     setCurrentlyCreatedElement,
+    //     // currentlyEditedElements,
+    //     setCurrentlyEditedElements,
+    //     addElement,
+    //     editElements,
+    //     deleteElement,
+    //     findNearbyPoints,
+    //     undo,
+    //     redo
+    // } = useElementsHistory([])
+
     const {
+        // useElements
         elements,
-        setElements,
         currentlyCreatedElement,
-        setCurrentlyCreatedElement,
         currentlyEditedElements,
-        setCurrentlyEditedElements,
+        snappedPoint,
+        addCurrentlyCreatedElement,
+        removeCurrentlyCreatedElement,
+        startEditingElements,
+        stopEditingElements,
+        setSnappedPoint,
+        clearSnappedPoint,
+        // history
         addElement,
         editElements,
-        deleteElement,
+        deleteElements,
         findNearbyPoints,
         undo,
-        redo
-    } = useElementsHistory([])
+        redo,
+        // useSelection
+        selectedElements,
+        selectedPoints, 
+        addSelectedElements, 
+        setSelectedElements,
+        hasSelectedElement,
+        setSelectedPoints,
+        clearSelectedPoints,
+        clearSelection,
+    } = useElementsContext()
 
-    const [tool, setTool] = useState({ type: 'select', name: 'select' })
-    const [inputValues, setInputValue] = useForm({})
     const { 
         currentTranslate, 
         setCurrentTranslate, 
         currentScale, 
         setCurrentScale,
-        selectedElements, 
-        addSelectedElements, 
-        setSelectedElements,
-        hasSelectedElement,
-        selectedPoints, 
-        setSelectedPoints,
-        clearSelectedPoints,
-        clearSelection
-    } = useMainContext()
+    } = useToolsContext()
+    
+    const [tool, setTool] = useState({ type: 'select', name: 'select' })
+    const [inputValues, setInputValue] = useForm({})
     const [options, setOptions] = useState({ snap: true, ortho: false })
-    const [snappedPoint, setSnappedPoint] = useState(null)
     const context = useRef(null)
     const mouseDrag = useRef(null)
 
@@ -106,13 +129,17 @@ const Canvas = () => {
         context.current.translate(currentTranslate[0], currentTranslate[1])
         context.current.scale(currentScale, currentScale)
 
-        let canvasElements = elements.filter(e => e.isShown && !hasSelectedElement(e))
+        elements.forEach(e => {
+            if (e.isShown && !hasSelectedElement(e)) {
+                draw(context.current, e, currentScale)
+            }
+        })
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
-            canvasElements.push(currentlyCreatedElement)
+            draw(context.current, currentlyCreatedElement, currentScale)
         }
 
-        canvasElements.forEach(element => draw(context.current, element, currentScale))
+        // canvasElements.forEach(element => draw(context.current, element, currentScale))
 
         if (snappedPoint) {
             drawSnappedPoint(context.current, snappedPoint, currentScale)
@@ -123,8 +150,6 @@ const Canvas = () => {
         const elementsWithHighlightedPoints = selectedElements.concat(currentlyEditedElements || [])
         elementsWithHighlightedPoints.forEach(selectedElement => {
             if (!selectedElement.isShown) return
-
-            console.log(selectedElement.angle)
 
             draw(context.current, selectedElement, currentScale, true)
 
@@ -164,45 +189,42 @@ const Canvas = () => {
                     return
                 }
 
-                setSnappedPoint(null)
-                return setCurrentlyCreatedElement(null)
+                clearSnappedPoint()
+                removeCurrentlyCreatedElement()
+                return
             }
 
             setTool({ type: 'select', name: 'select'})
 
             if (currentlyEditedElements) {
-                selectedElements.forEach(e => e.isShown = true)
-                setCurrentlyEditedElements(null)
-                setElements(e => [...e])
-                setSnappedPoint(null)
-                return clearSelectedPoints()
+                stopEditingElements()
+                clearSelectedPoints()
+                return
             }
 
             if (selectedElements && selectedElements.length > 0) {
                 clearSelection()
             }
 
-            setSnappedPoint(null)
+            clearSnappedPoint()
         } else if (event.keyCode === 13) { // enter
             if (currentlyCreatedElement && currentlyCreatedElement.baseType === 'polyline') {
                 if (currentlyCreatedElement.type === 'polyline') {
                     currentlyCreatedElement.elements.pop()
                 }
 
-                setSnappedPoint(null)
+                clearSnappedPoint()
 
                 currentlyCreatedElement.elements.forEach(e => e.id = uuidv4())
                 addElement(currentlyCreatedElement)
 
-                setCurrentlyCreatedElement(null)
+                removeCurrentlyCreatedElement()
                 setTool({ type: 'select', name: 'select'})
             }
         } else if (event.keyCode === 46) { // delete
             if (!selectedElements || selectedElements.length === 0 || selectedPoints) return
 
-            for (const selectedElement of selectedElements) {
-                deleteElement(selectedElement.id)
-            }
+            deleteElements(selectedElements)
 
             clearSelection()
         }
@@ -213,14 +235,14 @@ const Canvas = () => {
             currentlyCreatedElement, 
             currentlyEditedElements, 
             selectedElements, 
-            setCurrentlyCreatedElement, 
-            setCurrentlyEditedElements, 
-            setElements, 
+            removeCurrentlyCreatedElement,
+            stopEditingElements,
             clearSelectedPoints, 
             clearSelection, 
             addElement, 
             selectedPoints, 
-            deleteElement
+            deleteElements,
+            clearSnappedPoint
         ]
     )
 
@@ -241,10 +263,10 @@ const Canvas = () => {
             if (currentlyCreatedElement) {
 
                 if (currentlyCreatedElement.isFullyDefined && currentlyCreatedElement.type !== 'polyline') {
-                    setSnappedPoint(null)
+                    clearSnappedPoint()
                     addElement(currentlyCreatedElement)
 
-                    setCurrentlyCreatedElement(null)
+                    removeCurrentlyCreatedElement()
                     return
                 }
 
@@ -253,7 +275,7 @@ const Canvas = () => {
 
             const newGroupId = tool.name === 'polyline' || tool.name === 'rectangle' ? groupId++ : null
             const newElement = createElement(tool.name, clickedPoint.x, clickedPoint.y, newGroupId)
-            setCurrentlyCreatedElement(newElement)
+            addCurrentlyCreatedElement(newElement)
         } else if (tool.type === 'select') {
             if (event.shiftKey) {
                 const newlySelectedElements = selectedElements.filter(e => 
@@ -272,14 +294,15 @@ const Canvas = () => {
                     if (editedElement) {
                         selectedPoints.push(point)
                         const copiedElement = ElementManipulator.copyElement(editedElement, true)
-                       editedElements.push(copiedElement)
-                        editedElement.isShown = false
+
+                        editedElements.push(copiedElement)
+                        // editedElement.isShown = false
                     }
                 }
 
                 if (editedElements.length > 0) {
+                    startEditingElements(editedElements)
                     setSelectedPoints(selectedPoints)
-                    setCurrentlyEditedElements(editedElements)
                     setSelectedElements([...selectedElements])
                     setTool({ type: 'edit', name: 'edit' })
                     return
@@ -396,7 +419,7 @@ const Canvas = () => {
                 newCurrentlyEditedElements.push(editedElement)
             }
 
-            setCurrentlyEditedElements(newCurrentlyEditedElements)
+            startEditingElements(newCurrentlyEditedElements)
         }
 
         // should only pass through if currentlyCreatedElement is defined and has all but its last attribute set
@@ -405,7 +428,7 @@ const Canvas = () => {
         const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, true)
         newCurrentlyCreatedElement.setLastAttribute(mousePoint.x, mousePoint.y)
 
-        setCurrentlyCreatedElement(newCurrentlyCreatedElement)
+        addCurrentlyCreatedElement(newCurrentlyCreatedElement)
     }
 
     const handleMouseWheel = (event) => {
@@ -421,14 +444,14 @@ const Canvas = () => {
         setTool(tool)
         clearSelection()
         if (currentlyCreatedElement) {
-            setCurrentlyCreatedElement(null)
+            removeCurrentlyCreatedElement()
         }
 
         if (currentlyEditedElements) {
             const newSelectedElements = [...selectedElements]
             newSelectedElements.forEach(se => se.isShown = true)
             setSelectedElements(newSelectedElements)
-            setCurrentlyEditedElements(null)
+            stopEditingElements()
         }
     }
 
