@@ -1,20 +1,24 @@
-import { useCallback } from "react"
-import { useMainContext } from "../../contexts/MainContext"
+import { useCallback } from 'react'
+import { useElementsContext } from '../../contexts/ElementsContext'
+import { useToolsContext } from '../../contexts/ToolsContext'
 
 const useEscapeCommand = () => {
-    const { 
-        currentlyCreatedElement, 
-        currentlyEditedElements, 
-        selectedElements, 
-        elements, 
-        setCurrentlyEditedElements,
-        setCurrentlyCreatedElement,
-        setElements, 
-        setSnappedPoint,
-        clearSelectedPoints,
-        clearSelection,
-        setTool
-    } = useMainContext()
+    const {
+        elements: {
+            currentlyCreatedElement,
+            clearSnappedPoint,
+            removeCurrentlyCreatedElement,
+            currentlyEditedElements,
+            stopEditingElements,
+        },
+        selection: {
+            selectedElements,
+            clearSelection,
+            clearSelectedPoints
+        }
+    } = useElementsContext() 
+
+    const { setTool } = useToolsContext()
 
     const handleEscapeCmd = useCallback(() => {
         if (currentlyCreatedElement) {
@@ -24,36 +28,33 @@ const useEscapeCommand = () => {
                 return
             }
     
-            setSnappedPoint(null)
-            return setCurrentlyCreatedElement(null)
+            clearSnappedPoint()
+            removeCurrentlyCreatedElement()
+            return
         }
     
         setTool({ type: 'select', name: 'select'})
     
         if (currentlyEditedElements) {
-            selectedElements.forEach(e => e.isShown = true)
-            setCurrentlyEditedElements(null)
-            setElements([...elements])
-            setSnappedPoint(null)
-            return clearSelectedPoints()
+            stopEditingElements()
+            clearSelectedPoints()
+            return
         }
     
         if (selectedElements && selectedElements.length > 0) {
             clearSelection()
         }
     
-        setSnappedPoint(null)
+        clearSnappedPoint()
     }, [
         clearSelectedPoints, 
         clearSelection, 
+        clearSnappedPoint, 
         currentlyCreatedElement, 
         currentlyEditedElements, 
-        elements,
+        removeCurrentlyCreatedElement, 
         selectedElements, 
-        setCurrentlyCreatedElement, 
-        setCurrentlyEditedElements, 
-        setElements, 
-        setSnappedPoint, 
+        stopEditingElements,
         setTool
     ])
 

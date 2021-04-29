@@ -1,4 +1,5 @@
 import { useReducer } from 'react'
+import ElementManipulator from '../utils/elementManipulator'
 
 const elementsReducer = (state, action) => {
     switch (action.type) {
@@ -60,11 +61,22 @@ const elementsReducer = (state, action) => {
             const newCurrentlyEditedElements = {}
             const newElements = { ...state.elements }
             for (const editedElement of action.editedElements) {
+                const editedElementCopy = ElementManipulator.copyElement(editedElement, true)
+
                 newElements[editedElement.id].isShown = false
-                newCurrentlyEditedElements[editedElement.id] = editedElement
+                newCurrentlyEditedElements[editedElement.id] = editedElementCopy
             }   
 
             return { ...state, currentlyEditedElements: newCurrentlyEditedElements, elements: newElements }
+        }
+        case 'changeEditingElements': {
+            const newCurrentlyEditedElements = state.currentlyEditedElements ? { ...state.currentlyEditedElements } : {}
+
+            for (const newEditingElement of action.newEditingElements) {
+                newCurrentlyEditedElements[newEditingElement.id] = newEditingElement
+            }
+
+            return { ...state, currentlyEditedElements: newCurrentlyEditedElements }
         }
         case 'stopEditingElements': {
             if (!state.currentlyEditedElements) {
@@ -117,6 +129,7 @@ const useElements = () => {
     const addCurrentlyCreatedElement = (createdElement) => elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
     const removeCurrentlyCreatedElement = () => elementsDispatch({ type: 'removeCurrentlyCreated' })
     const startEditingElements = (editedElements) => elementsDispatch({ type: 'startEditingElements', editedElements })
+    const changeEditingElements = (newEditingElements) => elementsDispatch({ type: 'changeEditingElements', newEditingElements })
     const stopEditingElements = () => elementsDispatch({ type: 'stopEditingElements' })
 
     const completeEditingElements = () => {
@@ -146,6 +159,7 @@ const useElements = () => {
         addCurrentlyCreatedElement,
         removeCurrentlyCreatedElement,
         startEditingElements,
+        changeEditingElements,
         stopEditingElements,
         completeEditingElements,
         setSnappedPoint,

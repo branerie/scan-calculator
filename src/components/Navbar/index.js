@@ -1,6 +1,9 @@
 import React from 'react'
+import { useToolsContext } from '../../contexts/ToolsContext'
 
-const Navbar = ({ tool, changeTool, options, setOptions }) => {
+const Navbar = ({ changeTool }) => {
+    const { options, setOptions, tool } = useToolsContext()
+
     return (
         <>
             <div>
@@ -70,6 +73,15 @@ const Navbar = ({ tool, changeTool, options, setOptions }) => {
                         name='snapping'
                         checked={options.snap}
                         onChange={() => setOptions((options) => ({ ...options, snap: !options.snap }))}
+                    />
+                </label>
+                <label>
+                    Move
+                    <input
+                        type='radio'
+                        name='move'
+                        checked={tool.name === 'move'}
+                        onChange={() => changeTool({ type: 'transform', name: 'move' })}
                     />
                 </label>
             </div>

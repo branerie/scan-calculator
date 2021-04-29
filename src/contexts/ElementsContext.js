@@ -23,6 +23,7 @@ export default function ElementsContextProvider({ children }) {
         addCurrentlyCreatedElement,
         removeCurrentlyCreatedElement,
         startEditingElements,
+        changeEditingElements,
         stopEditingElements,
         addElement: addElementToState,
         completeEditingElements,
@@ -80,10 +81,15 @@ export default function ElementsContextProvider({ children }) {
         })
 
         // update selection points for edited elements
-        selectedPoints.forEach(selectedPoint => {
-            const elementOfPoint = currentlyEditedElements.find(cee => cee.getPointById(selectedPoint.pointId))
+        const pointsToReplace = selectedPoints 
+                                ? selectedPoints 
+                                : currentlyEditedElements.reduce((acc, cee) => [...acc, ...cee.getSelectionPoints()], [])
+
+        // TODO: Maybe add elementId to selection points to make finding the element easier?
+        pointsToReplace.forEach(pointToReplace => {
+            const elementOfPoint = currentlyEditedElements.find(cee => cee.getPointById(pointToReplace.pointId))
             if (!elementOfPoint) {
-                throw new Error('Mismatch between selectedPoints and currentlyEditedElements.')
+                throw new Error('Trying to change a point which does not belong to a currently edited element')
             }
 
             const selectionPointsAfterEdit = elementOfPoint.getSelectionPoints()
@@ -246,33 +252,37 @@ export default function ElementsContextProvider({ children }) {
             // TODO: which of the methods of the two states below do we need further down?
             // some names clash, such as elementsState.addElement with addElement here
 
-            // elements
-            elements,
-            currentlyCreatedElement,
-            currentlyEditedElements,
-            snappedPoint,
-            addCurrentlyCreatedElement,
-            removeCurrentlyCreatedElement,
-            startEditingElements,
-            stopEditingElements,
-            setSnappedPoint,
-            clearSnappedPoint,
-            // selection
-            selectedElements,
-            addSelectedElements,
-            setSelectedElements,
-            hasSelectedElement,
-            selectedPoints,
-            setSelectedPoints,
-            clearSelectedPoints,
-            clearSelection,
-            // history
-            addElement,
-            editElements,
-            deleteElements,
-            undo,
-            redo,
-            findNearbyPoints
+            elements: {
+                elements,
+                currentlyCreatedElement,
+                currentlyEditedElements,
+                snappedPoint,
+                addCurrentlyCreatedElement,
+                removeCurrentlyCreatedElement,
+                startEditingElements,
+                changeEditingElements,
+                stopEditingElements,
+                setSnappedPoint,
+                clearSnappedPoint,
+                findNearbyPoints,
+            },
+            selection: {
+                selectedElements,
+                addSelectedElements,
+                setSelectedElements,
+                hasSelectedElement,
+                selectedPoints,
+                setSelectedPoints,
+                clearSelectedPoints,
+                clearSelection,
+            },
+            history: {
+                addElement,
+                editElements,
+                deleteElements,
+                undo,
+                redo,
+            }
         }}>
             {children}
         </Context.Provider>
