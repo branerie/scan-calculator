@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 import useCreateCommand from './useCreateCommand'
+import useCopyCommand from './useCopyCommand'
 import useDragCommand from './useDragCommand'
 import useEditCommand from './useEditCommand'
 import useSnapCommand from './useSnapCommand'
@@ -12,7 +13,8 @@ const useMouseMoveCommands = () => {
     const {
         elements: {
             currentlyEditedElements,
-            currentlyCreatedElement
+            currentlyCreatedElement,
+            currentlyCopiedElements
         },
         selection: {
             selectedPoints
@@ -26,6 +28,7 @@ const useMouseMoveCommands = () => {
         edit: useEditCommand(),
         create: useCreateCommand(),
         transform: useTransformCommand(),
+        copy: useCopyCommand(),
     }
 
     const executeMouseMoveCommand = useCallback((event) => {
@@ -54,7 +57,20 @@ const useMouseMoveCommands = () => {
             commands.create(event)
             return
         }
-    }, [commands, currentlyCreatedElement, currentlyEditedElements, mouseDrag, options.snap, selectedPoints, tool.type])
+
+        if (currentlyCopiedElements) {
+            commands.copy(event)
+        }
+    }, [
+        commands, 
+        currentlyCreatedElement, 
+        currentlyEditedElements, 
+        currentlyCopiedElements,
+        mouseDrag, 
+        options.snap, 
+        selectedPoints, 
+        tool.type
+    ])
 
     return executeMouseMoveCommand
 }

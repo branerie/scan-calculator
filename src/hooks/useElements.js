@@ -3,13 +3,15 @@ import ElementManipulator from '../utils/elementManipulator'
 
 const elementsReducer = (state, action) => {
     switch (action.type) {
-        case 'addElement': {
+        case 'addElements': {
+            const newStateElements = { ...state.elements }
+            action.newElements.forEach(newElement => {
+                newStateElements[newElement.id] = newElement
+            })
+
             return { 
                 ...state, 
-                elements: {
-                    ...state.elements, 
-                    [action.value.id]: action.value
-                },
+                elements: newStateElements,
                 currentlyCreatedElement: null
             }
         }
@@ -63,7 +65,10 @@ const elementsReducer = (state, action) => {
             for (const editedElement of action.editedElements) {
                 const editedElementCopy = ElementManipulator.copyElement(editedElement, true)
 
-                newElements[editedElement.id].isShown = false
+                if (action.shouldHideOriginal) {
+                    newElements[editedElement.id].isShown = false
+                }
+
                 newCurrentlyEditedElements[editedElement.id] = editedElementCopy
             }   
 
@@ -103,6 +108,26 @@ const elementsReducer = (state, action) => {
 
             return { ...state, elements: newElements, currentlyEditedElements: null, snappedPoint: null }
         }
+        case 'startCopyingElements': {
+            const newCopiedElements = {}
+            action.elementsToCopy.forEach(element => {
+                const copyOfElement = ElementManipulator.copyElement(element, false)
+                newCopiedElements[copyOfElement.id] = copyOfElement
+            })
+
+            return { ...state, currentlyCopiedElements: newCopiedElements }
+        }
+        case 'changeCopyingElements': {
+            const newCopiedElements = state.currentlyCopiedElements ? { ...state.currentlyCopiedElements } : {}
+            action.newElementsToCopy.forEach(changedElement => {
+                newCopiedElements[changedElement.id] = changedElement
+            })
+
+            return { ...state, currentlyCopiedElements: newCopiedElements }
+        }
+        case 'clearCopyingElements': {
+            return { ...state, currentlyCopiedElements: null } 
+        }
         case 'setSnappedPoint': {
             return { ...state, snappedPoint: action.value }
         }
@@ -119,18 +144,23 @@ const useElements = () => {
         elements: {},
         currentlyCreatedElement: null,
         currentlyEditedElements: null,
+        currentlyCopiedElements: null,
         snappedPoint: null,
     })
 
-    const addElement = (element) => elementsDispatch({ type: 'addElement', value: element })
+    const addElements = (newElements) => elementsDispatch({ type: 'addElements', newElements })
     const removeElements = (removedElements) =>  elementsDispatch({ type: 'removeElements', removedElements })
     const changeElements = (elementsAfterChange) => elementsDispatch({ type: 'changeElements', elementsAfterChange })
     const setElements = (newElements) => elementsDispatch({ type: 'setElements', newElements })
     const addCurrentlyCreatedElement = (createdElement) => elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
     const removeCurrentlyCreatedElement = () => elementsDispatch({ type: 'removeCurrentlyCreated' })
-    const startEditingElements = (editedElements) => elementsDispatch({ type: 'startEditingElements', editedElements })
+    const startEditingElements = (editedElements, shouldHideOriginal = true) => 
+            elementsDispatch({ type: 'startEditingElements', editedElements, shouldHideOriginal })
     const changeEditingElements = (newEditingElements) => elementsDispatch({ type: 'changeEditingElements', newEditingElements })
     const stopEditingElements = () => elementsDispatch({ type: 'stopEditingElements' })
+    const startCopyingElements = (elementsToCopy) => elementsDispatch({ type: 'startCopyingElements', elementsToCopy })
+    const changeCopyingElements = (newElementsToCopy) => elementsDispatch({ type: 'changeCopyingElements', newElementsToCopy })
+    const clearCopyingElements = () => elementsDispatch({ type: 'clearCopyingElements' })
 
     const completeEditingElements = () => {
         const editedElements = Object.values(elementsState.currentlyEditedElements)
@@ -146,12 +176,15 @@ const useElements = () => {
 
     return {
         elements: Object.values(elementsState.elements),
+        currentlyCreatedElement: elementsState.currentlyCreatedElement,
         currentlyEditedElements: elementsState.currentlyEditedElements 
                                     ? Object.values(elementsState.currentlyEditedElements)
                                     : null,
-        currentlyCreatedElement: elementsState.currentlyCreatedElement,
+        currentlyCopiedElements: elementsState.currentlyCopiedElements 
+                                    ? Object.values(elementsState.currentlyCopiedElements)
+                                    : null,
         snappedPoint: elementsState.snappedPoint,
-        addElement,
+        addElements,
         removeElements,
         changeElements,
         getElementById,
@@ -162,6 +195,9 @@ const useElements = () => {
         changeEditingElements,
         stopEditingElements,
         completeEditingElements,
+        startCopyingElements,
+        changeCopyingElements,
+        clearCopyingElements,
         setSnappedPoint,
         clearSnappedPoint
     }

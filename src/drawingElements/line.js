@@ -1,5 +1,5 @@
 import { getPointDistance } from '../utils/point'
-import { degreesToRadians, getQuadrant, radiansToDegrees } from '../utils/angle'
+import { degreesToRadians, getQuadrant, getAngleBetweenPoints } from '../utils/angle'
 import Element from './element'
 import { createPoint } from '../utils/elementFactory'
 import Point from './point'
@@ -14,8 +14,8 @@ class Line extends Element {
         // TODO: check if both points are the same point
 
         this.#pointA = pointA
-        this.#pointB = pointB
         if (pointB) {
+            this.#pointB = pointB
             this.__updateMidPoint()
 
             if (midPointId) {
@@ -28,8 +28,8 @@ class Line extends Element {
     get startPoint() { return this.pointA }
     get endPoint() { return this.pointB }
 
-    get pointA() {return this.#pointA}//{ return this.#pointA ? { ...this.#pointA } : null }
-    get pointB() {return this.#pointB}//{ return this.#pointB ? { ...this.#pointB } : null }
+    get pointA() { return this.#pointA ? { ...this.#pointA } : null }
+    get pointB() { return this.#pointB ? { ...this.#pointB } : null }
     get midPoint() { return this.#midPoint ? { ...this.#midPoint } : null }
 
     get isFullyDefined() {
@@ -61,34 +61,7 @@ class Line extends Element {
             throw new Error('Cannot get angle of line until it is fully defined')
         }
 
-        const deltaX = this.#pointB.x - this.#pointA.x
-        const deltaY = this.#pointB.y - this.#pointA.y
-
-        const angleInRadians = Math.atan(Math.abs(deltaY) / Math.abs(deltaX))
-        const angle = radiansToDegrees(angleInRadians)
-        const quadrant = getQuadrant(deltaX, deltaY)
-
-        switch (quadrant) {
-            case 0:
-                // we have either a vertical or a horizontal line
-                if (deltaX === 0) {
-                    // line is vertical
-                    return deltaY > 0 ? 90 : 270
-                }
-
-                // line is horizontal
-                return deltaX > 0 ? 0 : 180
-            case 1:
-                return angle
-            case 2:
-                return 180 - angle
-            case 3:
-                return 180 + angle
-            case 4:
-                return 360 - angle
-            default:
-                throw new Error()
-        }
+        return getAngleBetweenPoints(this.#pointA, this.#pointB)
     }
 
     setPointA(x, y) {
@@ -121,7 +94,9 @@ class Line extends Element {
 
     setLastAttribute(pointX, pointY) {
         if (!this.#pointB) {
-            return this.#pointB = createPoint(pointX, pointY)
+            this.#pointB = createPoint(pointX, pointY)
+            this.__updateMidPoint()
+            return
         }
 
         this.setPointB(pointX, pointY)

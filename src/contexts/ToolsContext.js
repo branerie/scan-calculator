@@ -1,4 +1,4 @@
-import React, { useState, useContext, createContext, useCallback, useRef, useLayoutEffect } from 'react'
+import React, { useState, useContext, createContext, useCallback, useLayoutEffect } from 'react'
 import { MAX_NUM_ERROR } from '../utils/constants'
 
 const VIEW_ZOOM_STEP_UP = 1.2

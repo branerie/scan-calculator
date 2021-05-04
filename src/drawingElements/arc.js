@@ -175,19 +175,31 @@ class Arc extends Element {
     }
 
     setPointById(pointId, newPointX, newPointY) {
+        if (pointId === this.#centerPoint.pointId) {
+            this.#centerPoint.x = newPointX
+            this.#centerPoint.y = newPointY
+
+            this.#startLine.pointA.x = newPointX
+            this.#startLine.pointA.y = newPointY
+            this.#endLine.pointA.x = newPointX
+            this.#endLine.pointA.y = newPointY
+            this.#midLine.pointA.x = newPointX
+            this.#midLine.pointA.y = newPointY
+
+            return true
+        }
+
         let lineToChange
         if (pointId === this.#startLine.pointB.pointId) {
             lineToChange = this.#startLine
-        }
-
-        if (pointId === this.#endLine.pointB.pointId) {
+        } else if (pointId === this.#endLine.pointB.pointId) {
             lineToChange = this.#endLine
         }
 
         if (!lineToChange) return false
 
         lineToChange.setPointB(newPointX, newPointY)
-        lineToChange.setLength(this.radius, false)
+        lineToChange.setLength(this.#radius, false)
 
         if (this.isFullyDefined) {
             this.__updateMidLine()

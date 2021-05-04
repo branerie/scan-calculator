@@ -84,6 +84,33 @@ const Navbar = ({ changeTool }) => {
                         onChange={() => changeTool({ type: 'transform', name: 'move' })}
                     />
                 </label>
+                <label>
+                    Rotate
+                    <input
+                        type='radio'
+                        name='rotate'
+                        checked={tool.name === 'rotate'}
+                        onChange={() => changeTool({ type: 'transform', name: 'rotate' })}
+                    />
+                </label>
+                <label>
+                    Mirror
+                    <input
+                        type='radio'
+                        name='mirror'
+                        checked={tool.name === 'mirror'}
+                        onChange={() => changeTool({ type: 'transform', name: 'mirror' })}
+                    />
+                </label>
+                <label>
+                    Copy
+                    <input
+                        type='radio'
+                        name='copy'
+                        checked={tool.name === 'copy'}
+                        onChange={() => changeTool({ type: 'copy', name: 'copy' })}
+                    />
+                </label>
             </div>
             {/* <div>
                 <button onClick={undo}>Undo</button>

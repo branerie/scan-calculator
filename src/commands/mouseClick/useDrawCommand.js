@@ -13,7 +13,7 @@ const useDrawCommand = () => {
             clearSnappedPoint
         },
         history: {
-            addElement
+            addElements
         }
     } = useElementsContext()
 
@@ -31,7 +31,7 @@ const useDrawCommand = () => {
         // we are currently creating an element and it has its first point defined
         if (currentlyCreatedElement.isFullyDefined && currentlyCreatedElement.type !== 'polyline') {
             clearSnappedPoint()
-            addElement(currentlyCreatedElement)
+            addElements([currentlyCreatedElement])
 
             removeCurrentlyCreatedElement()
             return
@@ -40,7 +40,7 @@ const useDrawCommand = () => {
         currentlyCreatedElement.defineNextAttribute(clickedPoint)
     }, [
         addCurrentlyCreatedElement, 
-        addElement, 
+        addElements, 
         clearSnappedPoint, 
         currentlyCreatedElement, 
         removeCurrentlyCreatedElement, 

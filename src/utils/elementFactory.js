@@ -7,6 +7,10 @@ import Polyline from '../drawingElements/polyline'
 import Rectangle from '../drawingElements/rectangle'
 
 const createElement = (type, initialX, initialY, groupId = null) => {
+    if ((!initialX && initialX !== 0) || (!initialY && initialY !== 0)) {
+        throw new Error('Cannot create element with undefined initial point coordinates.')
+    }
+
     const initialPoint = new Point(initialX, initialY)
     initialPoint.pointId = uuidv4()
 

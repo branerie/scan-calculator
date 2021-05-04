@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 import { createPoint } from '../../utils/elementFactory'
+import useCopyCommand from './useCopyCommand'
 import useDrawCommand from './useDrawCommand'
 import useEditCommand from './useEditCommand'
 import useSelectCommand from './useSelectCommand'
@@ -17,6 +18,7 @@ const useMouseClickCommands = () => {
     const { tool, getRealMouseCoordinates } = useToolsContext()
 
     const commands = {
+        copy: useCopyCommand(),
         draw: useDrawCommand(),
         select: useSelectCommand(),
         edit: useEditCommand(),

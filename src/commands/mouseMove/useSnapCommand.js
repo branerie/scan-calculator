@@ -44,7 +44,7 @@ const useSnapCommand = () => {
             if (currentlyEditedElements) {
                 nearbyPoints = nearbyPoints.filter(nbp => 
                     !currentlyEditedElements.some(cee => {
-                        if (cee.baseType === 'polyline') {
+                        if (cee.baseType === 'polyline' && selectedPoints) {
                             const elementsWithEditedPoints = cee.elements.filter(e => 
                                 selectedPoints.some(sp => e.getPointById(sp.pointId)))
                             return elementsWithEditedPoints.some(ewep => ewep.getPointById(nbp.pointId))

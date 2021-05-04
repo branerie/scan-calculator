@@ -18,6 +18,7 @@ const Canvas = () => {
             elements,
             currentlyCreatedElement,
             currentlyEditedElements,
+            currentlyCopiedElements,
             snappedPoint,
             removeCurrentlyCreatedElement,
             stopEditingElements,
@@ -67,6 +68,10 @@ const Canvas = () => {
             drawSnappedPoint()
         }
 
+        if (currentlyCopiedElements) {
+            currentlyCopiedElements.forEach(cce => drawElement(cce, false))
+        }
+
         if (!selectedElements) return
 
         const elementsWithHighlightedPoints = selectedElements.concat(currentlyEditedElements || [])
@@ -81,7 +86,8 @@ const Canvas = () => {
     }, 
     [
         elements, 
-        currentlyCreatedElement, 
+        currentlyCreatedElement,
+        currentlyCopiedElements,
         selectedElements, 
         selectedPoints, 
         currentlyEditedElements, 
@@ -133,7 +139,7 @@ const Canvas = () => {
 
         setTool(tool)
 
-        if (tool.type !== 'transform') {
+        if (tool.type !== 'transform' && tool.type !== 'copy') {
             clearSelection()
         }
     }

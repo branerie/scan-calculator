@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import { createElement } from './elementFactory'
 import Arc from '../drawingElements/arc'
 import Line from '../drawingElements/line'
@@ -10,8 +11,13 @@ class ElementManipulator {
     static copyElement(element, keepIds = false) {
         const functionName = `copy${element.type.charAt(0).toUpperCase() + element.type.slice(1)}`
 
-        const func = ElementManipulator[functionName]
-        return func(element, keepIds)
+        const copyingMethod = ElementManipulator[functionName]
+        const newElement = copyingMethod(element, keepIds)
+        if (!keepIds) {
+            newElement.id = uuidv4()
+        }
+
+        return newElement
     }
     
     static copyLine(line, keepIds = false) {
@@ -33,7 +39,7 @@ class ElementManipulator {
         const newLine = createElement('line', line.pointA.x, line.pointA.y, line.groupId)
 
         if (line.pointB) {
-            newLine.setLastAttribute(createElement('point', line.pointB.x, line.pointB.y))
+            newLine.setLastAttribute(line.pointB.x, line.pointB.y)
         }
 
         return newLine

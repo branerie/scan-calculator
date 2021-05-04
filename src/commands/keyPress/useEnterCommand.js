@@ -11,7 +11,7 @@ const useEnterCommand = () => {
             removeCurrentlyCreatedElement
         },
         history: {
-            addElement
+            addElements
         }
     } = useElementsContext()
 
@@ -27,11 +27,11 @@ const useEnterCommand = () => {
         clearSnappedPoint()
 
         currentlyCreatedElement.elements.forEach(e => e.id = uuidv4())
-        addElement(currentlyCreatedElement)
+        addElements([currentlyCreatedElement])
 
         removeCurrentlyCreatedElement()
         setTool({ type: 'select', name: 'select'})
-    }, [addElement, clearSnappedPoint, currentlyCreatedElement, removeCurrentlyCreatedElement, setTool])
+    }, [addElements, clearSnappedPoint, currentlyCreatedElement, removeCurrentlyCreatedElement, setTool])
 
     return handleEnterCmd
 }

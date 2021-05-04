@@ -19,17 +19,21 @@ export default function ElementsContextProvider({ children }) {
         elements,
         currentlyCreatedElement,
         currentlyEditedElements,
+        currentlyCopiedElements,
         snappedPoint,
         addCurrentlyCreatedElement,
         removeCurrentlyCreatedElement,
         startEditingElements,
         changeEditingElements,
         stopEditingElements,
-        addElement: addElementToState,
+        addElements: addElementsToState,
         completeEditingElements,
         getElementById,
         removeElements,
         changeElements,
+        startCopyingElements,
+        changeCopyingElements,
+        clearCopyingElements,
         setSnappedPoint,
         clearSnappedPoint
     } = useElements()
@@ -63,15 +67,19 @@ export default function ElementsContextProvider({ children }) {
         setActionHistory([...newActionHistory, newEvent])
     }, [actionHistory, historyPointer])
 
-    const addElement = useCallback((newElement) => {
-        newElement.id = uuidv4()
+    const addElements = useCallback((newElements) => {
+        let newSelectionPoints = []
+        newElements.forEach(newElement => {
+            newElement.id = uuidv4()
+            
+            newSelectionPoints = newSelectionPoints.concat(newElement.getSelectionPoints())
+        })
+        
+        addElementsToState(newElements)
+        addSelectionPoints(newSelectionPoints)
 
-        const elementPoints = newElement.getSelectionPoints()
-        addSelectionPoints(elementPoints)
-
-        addElementToState(newElement)
-        updateHistoryEvents({ action: 'add', elements: [newElement] })
-    }, [addElementToState, addSelectionPoints, updateHistoryEvents])
+        updateHistoryEvents({ action: 'add', elements: newElements })
+    }, [addElementsToState, addSelectionPoints, updateHistoryEvents])
 
     const editElements = useCallback(() => {
         const elementPointsBeforeEdit = {}
@@ -146,11 +154,13 @@ export default function ElementsContextProvider({ children }) {
         }
 
         if (updateOperation === 'add') {
+            let pointsToAdd = []
             for (const element of lastHistoryEvent.elements) {
-                const elementPoints = element.getSelectionPoints()
-                addSelectionPoints(elementPoints)
-                addElementToState(element)
+                pointsToAdd = pointsToAdd.concat(element.getSelectionPoints()) 
             }
+
+            addSelectionPoints(pointsToAdd)
+            addElementsToState(lastHistoryEvent.elements)
             
             return
         }
@@ -209,7 +219,7 @@ export default function ElementsContextProvider({ children }) {
         throw new Error('Invalid event action')
     }, [
         actionHistory,
-        addElementToState,
+        addElementsToState,
         addSelectedElements,
         addSelectionPoints,
         changeElements,
@@ -250,18 +260,22 @@ export default function ElementsContextProvider({ children }) {
     return (
         <Context.Provider value={{
             // TODO: which of the methods of the two states below do we need further down?
-            // some names clash, such as elementsState.addElement with addElement here
+            // some names clash, such as elementsState.addElements with addElements here
 
             elements: {
                 elements,
                 currentlyCreatedElement,
                 currentlyEditedElements,
+                currentlyCopiedElements,
                 snappedPoint,
                 addCurrentlyCreatedElement,
                 removeCurrentlyCreatedElement,
                 startEditingElements,
                 changeEditingElements,
                 stopEditingElements,
+                startCopyingElements,
+                changeCopyingElements,
+                clearCopyingElements,
                 setSnappedPoint,
                 clearSnappedPoint,
                 findNearbyPoints,
@@ -277,7 +291,7 @@ export default function ElementsContextProvider({ children }) {
                 clearSelection,
             },
             history: {
-                addElement,
+                addElements,
                 editElements,
                 deleteElements,
                 undo,
