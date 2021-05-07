@@ -14,13 +14,14 @@ const useMouseMoveCommands = () => {
         elements: {
             currentlyEditedElements,
             currentlyCreatedElement,
-            currentlyCopiedElements
+            currentlyCopiedElements,
+            snappedPoint,
         },
         selection: {
             selectedPoints
         }
     } = useElementsContext()
-    const { mouseDrag, options, tool } = useToolsContext()
+    const { mouseDrag, options, tool, getRealMouseCoordinates } = useToolsContext()
 
     const commands = {
         drag: useDragCommand(),
@@ -37,29 +38,50 @@ const useMouseMoveCommands = () => {
             return
         }
 
-        if (options.snap && tool.type !== 'select') {
-            commands.snap(event)
+        let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
+
+        if (options.ortho && tool.clicks) {
+            const lastClick = tool.clicks[tool.clicks.length - 1]
+
+            const xDiff = Math.abs(lastClick.x - realClientX)
+            const yDiff = Math.abs(lastClick.y - realClientY)
+
+            if (xDiff < yDiff) {
+                realClientX = lastClick.x
+            } else {
+                realClientY = lastClick.y
+            }
         }
+
+        if (options.snap && tool.type !== 'select') {
+            commands.snap({ mouseX: realClientX, mouseY: realClientY })
+        }
+
+        if (snappedPoint) {
+            [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
+        }
+
+        const realMousePosition = { mouseX: realClientX, mouseY: realClientY }
 
         // if (!currentlyEditedElements && !currentlyCreatedElement) return
 
         if (currentlyEditedElements) {
             if (selectedPoints) {
-                commands.edit(event)
+                commands.edit(realMousePosition)
             } else {
-                commands.transform(event)
+                commands.transform(realMousePosition)
             }
 
             return
         }
 
         if (currentlyCreatedElement && currentlyCreatedElement.isAlmostDefined) {
-            commands.create(event)
+            commands.create(realMousePosition)
             return
         }
 
         if (currentlyCopiedElements) {
-            commands.copy(event)
+            commands.copy(realMousePosition)
         }
     }, [
         commands, 
@@ -68,8 +90,12 @@ const useMouseMoveCommands = () => {
         currentlyCopiedElements,
         mouseDrag, 
         options.snap, 
+        options.ortho,
         selectedPoints, 
-        tool.type
+        tool.type,
+        tool.clicks,
+        snappedPoint,
+        getRealMouseCoordinates
     ])
 
     return executeMouseMoveCommand

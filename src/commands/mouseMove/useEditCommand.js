@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
 import { createPoint } from '../../utils/elementFactory'
 import { getPointDistance } from '../../utils/point'
 
@@ -8,22 +7,16 @@ const useEditCommand = () => {
     const {
         elements: {
             currentlyEditedElements,
-            snappedPoint,
-            changeEditingElements
+            changeEditingElements,
         },
         selection: {
             selectedPoints
         }
     } = useElementsContext()
 
-    const { getRealMouseCoordinates } = useToolsContext()
-
-    const handleEditCmd = useCallback((event) => {
-        const [realClientX, realClientY] = snappedPoint 
-                    ? getRealMouseCoordinates(snappedPoint.x, snappedPoint.y) 
-                    : getRealMouseCoordinates(event.clientX, event.clientY)
-
-        const mousePoint = createPoint(realClientX, realClientY)
+    const handleEditCmd = useCallback((mousePosition) => {
+        const { mouseX, mouseY } = mousePosition
+        const mousePoint = createPoint(mouseX, mouseY)
 
         const newCurrentlyEditedElements = []
         for (const editedElement of currentlyEditedElements) {
@@ -65,7 +58,7 @@ const useEditCommand = () => {
         }
 
         changeEditingElements(newCurrentlyEditedElements)
-    }, [currentlyEditedElements, getRealMouseCoordinates, selectedPoints, snappedPoint, changeEditingElements])
+    }, [currentlyEditedElements, selectedPoints, changeEditingElements])
 
     return handleEditCmd
 }

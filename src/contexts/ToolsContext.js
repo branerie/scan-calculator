@@ -55,6 +55,26 @@ export default function ToolsContextProvider({ children }) {
         return
     }, [currentScale, currentTranslate, setCurrentScale, setCurrentTranslate])
 
+    const resetTool = useCallback(() => setTool({ type: 'select', name: 'select' }), [])
+
+    const addToolClick = useCallback((clickedPoint) => {
+        const clicks = tool.clicks ? [ ...tool.clicks, clickedPoint ] : [clickedPoint]
+        setTool({ ...tool, clicks })
+    }, [tool])
+
+    const editLastToolClick = useCallback((newPoint) => {
+        if (!tool.clicks) {
+            setTool({ ...tool, newPoint })
+            return
+        }
+
+        const newClicks = [...tool.clicks]
+        newClicks.pop()
+        newClicks.push(newPoint)
+
+        setTool({ ...tool, clicks: newClicks })
+    }, [tool])
+
     const getRealMouseCoordinates = useCallback((clientX, clientY) => {
         const [translateX, translateY] = currentTranslate
 
@@ -69,6 +89,9 @@ export default function ToolsContextProvider({ children }) {
             setCurrentScale,
             tool,
             setTool,
+            resetTool,
+            addToolClick,
+            editLastToolClick,
             getRealMouseCoordinates,
             panView,
             zoomView,

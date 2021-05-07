@@ -16,7 +16,7 @@ const useCopyCommand = () => {
         }
     } = useElementsContext()
 
-    const { tool, setTool } = useToolsContext()
+    const { tool, addToolClick } = useToolsContext()
     
     const handleCopyCmd = useCallback((event, clickedPoint) => {
         if (!selectedElements) return
@@ -24,7 +24,7 @@ const useCopyCommand = () => {
         if (tool.name === 'copy') {
             if (!currentlyCopiedElements) {
                 startCopyingElements(selectedElements)
-                setTool({ ...tool, basePoint: clickedPoint })
+                addToolClick(clickedPoint)
                 return
             }
 
@@ -32,7 +32,7 @@ const useCopyCommand = () => {
             startCopyingElements(currentlyCopiedElements)
             return
         }
-    }, [addElements, currentlyCopiedElements, selectedElements, setTool, startCopyingElements, tool])
+    }, [addElements, currentlyCopiedElements, selectedElements, addToolClick, startCopyingElements, tool])
 
     return handleCopyCmd
 }

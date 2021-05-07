@@ -7,21 +7,18 @@ const useCopyCommand = () => {
         elements: {
             currentlyCopiedElements,
             changeCopyingElements,
-            snappedPoint
         }
     } = useElementsContext()
 
-    const { tool, setTool, getRealMouseCoordinates } = useToolsContext()
+    const { tool, editLastToolClick } = useToolsContext()
     
-    const handleCopyCmd = useCallback((event) => {
-        const [realClientX, realClientY] = snappedPoint 
-                    ? getRealMouseCoordinates(snappedPoint.x, snappedPoint.y) 
-                    : getRealMouseCoordinates(event.clientX, event.clientY)
+    const handleCopyCmd = useCallback((mousePosition) => {
+        const { mouseX, mouseY } = mousePosition
 
         if (tool.name === 'copy') {
-            const { basePoint } = tool
-            const dX = realClientX - basePoint.x
-            const dY = realClientY - basePoint.y
+            const basePoint = tool.clicks[0]
+            const dX = mouseX - basePoint.x
+            const dY = mouseY - basePoint.y
 
             const newCurrentlyCopiedElements = [...currentlyCopiedElements]
             for (const editedElement of newCurrentlyCopiedElements) {
@@ -29,10 +26,10 @@ const useCopyCommand = () => {
             }
 
             changeCopyingElements(newCurrentlyCopiedElements)
-            setTool({ ...tool, basePoint: { x: realClientX, y: realClientY } })
+            editLastToolClick({ x: mouseX, y: mouseY })
             return
         }
-    }, [currentlyCopiedElements, changeCopyingElements, tool, setTool, getRealMouseCoordinates, snappedPoint])
+    }, [currentlyCopiedElements, changeCopyingElements, tool, editLastToolClick])
 
     return handleCopyCmd
 }

@@ -76,6 +76,15 @@ const Navbar = ({ changeTool }) => {
                     />
                 </label>
                 <label>
+                    Ortho
+                    <input
+                        type='checkbox'
+                        name='ortho'
+                        checked={options.ortho}
+                        onChange={() => setOptions((options) => ({ ...options, ortho: !options.ortho }))}
+                    />
+                </label>
+                <label>
                     Move
                     <input
                         type='radio'
@@ -100,6 +109,15 @@ const Navbar = ({ changeTool }) => {
                         name='mirror'
                         checked={tool.name === 'mirror'}
                         onChange={() => changeTool({ type: 'transform', name: 'mirror' })}
+                    />
+                </label>
+                <label>
+                    Scale
+                    <input
+                        type='radio'
+                        name='scale'
+                        checked={tool.name === 'scale'}
+                        onChange={() => changeTool({ type: 'transform', name: 'scale' })}
                     />
                 </label>
                 <label>

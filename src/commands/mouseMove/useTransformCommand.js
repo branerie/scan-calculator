@@ -2,7 +2,10 @@ import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 import { getAngleBetweenLines } from '../../utils/angle'
-import { getRotatedPointAroundPivot } from '../../utils/point'
+import { createLine } from '../../utils/elementFactory'
+import { getPointDistance, getRotatedPointAroundPivot } from '../../utils/point'
+
+const SCALE_SMOOTHING_FACTOR = 0.05
 
 const useTransformCommand = () => {
     const {
@@ -13,37 +16,36 @@ const useTransformCommand = () => {
         }
     } = useElementsContext()
 
-    const { tool, setTool, getRealMouseCoordinates } = useToolsContext()
+    const { tool, setTool, editLastToolClick, getRealMouseCoordinates } = useToolsContext()
 
     const handleTransformCmd = useCallback((event) => {
-        const [realClientX, realClientY] = snappedPoint 
-                    ? getRealMouseCoordinates(snappedPoint.x, snappedPoint.y) 
-                    : getRealMouseCoordinates(event.clientX, event.clientY)
-        
+        const [realClientX, realClientY] = snappedPoint
+            ? getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
+            : getRealMouseCoordinates(event.clientX, event.clientY)
+
         if (tool.name === 'move') {
-            if (!tool.initialClick) {
-                throw new Error('Cannot make move command without having initialClick set in tools')
-            }
+            const initialClick = tool.clicks[0]
+            const dX = realClientX - initialClick.x
+            const dY = realClientY - initialClick.y
 
-            const dX = realClientX - tool.initialClick.x
-            const dY = realClientY - tool.initialClick.y
-
-            const newCurrentlyEditedElements =  [...currentlyEditedElements]
+            const newCurrentlyEditedElements = [...currentlyEditedElements]
             newCurrentlyEditedElements.forEach(ncee => ncee.move(dX, dY))
 
             changeEditingElements(newCurrentlyEditedElements)
-            setTool({ ...tool, initialClick: { x: realClientX, y: realClientY } })
+            editLastToolClick({ x: realClientX, y: realClientY })
             return
         }
 
         if (tool.name === 'rotate') {
+            const [pivotPoint, angleStartPoint] = tool.clicks 
+
             const angle = getAngleBetweenLines({
-                lineAFirstPointX: tool.pivotPoint.x,
-                lineAFirstPointY: tool.pivotPoint.y,
-                lineASecondPointX: tool.angleStartPoint.x, 
-                lineASecondPointY: tool.angleStartPoint.y,
-                lineBFirstPointX: tool.pivotPoint.x,
-                lineBFirstPointY: tool.pivotPoint.y,
+                lineAFirstPointX: pivotPoint.x,
+                lineAFirstPointY: pivotPoint.y,
+                lineASecondPointX: angleStartPoint.x,
+                lineASecondPointY: angleStartPoint.y,
+                lineBFirstPointX: pivotPoint.x,
+                lineBFirstPointY: pivotPoint.y,
                 lineBSecondPointX: realClientX,
                 lineBSecondPointY: realClientY
             })
@@ -52,23 +54,61 @@ const useTransformCommand = () => {
             for (const editedElement of newCurrentlyEditedElements) {
                 const selectionPoints = editedElement.getSelectionPoints()
                 for (const selectionPoint of selectionPoints) {
-                    const newPointPosition = getRotatedPointAroundPivot(selectionPoint, tool.pivotPoint, angle)
+                    const newPointPosition = getRotatedPointAroundPivot(selectionPoint, pivotPoint, angle)
 
                     editedElement.setPointById(selectionPoint.pointId, newPointPosition.x, newPointPosition.y)
                 }
             }
 
             changeEditingElements(newCurrentlyEditedElements)
-            setTool({ ...tool, angleStartPoint: { x: realClientX, y: realClientY } })
+            editLastToolClick({ x: realClientX, y: realClientY })
             return
-        }     
+        }
+
+        if (tool.name === 'scale') {
+            const initialClick = tool.clicks[0]
+
+            const distanceFromInitial = getPointDistance(initialClick, { x: realClientX, y: realClientY })
+            const scalingFactor = Math.max(distanceFromInitial * SCALE_SMOOTHING_FACTOR, 0.001)
+
+            const oldScalingFactor = tool.scalingFactor || 1
+            const correctedScalingFactor = scalingFactor / oldScalingFactor
+
+            const newCurrentlyEditedElements = [...currentlyEditedElements]
+            for (const editedElement of newCurrentlyEditedElements) {
+                const selectionPoints = editedElement.getSelectionPoints()
+                for (const selectionPoint of selectionPoints) {
+                    const lineToPoint = createLine(
+                        initialClick.x,
+                        initialClick.y,
+                        null,
+                        selectionPoint.x,
+                        selectionPoint.y
+                    )
+
+                    lineToPoint.setLength(lineToPoint.length * correctedScalingFactor, false)
+                    editedElement.setPointById(selectionPoint.pointId, lineToPoint.pointB.x, lineToPoint.pointB.y)
+                    changeEditingElements(newCurrentlyEditedElements)
+                }
+
+                if (editedElement.baseType === 'arc') {
+                    editedElement.radius = editedElement.radius * correctedScalingFactor
+                }
+            }
+
+            changeEditingElements(newCurrentlyEditedElements)
+            setTool({ ...tool, scalingFactor })
+
+            return
+        }
     }, [
-        currentlyEditedElements, 
-        snappedPoint, 
-        getRealMouseCoordinates, 
-        tool, 
-        changeEditingElements, 
-        setTool
+        currentlyEditedElements,
+        snappedPoint,
+        getRealMouseCoordinates,
+        tool,
+        changeEditingElements,
+        setTool,
+        editLastToolClick,
     ])
 
     return handleTransformCmd

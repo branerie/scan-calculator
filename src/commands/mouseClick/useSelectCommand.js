@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 import { SELECT_DELTA } from '../../utils/constants'
-import ElementManipulator from '../../utils/elementManipulator'
 
 const useSelectCommand = () => {
     const {

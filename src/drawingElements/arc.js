@@ -4,6 +4,8 @@ import { getPointDistance, getRotatedPointAroundPivot } from '../utils/point'
 import Element from './element'
 import Line from './line'
 
+const INCONSISTENT_ARC_ERROR = 'Inconsistent arc - the end of startLine and the end of endLine must lie the same distance from the arc center (its radius)'
+
 class Arc extends Element {
     #centerPoint
     #radius
@@ -37,8 +39,7 @@ class Arc extends Element {
             }
 
             if (Math.abs(getPointDistance(centerPoint, startLine.pointB) - this.#radius) > MAX_NUM_ERROR) {
-                throw new Error(`Inconsistent arc - the end of startLine and the end of endLine must lie the same distance from 
-                the arc center (its radius)`)
+                throw new Error(INCONSISTENT_ARC_ERROR)
             }
         }
 
@@ -52,8 +53,7 @@ class Arc extends Element {
             }
 
             if (Math.abs(getPointDistance(centerPoint, endLine.pointB) - this.#radius) > MAX_NUM_ERROR) {
-                throw new Error(`Inconsistent arc - the end of startLine and the end of endLine must lie the same distance from 
-                the arc center (its radius)`)
+                throw new Error(INCONSISTENT_ARC_ERROR)
             }
         }
 
@@ -179,12 +179,9 @@ class Arc extends Element {
             this.#centerPoint.x = newPointX
             this.#centerPoint.y = newPointY
 
-            this.#startLine.pointA.x = newPointX
-            this.#startLine.pointA.y = newPointY
-            this.#endLine.pointA.x = newPointX
-            this.#endLine.pointA.y = newPointY
-            this.#midLine.pointA.x = newPointX
-            this.#midLine.pointA.y = newPointY
+            this.#startLine.setPointA(newPointX, newPointY)
+            this.#endLine.setPointA(newPointX, newPointY)
+            this.#midLine.setPointA(newPointX, newPointY)
 
             return true
         }

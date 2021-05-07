@@ -18,7 +18,7 @@ const useTransformCommand = () => {
             selectedElements,
         }
     } = useElementsContext()
-    const { tool, setTool } = useToolsContext()
+    const { tool, addToolClick, resetTool } = useToolsContext()
 
     const handleTransformCmd = useCallback((event, clickedPoint) => {
         if (!selectedElements) return
@@ -26,44 +26,45 @@ const useTransformCommand = () => {
         if (tool.name === 'move') {
             if (!currentlyEditedElements) {
                 startEditingElements(selectedElements)
-                setTool({ ...tool, initialClick: clickedPoint })
+                addToolClick(clickedPoint)
                 return
             }
 
             editElements()
-            setTool({ type: 'select', name: 'select' })
+            resetTool()
             return
         }
 
         if (tool.name === 'rotate') {
-            if (!currentlyEditedElements && !tool.pivotPoint) {
+            if (!currentlyEditedElements && !tool.clicks) {
                 // this was the first click of the rotate operation, setting up the pivot center
-                setTool({ ...tool, pivotPoint: clickedPoint })
+                addToolClick(clickedPoint)
                 return
             }
 
-            if (!currentlyEditedElements && tool.pivotPoint) {
+            if (!currentlyEditedElements && tool.clicks && tool.clicks.length === 1) {
                 // second click of the rotate operation, setting up the beggining of the angle of rotation
                 startEditingElements(selectedElements)
-                setTool({ ...tool, angleStartPoint: clickedPoint })
+                addToolClick(clickedPoint)
                 return
             }
 
             editElements()
-            setTool({ type: 'select', name: 'select' })
+            resetTool()
             return
         }
 
         if (tool.name === 'mirror') {
             if (!currentlyEditedElements) {
                 startEditingElements(selectedElements)
-                setTool({ ...tool, mirrorFirstPoint: clickedPoint })
+                addToolClick(clickedPoint)
                 return
             }
 
+            const mirrorFirstPoint = tool.clicks[0]
             const mirrorLine = createLine(
-                tool.mirrorFirstPoint.x,
-                tool.mirrorFirstPoint.y,
+                mirrorFirstPoint.x,
+                mirrorFirstPoint.y,
                 null,
                 clickedPoint.x,
                 clickedPoint.y
@@ -91,17 +92,31 @@ const useTransformCommand = () => {
 
             changeEditingElements(newCurrentlyEditedElements)
             editElements()
-            setTool({ type: 'select', name: 'select' })
+            resetTool()
+            return
+        }
+
+        if (tool.name === 'scale') {
+            if (!currentlyEditedElements) {
+                startEditingElements(selectedElements)
+                addToolClick(clickedPoint)
+                return
+            }
+
+            editElements()
+            resetTool()
             return
         }
     }, [
-        changeEditingElements, 
+        selectedElements,
+        tool.name, 
+        tool.clicks, 
         currentlyEditedElements, 
         editElements, 
-        selectedElements, 
-        setTool, 
-        startEditingElements,
-        tool
+        resetTool, 
+        startEditingElements, 
+        addToolClick, 
+        changeEditingElements
     ])
 
     return handleTransformCmd

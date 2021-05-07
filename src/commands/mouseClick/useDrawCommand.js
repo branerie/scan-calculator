@@ -17,7 +17,7 @@ const useDrawCommand = () => {
         }
     } = useElementsContext()
 
-    const { tool } = useToolsContext()
+    const { tool, addToolClick } = useToolsContext()
 
     const handleDrawCmd = useCallback((event, clickedPoint) => {
         if (!currentlyCreatedElement) {
@@ -25,6 +25,7 @@ const useDrawCommand = () => {
             const newElement = createElement(tool.name, clickedPoint.x, clickedPoint.y, newGroupId)
 
             addCurrentlyCreatedElement(newElement)
+            addToolClick(clickedPoint)
             return
         }
 
@@ -38,13 +39,15 @@ const useDrawCommand = () => {
         }
 
         currentlyCreatedElement.defineNextAttribute(clickedPoint)
+        addToolClick(clickedPoint)
     }, [
         addCurrentlyCreatedElement, 
         addElements, 
         clearSnappedPoint, 
         currentlyCreatedElement, 
         removeCurrentlyCreatedElement, 
-        tool.name
+        tool.name,
+        addToolClick
     ])
 
     return handleDrawCmd

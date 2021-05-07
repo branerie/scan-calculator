@@ -15,7 +15,7 @@ const useMouseClickCommands = () => {
         }
     } = useElementsContext()
 
-    const { tool, getRealMouseCoordinates } = useToolsContext()
+    const { tool, getRealMouseCoordinates, options } = useToolsContext()
 
     const commands = {
         copy: useCopyCommand(),
@@ -30,11 +30,24 @@ const useMouseClickCommands = () => {
             return
         }
 
-        const [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
+        let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
+        if (options.ortho && tool.clicks) {
+            const lastClick = tool.clicks[tool.clicks.length - 1]
+
+            const xDiff = Math.abs(lastClick.x - realClientX)
+            const yDiff = Math.abs(lastClick.y - realClientY)
+
+            if (xDiff < yDiff) {
+                realClientX = lastClick.x
+            } else {
+                realClientY = lastClick.y
+            }
+        }
+
         const clickedPoint = snappedPoint ? snappedPoint : createPoint(realClientX, realClientY)
 
         commands[tool.type](event, clickedPoint)
-    }, [commands, getRealMouseCoordinates, snappedPoint, tool.type])
+    }, [commands, getRealMouseCoordinates, snappedPoint, tool.type, tool.clicks, options.ortho])
 
     return executeKeyPressCommand
 }

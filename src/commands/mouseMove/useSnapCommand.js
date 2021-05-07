@@ -18,11 +18,11 @@ const useSnapCommand = () => {
         }
     } = useElementsContext()
 
-    const { currentScale, getRealMouseCoordinates } = useToolsContext()
+    const { currentScale } = useToolsContext()
 
-    const handleSnapCmd = useCallback((event) => {
-        const [ realClientX, realClientY ] = getRealMouseCoordinates(event.clientX, event.clientY)
-        let nearbyPoints = findNearbyPoints(realClientX, realClientY, SNAP_DELTA / currentScale)
+    const handleSnapCmd = useCallback((mousePosition) => {
+        const { mouseX, mouseY } = mousePosition
+        let nearbyPoints = findNearbyPoints(mouseX, mouseY, SNAP_DELTA / currentScale)
 
             if (currentlyCreatedElement && 
                (currentlyCreatedElement.type === 'polyline' || currentlyCreatedElement === 'arc')) {
@@ -37,7 +37,7 @@ const useSnapCommand = () => {
                     snappingPoints = currentlyCreatedElement.getSelectionPoints()
                 }
                 const newNearbyPoints = snappingPoints.filter(sp => 
-                    getPointDistance(sp, {x: realClientX, y: realClientY}) < SNAP_DELTA / currentScale)
+                    getPointDistance(sp, { x: mouseX, y: mouseY }) < SNAP_DELTA / currentScale)
                 nearbyPoints = nearbyPoints.concat(newNearbyPoints)
             }
             
@@ -54,13 +54,13 @@ const useSnapCommand = () => {
                     }))
             }
             
-            const clickedPoint = createPoint(realClientX, realClientY)
+            const mousePoint = createPoint(mouseX, mouseY)
 
             let nearestSnappingPoint = nearbyPoints.length > 0 ? nearbyPoints[0] : null
-            let nearestDistance = nearestSnappingPoint ? getPointDistance(clickedPoint, nearestSnappingPoint) : null
+            let nearestDistance = nearestSnappingPoint ? getPointDistance(mousePoint, nearestSnappingPoint) : null
             for (let pointIndex = 1; pointIndex < nearbyPoints.length; pointIndex++) {
                 const nearbyPoint = nearbyPoints[pointIndex]
-                const nearbyPointDistance = getPointDistance(clickedPoint, nearbyPoint)
+                const nearbyPointDistance = getPointDistance(mousePoint, nearbyPoint)
 
                 if (nearbyPointDistance < nearestDistance) {
                     nearestSnappingPoint = nearbyPoint
@@ -74,7 +74,6 @@ const useSnapCommand = () => {
         currentlyCreatedElement, 
         currentlyEditedElements, 
         findNearbyPoints, 
-        getRealMouseCoordinates, 
         selectedPoints, 
         setSnappedPoint
     ])
