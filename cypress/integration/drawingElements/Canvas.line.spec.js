@@ -1,5 +1,5 @@
-import { click, matchSnapshot, moveMouse, pressEscape, selectDrawingTool } from "../utils/canvas"
-import { visitPage } from "../utils/main"
+import { click, matchSnapshot, moveMouse, pressEscape, selectTool } from "../../utils/canvas"
+import { visitPage } from "../../utils/main"
 
 /* eslint-disable no-undef */
 describe('Canvas.line', () => {
@@ -12,7 +12,7 @@ describe('Canvas.line', () => {
     })
 
     it('should draw lines correctly', () => {
-        selectDrawingTool('line')
+        selectTool('line')
         
         click(100, 100)
         click(200, 100)
@@ -22,7 +22,7 @@ describe('Canvas.line', () => {
     })
 
     it ('should edit line by clicking on endpoint', () => {
-        selectDrawingTool('line')
+        selectTool('line')
 
         click(200, 50)
         click(200, 200)
@@ -43,7 +43,7 @@ describe('Canvas.line', () => {
     })
 
     it('should move line by clicking on midpoint', () => {
-        selectDrawingTool('line')
+        selectTool('line')
 
         click(200, 100)
         click(200, 200)
@@ -62,7 +62,7 @@ describe('Canvas.line', () => {
     })
 
     it('should display endpoint snap correctly', () => {
-        selectDrawingTool('line')
+        selectTool('line')
 
         click(100, 100)
         click(300, 300)
@@ -71,7 +71,7 @@ describe('Canvas.line', () => {
     })
 
     it('should display midpoint snap correctly', () => {
-        selectDrawingTool('line')
+        selectTool('line')
 
         click(100, 100)
         click(300, 300)

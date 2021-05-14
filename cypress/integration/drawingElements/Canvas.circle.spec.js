@@ -1,5 +1,5 @@
-import { click, matchSnapshot, moveMouse, pressEscape, selectDrawingTool } from "../utils/canvas"
-import { visitPage } from "../utils/main"
+import { click, matchSnapshot, moveMouse, pressEscape, selectTool } from "../../utils/canvas"
+import { visitPage } from "../../utils/main"
 
 /* eslint-disable no-undef */
 describe('<Canvas />', () => {
@@ -12,7 +12,7 @@ describe('<Canvas />', () => {
     })
 
     it('should draw circle correctly', () => {
-        selectDrawingTool('circle')
+        selectTool('circle')
 
         click(300, 300)
         click(350, 350)
@@ -22,7 +22,7 @@ describe('<Canvas />', () => {
     })
 
     it('should edit circle radius by clicking on endpoints', () => {
-        selectDrawingTool('circle')
+        selectTool('circle')
 
         click(500, 500)
         click(400, 500)
@@ -46,7 +46,7 @@ describe('<Canvas />', () => {
     })
 
     it('should move circle by moving center', () => {
-        selectDrawingTool('circle')
+        selectTool('circle')
 
         click(500, 500)
         click(400, 500)
@@ -62,7 +62,7 @@ describe('<Canvas />', () => {
     })
 
     it('should display center snap', () => {
-        selectDrawingTool('circle')
+        selectTool('circle')
 
         click(300, 300)
         click(100, 100)

@@ -1,5 +1,5 @@
-import { click, matchSnapshot, moveMouse, pressEnter, selectDrawingTool } from "../utils/canvas"
-import { visitPage } from "../utils/main"
+import { click, matchSnapshot, moveMouse, pressEnter, pressEscape, selectTool } from "../../utils/canvas"
+import { visitPage } from "../../utils/main"
 
 
 /* eslint-disable no-undef */
@@ -13,7 +13,7 @@ describe('Canvas.line', () => {
     })
 
     it('should draw polylines correctly', () => {
-        selectDrawingTool('polyline')
+        selectTool('polyline')
     
         click(20, 20)
         click(40, 80)
@@ -24,7 +24,7 @@ describe('Canvas.line', () => {
         // press enter to finish drawing polyline
         pressEnter()
 
-        selectDrawingTool('polyline')
+        selectTool('polyline')
 
         click(300, 380)
         click(420, 480)
@@ -36,7 +36,7 @@ describe('Canvas.line', () => {
     })
 
     it('should edit polyline by clicking endpoints', () => {
-        selectDrawingTool('polyline')
+        selectTool('polyline')
 
         click(100, 100)
         click(120, 140)
@@ -45,6 +45,7 @@ describe('Canvas.line', () => {
         click(20, 50)
 
         pressEnter()
+        pressEscape()
 
         click(50, 200)
         click(50, 200)
@@ -57,13 +58,14 @@ describe('Canvas.line', () => {
     })
 
     it('should edit polyline by clicking midpoint', () => {
-        selectDrawingTool('polyline')
+        selectTool('polyline')
 
         click(100, 100)
         click(200, 200)
         click(100, 300)
 
         pressEnter()
+        pressEscape()
 
         click(150, 150)
         click(150, 150)
@@ -74,7 +76,7 @@ describe('Canvas.line', () => {
     })
 
     it('should edit closed polyline by clicking endpoints and midpoints', () => {
-        selectDrawingTool('polyline')
+        selectTool('polyline')
 
         click(100, 100)
         click(200, 100)
@@ -83,6 +85,7 @@ describe('Canvas.line', () => {
         click(100, 100)
 
         pressEnter()
+        pressEscape()
 
         // modify endpoint
         click(200, 200)
@@ -95,35 +98,37 @@ describe('Canvas.line', () => {
     })
 
     it('should display snap between lines correctly', () => {
-        selectDrawingTool('polyline')
+        selectTool('polyline')
 
         click(100, 100)
         click(200, 100)
         click(200, 200)
 
         pressEnter()
+        pressEscape()
 
-        selectDrawingTool('line')
+        selectTool('line')
 
         moveMouse(203, 96)
     })
 
     it('should display endpoint snap correctly', () => {
-        selectDrawingTool('polyline')
+        selectTool('polyline')
 
         click(100, 100)
         click(200, 100)
         click(200, 200)
 
         pressEnter()
+        pressEscape()
 
-        selectDrawingTool('line')
+        selectTool('line')
 
         moveMouse(203, 196)
     })
 
     it('should display midpoint snap correctly', () => {
-        selectDrawingTool('polyline')
+        selectTool('polyline')
 
         click(100, 100)
         click(200, 100)
@@ -131,7 +136,7 @@ describe('Canvas.line', () => {
 
         pressEnter()
 
-        selectDrawingTool('line')
+        selectTool('line')
 
         moveMouse(155, 102)
     })

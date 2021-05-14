@@ -1,5 +1,5 @@
-import { click, pressEscape, selectDrawingTool, matchSnapshot, moveMouse } from '../utils/canvas'
-import { visitPage } from '../utils/main'
+import { click, pressEscape, selectTool, matchSnapshot, moveMouse } from '../../utils/canvas'
+import { visitPage } from '../../utils/main'
 
 /* eslint-disable no-undef */
 describe('Canvas.line', () => {
@@ -12,7 +12,7 @@ describe('Canvas.line', () => {
     })
 
     it('should draw arc correctly', () => {
-        selectDrawingTool('arc')
+        selectTool('arc')
     
         click(100, 100)
         click(150, 100)
@@ -32,7 +32,7 @@ describe('Canvas.line', () => {
     })
 
     it('should edit arc correctly by clicking endpoint', () => {
-        selectDrawingTool('arc')
+        selectTool('arc')
 
         click(100, 100)
         click(150, 100)
@@ -54,7 +54,7 @@ describe('Canvas.line', () => {
     })
 
     it('should modify arc radius by clicking midpoint and location by clicking center', () => {
-        selectDrawingTool('arc')
+        selectTool('arc')
 
         click(200, 200)
         click(200, 300)
@@ -71,7 +71,7 @@ describe('Canvas.line', () => {
     })
 
     it('should display arc selection points correctly', () => {
-        selectDrawingTool('arc')
+        selectTool('arc')
 
         click(200, 200)
         click(200, 300)
@@ -104,7 +104,7 @@ describe('Canvas.line', () => {
     })
 
     it('should snap to selection points', () => {
-        selectDrawingTool('arc')
+        selectTool('arc')
 
         click(200, 200)
         click(300, 200)
@@ -121,7 +121,7 @@ describe('Canvas.line', () => {
     })
 
     it('should display center snap correctly', () => {
-        selectDrawingTool('arc')
+        selectTool('arc')
 
         click(200, 200)
         click(300, 200)
@@ -131,7 +131,7 @@ describe('Canvas.line', () => {
     })
 
     it('should display end point snap correctly', () => {
-        selectDrawingTool('arc')
+        selectTool('arc')
 
         click(200, 200)
         click(300, 200)

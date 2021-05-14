@@ -25,7 +25,7 @@ const pressDelete = () => {
     canvas.trigger('keydown', { keyCode: DELETE_KEY_CODE })
 }
 
-const selectDrawingTool = (toolName) => {
+const selectTool = (toolName) => {
     cy.get(`input[name="${toolName}"]`).click()
 }
 
@@ -61,6 +61,6 @@ export {
     pressDelete,
     pressEnter,
     pressEscape,
-    selectDrawingTool,
+    selectTool,
     matchSnapshot
 }

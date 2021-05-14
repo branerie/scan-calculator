@@ -1,5 +1,5 @@
-import { click, matchSnapshot, moveMouse, pressEscape, selectDrawingTool } from "../utils/canvas"
-import { visitPage } from "../utils/main"
+import { click, matchSnapshot, moveMouse, pressEscape, selectTool } from "../../utils/canvas"
+import { visitPage } from "../../utils/main"
 
 /* eslint-disable no-undef */
 describe('<Canvas />', () => {
@@ -12,7 +12,7 @@ describe('<Canvas />', () => {
     })
 
     it('should draw rectangle correctly', () => {
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
     
         click(100, 100)
         click(400, 200)
@@ -22,7 +22,7 @@ describe('<Canvas />', () => {
     })
 
     it('should modify rectangle by clicking midpoint', () => {
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
 
         click(100, 100)
         click(400, 200)
@@ -40,7 +40,7 @@ describe('<Canvas />', () => {
     })
 
     it('should modify rectangle by clicking endpoint', () => {
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
 
         click(100, 100)
         click(400, 200)
@@ -61,7 +61,7 @@ describe('<Canvas />', () => {
     })
 
     it('should display edge snap correctly', () => {
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
 
         click(100, 100)
         click(400, 200)
@@ -70,7 +70,7 @@ describe('<Canvas />', () => {
     })
 
     it('should display midpoint snap correctly', () => {
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
 
         click(100, 100)
         click(400, 200)

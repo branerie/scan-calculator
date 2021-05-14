@@ -1,4 +1,4 @@
-import { click, matchSnapshot, mousePan, pressEnter, pressEscape, pressDelete, selectDrawingTool, zoom } from '../utils/canvas'
+import { click, matchSnapshot, mousePan, pressEnter, pressEscape, pressDelete, selectTool, zoom } from '../utils/canvas'
 import { redo, undo, visitPage } from '../utils/main'
 
 /* eslint-disable no-undef */
@@ -13,32 +13,32 @@ describe('<Canvas />', () => {
 
     const drawElements = () => {
         // draw line
-        selectDrawingTool('line')
+        selectTool('line')
         click(50, 50)
         click(100, 100)
 
         // draw polyline
-        selectDrawingTool('polyline')
+        selectTool('polyline')
         click(100, 150)
         click(80, 180)
         click(120, 180)
         click(120, 190)
-
         pressEnter()
+        pressEscape()
 
         // draw arc
-        selectDrawingTool('arc')
+        selectTool('arc')
         click(300, 250)
         click(250, 250)
         click(200, 250)
 
         // draw circle
-        selectDrawingTool('circle')
+        selectTool('circle')
         click(350, 350)
         click(200, 350)
 
         // draw rectangle
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
 
         click(350, 300)
         click(600, 600)
@@ -47,7 +47,7 @@ describe('<Canvas />', () => {
     }
 
     const undoOneStepEdit = () => {
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
         click(350, 300)
         click(600, 600)
         pressEscape()
@@ -64,7 +64,7 @@ describe('<Canvas />', () => {
     }
 
     const undoMultiStepEdit = () => {
-        selectDrawingTool('rectangle')
+        selectTool('rectangle')
         click(350, 300)
         click(600, 600)
         pressEscape()
