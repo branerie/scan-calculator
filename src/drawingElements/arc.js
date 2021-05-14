@@ -12,6 +12,7 @@ class Arc extends Element {
     #startLine
     #endLine
     #midLine
+    #boundingBox
 
     constructor(centerPoint, { 
         radius = null, 
@@ -81,10 +82,10 @@ class Arc extends Element {
 
     get isFullyDefined() {
         return (
-            this.#centerPoint &&
+            !!(this.#centerPoint) &&
             this.#radius > 0 &&
-            (!!(this.#startLine) && this.#startLine.angle >= 0 && this.#startLine.angle <= 360) &&
-            (!!(this.#endLine) && this.#endLine.angle >= 0 && this.#endLine.angle <= 360)
+            !!(this.#startLine) &&
+            !!(this.#endLine)
         )
     }
 
@@ -131,9 +132,9 @@ class Arc extends Element {
     }
 
     setLastAttribute(pointX, pointY) {
-        this.#endLine = createLine(this.#centerPoint.x, this.#centerPoint.y, this.groupId, pointX, pointY)
+        this.#endLine = createLine(this.#centerPoint.x, this.#centerPoint.y, pointX, pointY, this.groupId)
         this.#endLine.setLength(this.#radius, false)
-        this.__updateMidLine()
+        this.__updateDetails()
     }
 
     defineNextAttribute(definingPoint) {
@@ -141,6 +142,7 @@ class Arc extends Element {
 
         if (!this.#centerPoint) {
             this.#centerPoint = definingPoint
+            
             return
         }
 
@@ -199,11 +201,13 @@ class Arc extends Element {
         lineToChange.setLength(this.#radius, false)
 
         if (this.isFullyDefined) {
-            this.__updateMidLine()
+            this.__updateDetails()
         }
 
         return true
     }
+
+    getBoundingBox() { return this.#boundingBox }
 
     move(dX, dY) {
         this.#centerPoint.x += dX
@@ -212,16 +216,43 @@ class Arc extends Element {
         this.#startLine.move(dX, dY)
         this.#endLine.move(dX, dY)
         this.#midLine.move(dX, dY)
+
+        this.#boundingBox.left += dX
+        this.#boundingBox.right += dX
+        this.#boundingBox.top += dY
+        this.#boundingBox.bottom += dY
+    }
+
+    __updateDetails() {
+        this.__updateMidLine()
+        this.__updateBoundingBox()
+    }
+
+    __updateBoundingBox() {
+        const left = this.__isAngleInArc(180) 
+                        ? this.#centerPoint.x - this.#radius 
+                        : Math.min(this.#startLine.pointB.x, this.#endLine.pointB.x)
+        const right = this.__isAngleInArc(0) 
+                        ? this.#centerPoint.x + this.#radius  
+                        : Math.max(this.#startLine.pointB.x, this.#endLine.pointB.x)
+        const top = this.__isAngleInArc(270) 
+                        ? this.#centerPoint.y - this.#radius 
+                        : Math.min(this.#startLine.pointB.y, this.#endLine.pointB.y)
+        const bottom = this.__isAngleInArc(90) 
+                        ? this.centerPoint.y + this.#radius 
+                        : Math.max(this.#startLine.pointB.y, this.#endLine.pointB.y)
+    
+        this.#boundingBox = { left, right, top, bottom }
     }
 
     __updateMidLine() {
         if (!this.#midLine) {
-            this.#midLine = createLine(this.#centerPoint.x, this.#centerPoint.y, this.groupId)
+            this.#midLine = createLine(this.#centerPoint.x, this.#centerPoint.y, null, null, this.groupId)
         }
 
         const angleStartToEnd = Math.abs(this.#startLine.angle - this.#endLine.angle)
 
-        if (angleStartToEnd === 180) {
+        if (Math.abs(angleStartToEnd - 180) <= MAX_NUM_ERROR) {
             const midLineEndPoint = getRotatedPointAroundPivot(this.#startLine.pointB, this.#centerPoint, 90)
             this.#midLine.setPointB(midLineEndPoint.x, midLineEndPoint.y)
             return
@@ -232,13 +263,24 @@ class Arc extends Element {
         this.#midLine.setPointB(midPointX, midPointY)
 
         const isStartLessThanEnd = this.#startLine.angle < this.#endLine.angle
-        const isBetweenLessThan180 = angleStartToEnd < 180
+        const isLessThan180 = angleStartToEnd < 180
 
-        const newLength = isStartLessThanEnd !== isBetweenLessThan180
+        const newLength = isStartLessThanEnd !== isLessThan180
             ? this.#radius
             : -this.#radius
 
         this.#midLine.setLength(newLength, false)
+    }
+
+    __isAngleInArc(angle) {
+        const startAngle = this.#startLine.angle
+        const endAngle = this.#endLine.angle
+
+        if (startAngle > endAngle) {
+            return angle <= startAngle && angle >= endAngle
+        }
+
+        return angle <= startAngle || angle >= endAngle
     }
 }
 

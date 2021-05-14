@@ -57,22 +57,39 @@ export default function ToolsContextProvider({ children }) {
 
     const resetTool = useCallback(() => setTool({ type: 'select', name: 'select' }), [])
 
-    const addToolClick = useCallback((clickedPoint) => {
-        const clicks = tool.clicks ? [ ...tool.clicks, clickedPoint ] : [clickedPoint]
-        setTool({ ...tool, clicks })
-    }, [tool])
+    const addToolClick = useCallback((clickedPoint, isReferenceClick = true) => {
+        setTool(tool => { 
+            const clicks = tool.clicks ? [ ...tool.clicks, clickedPoint ] : [clickedPoint]
+            const newTool = { ...tool, clicks }
+
+            if (isReferenceClick) {
+                newTool.refClickIndex = clicks.length - 1
+            }
+
+            return newTool
+        })
+    }, [])
 
     const editLastToolClick = useCallback((newPoint) => {
         if (!tool.clicks) {
-            setTool({ ...tool, newPoint })
-            return
+            throw new Error('Cannot edit clicks - tool does not contain any clicks.')
         }
 
         const newClicks = [...tool.clicks]
         newClicks.pop()
         newClicks.push(newPoint)
 
-        setTool({ ...tool, clicks: newClicks })
+        setTool(tool => ({ ...tool, clicks: newClicks }))
+    }, [tool])
+
+    const clearCurrentTool = useCallback(() => {
+        setTool(tool => ({ type: tool.type, name: tool.name }))
+    }, [])
+
+    const getLastReferenceClick = useCallback(() => {
+        if (!tool.clicks || (!tool.refClickIndex && tool.refClickIndex !== 0)) return null
+        
+        return tool.clicks[tool.refClickIndex]
     }, [tool])
 
     const getRealMouseCoordinates = useCallback((clientX, clientY) => {
@@ -80,6 +97,10 @@ export default function ToolsContextProvider({ children }) {
 
         return [(clientX - translateX) / currentScale, (clientY - translateY) / currentScale]
     }, [currentScale, currentTranslate])
+
+    const addToolLine = useCallback((line) => {
+        setTool(tool => ({ ...tool, line }))
+    }, [])
 
     return (
         <Context.Provider value={{
@@ -92,6 +113,8 @@ export default function ToolsContextProvider({ children }) {
             resetTool,
             addToolClick,
             editLastToolClick,
+            clearCurrentTool,
+            getLastReferenceClick,
             getRealMouseCoordinates,
             panView,
             zoomView,
@@ -99,7 +122,8 @@ export default function ToolsContextProvider({ children }) {
             mouseDrag,
             setMouseDrag,
             options,
-            setOptions
+            setOptions,
+            addToolLine,
         }}>
             {children}
         </Context.Provider>

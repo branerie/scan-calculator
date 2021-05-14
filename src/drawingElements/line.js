@@ -8,6 +8,7 @@ class Line extends Element {
     #pointA
     #pointB
     #midPoint
+    #boundingBox
 
     constructor(pointA, { pointB = null, id = null, groupId = null, midPointId = null } = {}) {
         super(id, groupId)
@@ -16,7 +17,7 @@ class Line extends Element {
         this.#pointA = pointA
         if (pointB) {
             this.#pointB = pointB
-            this.__updateMidPoint()
+            this.__updateDetails()
 
             if (midPointId) {
                 this.#midPoint.pointId = midPointId
@@ -35,11 +36,11 @@ class Line extends Element {
     get isFullyDefined() {
         return (
             !!(this.#pointA) &&
-            !!(this.#pointB) && 
-            (!!(this.#pointA.x) || this.#pointA.x === 0) &&
-            (!!(this.#pointA.y) || this.#pointA.y === 0) &&
-            (!!(this.#pointB.x) || this.#pointB.x === 0) &&
-            (!!(this.#pointB.y) || this.#pointB.y === 0)
+            !!(this.#pointB)
+            // (!!(this.#pointA.x) || this.#pointA.x === 0) &&
+            // (!!(this.#pointA.y) || this.#pointA.y === 0) &&
+            // (!!(this.#pointB.x) || this.#pointB.x === 0) &&
+            // (!!(this.#pointB.y) || this.#pointB.y === 0)
         )
     }
 
@@ -64,10 +65,23 @@ class Line extends Element {
         return getAngleBetweenPoints(this.#pointA, this.#pointB)
     }
 
+    get equation() {
+        if (!this.isFullyDefined) return null
+
+        // m = (y2 - y1) / (x2 - x1)
+        const xDiff = this.#pointB.x - this.#pointA.x
+
+        const slope = xDiff !== 0 ? (this.#pointB.y - this.#pointA.y) / xDiff : Number.NaN
+        // b = y - m * x
+        const intercept = isNaN(slope) ? Number.NaN : this.#pointA.y - this.#pointA.x * slope
+
+        return { slope, intercept }
+    }
+
     setPointA(x, y) {
         this.#pointA.x = x
         this.#pointA.y = y
-        this.__updateMidPoint()
+        this.__updateDetails()
     }
 
     setPointB(x, y) {
@@ -78,7 +92,7 @@ class Line extends Element {
             this.#pointB.y = y
         }
 
-        this.__updateMidPoint()
+        this.__updateDetails()
     }
 
     checkIfPointOnElement(point, maxDiff) {
@@ -86,7 +100,7 @@ class Line extends Element {
             throw new Error('Cannot use method \'checkIfPointOnElement\' before line is fully defined.')
         }
 
-        const nearestPoint = this.getNearestPoint(point)
+        const nearestPoint = this.getNearestPoint(point, false)
         const perpendicular = new Line(point, { pointB: nearestPoint })
 
         return perpendicular.length < maxDiff
@@ -95,7 +109,7 @@ class Line extends Element {
     setLastAttribute(pointX, pointY) {
         if (!this.#pointB) {
             this.#pointB = createPoint(pointX, pointY)
-            this.__updateMidPoint()
+            this.__updateDetails()
             return
         }
 
@@ -104,7 +118,7 @@ class Line extends Element {
 
     setPointById(pointId, newPointX, newPointY) {
         const settingResult = super.setPointById(pointId, newPointX, newPointY)
-        this.__updateMidPoint()
+        this.__updateDetails()
         
         return settingResult
     }
@@ -130,7 +144,7 @@ class Line extends Element {
             return []
         }
 
-        // this.__updateMidPoint()
+        // this.__updateDetails()
 
         return [
             { ...this.#pointA, pointType: 'endPoint' },
@@ -144,7 +158,7 @@ class Line extends Element {
             // needs to set mid point when line is part of a polyline which is currently created
             // otherwise, the mid point is not set anywhere
             if (!this.#midPoint) {
-                this.__updateMidPoint()
+                this.__updateDetails()
             }
 
             return
@@ -156,7 +170,7 @@ class Line extends Element {
         }
 
         this.#pointB = definingPoint
-        this.__updateMidPoint()
+        this.__updateDetails()
     }
 
     getNearestPoint(point, shouldUseLineExtension = false) {
@@ -166,11 +180,7 @@ class Line extends Element {
                 ? new Point(this.#pointA.x, point.y)
                 : new Point(point.x, this.#pointA.y)
         } else {
-            // m = (y2 - y1) / (x2 - x1)
-            const slope = (this.#pointB.y - this.#pointA.y) / (this.#pointB.x - this.#pointA.x)
-
-            // b = y - m * x
-            const lineIntercept = this.#pointA.y - this.#pointA.x * slope
+            const { slope, intercept: lineIntercept } = this.equation
 
             // mp = - 1 / m (slope of perpendicular)
             // bp = yp - mp * xp = yp + (xp / m)
@@ -226,7 +236,7 @@ class Line extends Element {
                     : this.#pointA.x - newLength
             }
 
-            return this.__updateMidPoint()
+            return this.__updateDetails()
         }
 
         if (this.#pointA.x === this.#pointB.x) {
@@ -240,7 +250,7 @@ class Line extends Element {
                     : this.#pointA.y - newLength
             }
 
-            return this.__updateMidPoint()
+            return this.__updateDetails()
         }
 
         const quadrant = getQuadrant(this.angle)
@@ -284,6 +294,8 @@ class Line extends Element {
         this.setPointB(this.#pointA.x + dX, this.#pointA.y + dY)
     }
 
+    getBoundingBox() { return this.#boundingBox }
+
     move(dX, dY) {
         this.#pointA.x += dX
         this.#pointA.y += dY
@@ -291,6 +303,38 @@ class Line extends Element {
         this.#pointB.y += dY
         this.#midPoint.x += dX
         this.#midPoint.y += dY
+
+        this.#boundingBox.left += dX
+        this.#boundingBox.right += dX
+        this.#boundingBox.top += dY
+        this.#boundingBox.bottom += dY
+    }
+
+    __updateDetails() {
+        this.__updateMidPoint()
+        this.__updateBoundingBox()
+    }
+
+    __updateBoundingBox() {
+        let left, right
+        if (this.#pointA.x <= this.#pointB.x) {
+            left = this.#pointA.x
+            right = this.#pointB.x
+        } else {
+            left = this.#pointB.x
+            right = this.#pointA.x
+        }
+
+        let top, bottom
+        if (this.#pointA.y <= this.#pointB.y) {
+            top = this.#pointA.y
+            bottom = this.#pointB.y
+        } else {
+            top = this.#pointB.y
+            bottom = this.#pointA.y
+        }
+
+        this.#boundingBox = { left, right, top, bottom }
     }
 
     __updateMidPoint() {

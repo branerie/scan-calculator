@@ -72,7 +72,6 @@ const selectionReducer = (state, action) => {
 
 const useSelection = () => {
     const [selection, selectionDispatch] = useReducer(selectionReducer, { elements: {}, points: {} })
-
     const addSelectedElements = (elements) => selectionDispatch({ type: 'addElements', values: elements })
     const removeSelectedElements = (elements) => selectionDispatch({ type: 'removeElements', values: elements })
     const hasSelectedElement = (element) => !!(selection.elements[element.id])

@@ -10,6 +10,8 @@ const SNAP_MID_POINT_TRIANGLE_HALF_SIDE = 10
 const LINE_DASH_LINE_SIZE = 15
 const LINE_DASH_SPACE_SIZE = 10
 
+const LINE_DASH_CONTAINER_SIZE = 5
+
 const useDrawing = () => {
     const {
         elements: {
@@ -20,7 +22,7 @@ const useDrawing = () => {
 
         }
     } = useElementsContext()
-    const { canvasContext, currentScale, currentTranslate } = useToolsContext()
+    const { canvasContext, currentScale, currentTranslate, tool } = useToolsContext()
 
     const resetCanvas = useCallback(() => {
         if (!canvasContext) return
@@ -78,6 +80,7 @@ const useDrawing = () => {
 
         canvasContext.stroke()
         canvasContext.setLineDash([])
+
     }, [canvasContext, currentScale])
 
     const drawSelectionPoints = useCallback((selectionPoints) => {
@@ -149,10 +152,51 @@ const useDrawing = () => {
         canvasContext.strokeStyle = '#000000'
     }, [canvasContext, currentScale, snappedPoint])
 
+    const drawToolComponents = useCallback(() => {
+        if (tool.name === 'select' && tool.clicks && tool.mousePosition) {
+            const { clicks: [initialClick], mousePosition: { mouseX, mouseY } } = tool
+            const isPartialSelect = mouseX < initialClick.x
+
+            const startX = Math.min(initialClick.x, mouseX)
+            const startY = Math.min(initialClick.y, mouseY)
+            const width = Math.abs(initialClick.x - mouseX)
+            const height = Math.abs(initialClick.y - mouseY)
+
+            canvasContext.beginPath()
+
+            canvasContext.globalAlpha = 0.6
+            canvasContext.fillStyle = isPartialSelect ? '#169438' : '#0277d6'
+            canvasContext.fillRect(startX, startY, width, height)
+
+            const lineDash = isPartialSelect 
+                                ? [LINE_DASH_CONTAINER_SIZE / currentScale, LINE_DASH_CONTAINER_SIZE / currentScale]
+                                : []
+
+            canvasContext.setLineDash(lineDash)
+
+            canvasContext.strokeStyle = '#000000'
+            canvasContext.strokeRect(startX, startY, width, height)
+            canvasContext.stroke()
+
+            canvasContext.globalAlpha = 1
+            canvasContext.setLineDash([])
+            return
+        }
+
+        if (!tool.line || (tool.type === 'draw' && tool.name !== 'arc' && tool.name !== 'circle')) return
+
+        canvasContext.strokeStyle = '#d48a02'
+        drawElement(tool.line, true)
+
+        canvasContext.strokeStyle = '#000000'
+        canvasContext.setLineDash([])
+    }, [canvasContext, currentScale, drawElement, tool])
+
     return {
         drawElement,
         drawSelectionPoints,
         drawSnappedPoint,
+        drawToolComponents,
         resetCanvas
     }
 }

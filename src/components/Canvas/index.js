@@ -41,7 +41,7 @@ const Canvas = () => {
         setMouseDrag
     } = useToolsContext()
 
-    const { drawElement, drawSelectionPoints, drawSnappedPoint, resetCanvas } = useDrawing()
+    const { drawElement, drawSelectionPoints, drawSnappedPoint, resetCanvas, drawToolComponents } = useDrawing()
 
     const executeKeyPressCommand = useKeyPressCommands()
     const executeMouseClickCommand = useMouseClickCommands()
@@ -59,7 +59,13 @@ const Canvas = () => {
         })
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
-            drawElement(currentlyCreatedElement)
+            if (currentlyCreatedElement.type === 'polyline' && !currentlyCreatedElement.elements[currentlyCreatedElement.elements.length - 1].isFullyDefined) {
+                for (let i = 0; i < currentlyCreatedElement.elements.length - 1; i++) {
+                    drawElement(currentlyCreatedElement.elements[i])
+                }
+            } else {
+                drawElement(currentlyCreatedElement)
+            }
         }
 
         // canvasElements.forEach(element => draw(context.current, element, currentScale))
@@ -71,6 +77,8 @@ const Canvas = () => {
         if (currentlyCopiedElements) {
             currentlyCopiedElements.forEach(cce => drawElement(cce, false))
         }
+
+        drawToolComponents()
 
         if (!selectedElements) return
 
@@ -98,6 +106,7 @@ const Canvas = () => {
         drawElement,
         drawSelectionPoints,
         drawSnappedPoint,
+        drawToolComponents,
         resetCanvas
     ])
 

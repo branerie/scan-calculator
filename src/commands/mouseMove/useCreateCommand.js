@@ -10,9 +10,7 @@ const useCreateCommand = () => {
         }
     } = useElementsContext()
 
-    const handleCreateCmd = useCallback((mousePosition) => {
-        const { mouseX, mouseY } = mousePosition
-
+    const handleCreateCmd = useCallback(({ mouseX, mouseY }) => {
         const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, true)
         newCurrentlyCreatedElement.setLastAttribute(mouseX, mouseY)
 

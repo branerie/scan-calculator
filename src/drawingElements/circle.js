@@ -9,6 +9,7 @@ class Circle extends Element {
     #radius
     #centerPoint
     #endPoints
+    #boundingBox
 
     constructor(centerPoint, { radius = null, endPoints = null, id = null } = {}) {
         super(id)
@@ -27,12 +28,12 @@ class Circle extends Element {
 
     set radius(newRadius) {
         this.#radius = newRadius
-        this.__setEndPoints()
+        this.__setDetails()
     }
 
     get isFullyDefined() {
         return (
-            this.#centerPoint &&
+            !!(this.#centerPoint) &&
             this.#radius > 0
         )
     }
@@ -61,7 +62,7 @@ class Circle extends Element {
 
     setLastAttribute(pointX, pointY) {
         this.#radius = getPointDistance(this.#centerPoint, new Point(pointX, pointY))
-        this.__setEndPoints()
+        this.__setDetails()
     }
 
     defineNextAttribute(definingPoint) {
@@ -105,13 +106,32 @@ class Circle extends Element {
         })
     }
 
+    getBoundingBox() { return this.#boundingBox }
+
+    __setDetails() {
+        this.__setEndPoints()
+        this.__setBoundingBox()
+    }
+
+    __setBoundingBox() {
+        const xDims = this.#endPoints.map(ep => ep.x)
+        const yDims = this.#endPoints.map(ep => ep.y)
+
+        this.#boundingBox = {
+            left: Math.min(...xDims),
+            top: Math.min(...yDims),
+            right: Math.max(...xDims),
+            bottom: Math.max(...yDims)
+        }
+    }
+
     __setEndPoints() {
         if (!this.#endPoints) {
             this.#endPoints = [
-                createPoint(this.#centerPoint.x + this.#radius, this.#centerPoint.y),
                 createPoint(this.#centerPoint.x - this.#radius, this.#centerPoint.y),
-                createPoint(this.#centerPoint.x, this.#centerPoint.y + this.#radius),
-                createPoint(this.#centerPoint.x, this.#centerPoint.y - this.#radius)
+                createPoint(this.#centerPoint.x + this.#radius, this.#centerPoint.y),
+                createPoint(this.#centerPoint.x, this.#centerPoint.y - this.#radius),
+                createPoint(this.#centerPoint.x, this.#centerPoint.y + this.#radius)
             ]
 
             return
@@ -138,7 +158,7 @@ class Circle extends Element {
         }
 
         if (!this.#endPoints || !Array.isArray(this.#endPoints)) {
-            return this.__setEndPoints()
+            return this.__setDetails()
         }
 
         const isEndPointsInconsistent = this.#endPoints.some(ep => 

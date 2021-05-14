@@ -35,7 +35,9 @@ export default function ElementsContextProvider({ children }) {
         changeCopyingElements,
         clearCopyingElements,
         setSnappedPoint,
-        clearSnappedPoint
+        clearSnappedPoint,
+        getElementsContainingPoint,
+        getElementsInContainer,
     } = useElements()
 
     const {
@@ -83,8 +85,12 @@ export default function ElementsContextProvider({ children }) {
 
     const editElements = useCallback(() => {
         const elementPointsBeforeEdit = {}
+        const elementsBeforeEdit = []
         currentlyEditedElements.forEach(cee => {
             const elementBeforeEdit = getElementById(cee.id)
+            elementBeforeEdit.isShown = true
+            elementsBeforeEdit.push(elementBeforeEdit)
+
             elementPointsBeforeEdit[cee.id] = elementBeforeEdit.getSelectionPoints()
         })
 
@@ -104,12 +110,6 @@ export default function ElementsContextProvider({ children }) {
             const selectionPointsBeforeEdit = elementPointsBeforeEdit[elementOfPoint.id]
 
             replaceSelectionPoints(selectionPointsAfterEdit, selectionPointsBeforeEdit)
-        })
-
-        const elementsBeforeEdit = currentlyEditedElements.map(cee => {
-            const elementBeforeEdit = getElementById(cee.id)
-            elementBeforeEdit.isShown = true
-            return elementBeforeEdit
         })
 
         updateHistoryEvents({ action: 'edit', elements: elementsBeforeEdit })
@@ -268,6 +268,7 @@ export default function ElementsContextProvider({ children }) {
                 currentlyEditedElements,
                 currentlyCopiedElements,
                 snappedPoint,
+                getElementById,
                 addCurrentlyCreatedElement,
                 removeCurrentlyCreatedElement,
                 startEditingElements,
@@ -279,11 +280,14 @@ export default function ElementsContextProvider({ children }) {
                 setSnappedPoint,
                 clearSnappedPoint,
                 findNearbyPoints,
+                getElementsContainingPoint,
+                getElementsInContainer,
             },
             selection: {
                 selectedElements,
                 addSelectedElements,
                 setSelectedElements,
+                removeSelectedElements,
                 hasSelectedElement,
                 selectedPoints,
                 setSelectedPoints,

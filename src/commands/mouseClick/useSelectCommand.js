@@ -6,28 +6,23 @@ import { SELECT_DELTA } from '../../utils/constants'
 const useSelectCommand = () => {
     const {
         elements: {
-            elements,
             startEditingElements,
             findNearbyPoints,
+            getElementsContainingPoint,
+            getElementsInContainer,
         },
         selection: {
             selectedElements,
             addSelectedElements,
             setSelectedElements,
             setSelectedPoints,
+            removeSelectedElements,
         }
     } = useElementsContext()
 
-    const { setTool, currentScale } = useToolsContext()
+    const { tool, setTool, currentScale, addToolClick, clearCurrentTool } = useToolsContext()
 
     const handleSelectCmd = useCallback((event, clickedPoint) => {
-        if (event.shiftKey) {
-            const newlySelectedElements = selectedElements.filter(e => 
-                !e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale))
-             setSelectedElements(newlySelectedElements)
-            return
-        }
-
         if (selectedElements && selectedElements.length > 0) {
             const nearbyPoints = findNearbyPoints(clickedPoint.x, clickedPoint.y, SELECT_DELTA)
 
@@ -51,19 +46,49 @@ const useSelectCommand = () => {
             }
         }
 
-        const newlySelectedElements = elements.filter(e =>
-            e.checkIfPointOnElement(clickedPoint, SELECT_DELTA / currentScale))
-        addSelectedElements(newlySelectedElements)
+        const clickedElements = getElementsContainingPoint(clickedPoint.x, clickedPoint.y, SELECT_DELTA / currentScale)
+        if (!tool.clicks) {
+            if (clickedElements) {
+                if (event.shiftKey) {
+                    removeSelectedElements(clickedElements)
+                    return
+                }
+    
+                addSelectedElements(clickedElements)
+                return    
+            }
+
+            addToolClick(clickedPoint, false)
+            return
+        }
+
+        const initialClick = tool.clicks[0]
+        const newlySelectedElements = getElementsInContainer(initialClick, clickedPoint, initialClick.x < clickedPoint.x)
+        if (newlySelectedElements) {
+            if (event.shiftKey) {
+                removeSelectedElements(newlySelectedElements)
+            } else {
+                addSelectedElements(newlySelectedElements)
+            }
+        }
+
+        clearCurrentTool()
+        return
     }, [
-        addSelectedElements, 
+        getElementsContainingPoint, 
         currentScale, 
-        elements, 
-        findNearbyPoints, 
+        tool.clicks, 
+        getElementsInContainer, 
+        clearCurrentTool, 
         selectedElements, 
-        setSelectedElements, 
+        addToolClick, 
+        addSelectedElements, 
+        removeSelectedElements, 
+        findNearbyPoints, 
+        startEditingElements, 
         setSelectedPoints, 
-        setTool, 
-        startEditingElements
+        setSelectedElements, 
+        setTool
     ])
 
     return handleSelectCmd

@@ -1,4 +1,4 @@
-import Node from './searchTree/node'
+import Node from './node'
 
 const NUM_LAYERS = 5
 

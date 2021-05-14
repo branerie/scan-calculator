@@ -9,11 +9,7 @@ const getPerpendicularPointToLine = (initialPoint, line) => {
         return createPoint(initialPoint.x, line.pointA.y)
     }
 
-    // m = (y2 - y1) / (x2 - x1)
-    const slope = (line.pointB.y - line.pointA.y) / (line.pointB.x - line.pointA.x)
-
-    // b = y - m * x
-    const lineIntercept = line.pointA.y - line.pointA.x * slope
+    const { slope, intercept: lineIntercept } = line.equation
 
     // mp = - 1 / m (slope of perpendicular)
     // bp = yp - mp * xp = yp + (xp / m)
@@ -27,7 +23,7 @@ const getPerpendicularPointToLine = (initialPoint, line) => {
 
 const getPerpendicularToLine = (initialPoint, line) => {
     const perpendicularPoint = getPerpendicularPointToLine(initialPoint, line)
-    return createLine(initialPoint.x, initialPoint.y, null, perpendicularPoint.x, perpendicularPoint.y)
+    return createLine(initialPoint.x, initialPoint.y, perpendicularPoint.x, perpendicularPoint.y)
 }
 
 export {

@@ -6,7 +6,10 @@ import useCopyCommand from './useCopyCommand'
 import useDragCommand from './useDragCommand'
 import useEditCommand from './useEditCommand'
 import useSnapCommand from './useSnapCommand'
+import useSelectCommand from './useSelectCommand'
 import useTransformCommand from './useTransformCommand'
+import { getOrthoCoordinates } from '../../utils/options'
+import { createLine } from '../../utils/elementFactory'
 
 
 const useMouseMoveCommands = () => {
@@ -21,7 +24,7 @@ const useMouseMoveCommands = () => {
             selectedPoints
         }
     } = useElementsContext()
-    const { mouseDrag, options, tool, getRealMouseCoordinates } = useToolsContext()
+    const { mouseDrag, options, tool, getRealMouseCoordinates, getLastReferenceClick, addToolLine } = useToolsContext()
 
     const commands = {
         drag: useDragCommand(),
@@ -30,6 +33,7 @@ const useMouseMoveCommands = () => {
         create: useCreateCommand(),
         transform: useTransformCommand(),
         copy: useCopyCommand(),
+        select: useSelectCommand(),
     }
 
     const executeMouseMoveCommand = useCallback((event) => {
@@ -39,32 +43,43 @@ const useMouseMoveCommands = () => {
         }
 
         let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
-
-        if (options.ortho && tool.clicks) {
-            const lastClick = tool.clicks[tool.clicks.length - 1]
-
-            const xDiff = Math.abs(lastClick.x - realClientX)
-            const yDiff = Math.abs(lastClick.y - realClientY)
-
-            if (xDiff < yDiff) {
-                realClientX = lastClick.x
-            } else {
-                realClientY = lastClick.y
-            }
-        }
-
+        
         if (options.snap && tool.type !== 'select') {
             commands.snap({ mouseX: realClientX, mouseY: realClientY })
         }
-
-        if (snappedPoint) {
-            [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
+        
+        if (options.ortho && tool.clicks && !snappedPoint) {
+            const lastClick = getLastReferenceClick()
+            if (lastClick) {
+                const [finalX, finalY] = getOrthoCoordinates(lastClick.x, lastClick.y, realClientX, realClientY)
+                realClientX = finalX
+                realClientY = finalY
+            }
         }
-
+        
+        
+        if (snappedPoint) {
+            // [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
+            realClientX = snappedPoint.x
+            realClientY = snappedPoint.y
+        }
+        
         const realMousePosition = { mouseX: realClientX, mouseY: realClientY }
+        if (tool.clicks) {
+            if (tool.name === 'select') {
+                commands.select(realMousePosition)
+                return
+            }
 
+            const refClick = getLastReferenceClick()
+            if (refClick) {
+                const toolLine = createLine(refClick.x, refClick.y, realClientX, realClientY)
+                addToolLine(toolLine)
+            }
+        }
+        
         // if (!currentlyEditedElements && !currentlyCreatedElement) return
-
+        
         if (currentlyEditedElements) {
             if (selectedPoints) {
                 commands.edit(realMousePosition)
@@ -93,9 +108,12 @@ const useMouseMoveCommands = () => {
         options.ortho,
         selectedPoints, 
         tool.type,
+        tool.name,
         tool.clicks,
         snappedPoint,
-        getRealMouseCoordinates
+        getRealMouseCoordinates,
+        getLastReferenceClick,
+        addToolLine
     ])
 
     return executeMouseMoveCommand

@@ -12,16 +12,14 @@ const useEditCommand = () => {
         }
     } = useElementsContext()
 
-    const { setTool } = useToolsContext()
+    const { resetTool } = useToolsContext()
 
     const handleEditCmd = useCallback(() => {
-        if (!currentlyEditedElements) {
-            return
-        }
+        if (!currentlyEditedElements) return
 
-        setTool({ type: 'select', name: 'select'})
+        resetTool()
         editElements(currentlyEditedElements)
-    }, [currentlyEditedElements, editElements, setTool])
+    }, [currentlyEditedElements, editElements, resetTool])
 
     return handleEditCmd
 }

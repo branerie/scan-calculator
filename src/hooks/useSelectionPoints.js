@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { CANVAS_WIDTH } from '../utils/constants'
-import { createTree } from '../utils/pointsSearchTree'
+import { createTree } from '../utils/searchTree/pointsSearchTree'
 
 const buildPointsTreeDataObject = (point, pointType) => {
     return {

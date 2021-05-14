@@ -66,6 +66,19 @@ class Element {
         throw new Error('Method setLastAttribute is not implemented')
     }
 
+    /* Method should return an object containing information about an object's bounding box,
+    containing properties as the following example:
+        {
+            left: 10,
+            right: 150,
+            top: 50,
+            bottom: 350
+        } 
+    */
+    getBoundingBox() {
+        throw new Error('Method getBoundingBox is not implemented')
+    }
+
     move(dX, dY) {
         throw new Error('Method move is not implemented')
     }

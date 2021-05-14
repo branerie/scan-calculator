@@ -9,9 +9,9 @@ import Rectangle from '../drawingElements/rectangle'
 
 class ElementManipulator {
     static copyElement(element, keepIds = false) {
-        const functionName = `copy${element.type.charAt(0).toUpperCase() + element.type.slice(1)}`
+        const methodName = `copy${element.type.charAt(0).toUpperCase() + element.type.slice(1)}`
 
-        const copyingMethod = ElementManipulator[functionName]
+        const copyingMethod = ElementManipulator[methodName]
         const newElement = copyingMethod(element, keepIds)
         if (!keepIds) {
             newElement.id = uuidv4()

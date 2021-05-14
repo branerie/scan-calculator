@@ -3,11 +3,12 @@ import { createLine } from '../utils/elementFactory'
 
 class Polyline extends Element {
     #isFullyDefined
+    #boundingBox
 
     constructor(initialPoint, { id = null, groupId = null, elements = null } = {}) {
         super(id, groupId)
 
-        this.elements = elements ? elements : [createLine(initialPoint.x, initialPoint.y, groupId)]
+        this.elements = elements ? elements : [createLine(initialPoint.x, initialPoint.y, null, null, groupId)]
         this.#isFullyDefined = false
     }
 
@@ -50,8 +51,9 @@ class Polyline extends Element {
         const elementToDefine = this.elements[this.elements.length - 1]
         elementToDefine.defineNextAttribute(definingPoint)
 
-        const line = createLine(definingPoint.x, definingPoint.y, this.groupId)
+        const line = createLine(definingPoint.x, definingPoint.y, null, null, this.groupId)
         this.elements.push(line)
+        // this.__updateBoundingBox()
     }
 
     getSelectionPoints() {
@@ -71,12 +73,19 @@ class Polyline extends Element {
         const elementToDefine = this.elements[this.elements.length - 1]
 
         elementToDefine.setPointB(pointX, pointY)
+        this._updateBoundingBox()
     }
 
     setPointById(pointId, newPointX, newPointY) {
-        return this.elements.reduce((acc, element) => {
+        const isSuccessful = this.elements.reduce((acc, element) => {
             return acc || element.setPointById(pointId, newPointX, newPointY)
         }, false)
+
+        if (isSuccessful) {
+            this._updateBoundingBox()
+        }
+
+        return isSuccessful
     }
 
     getPointById(pointId) {
@@ -92,7 +101,16 @@ class Polyline extends Element {
         return point
     }
 
-    move(dX, dY) { this.elements.forEach(e => e.move(dX, dY)) }
+    move(dX, dY) { 
+        this.elements.forEach(e => e.move(dX, dY))
+        
+        this.#boundingBox.left += dX
+        this.#boundingBox.right += dX
+        this.#boundingBox.top += dY
+        this.#boundingBox.bottom += dY
+    }
+
+    getBoundingBox() { return this.#boundingBox }
 
     stretchByMidPoint(dX, dY, midPointId) {
         const movedLineIndex = this.elements.findIndex(e => e.getPointById(midPointId))
@@ -122,7 +140,25 @@ class Polyline extends Element {
             nextElement.setPointA(nextElement.pointA.x + dX, nextElement.pointA.y + dY)
         }
 
+        this._updateBoundingBox()
         return true
+    }
+
+    _updateBoundingBox() {
+        let left = Number.POSITIVE_INFINITY
+        let right = Number.NEGATIVE_INFINITY
+        let top = Number.POSITIVE_INFINITY
+        let bottom = Number.NEGATIVE_INFINITY
+        for (const element of this.elements) {
+            const box = element.getBoundingBox()
+
+            left = box.left < left ? box.left : left
+            right = box.right > right ? box.right : right
+            top = box.top < top ? box.top : top
+            bottom = box.bottom > bottom ? box.bottom : bottom
+        }
+
+        this.#boundingBox = { left, right, top, bottom }
     }
 }
 

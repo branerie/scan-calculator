@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
-import { createElement } from '../../utils/elementFactory'
+import { createElement, createPoint } from '../../utils/elementFactory'
 
 const useDrawCommand = () => {
     const {
@@ -10,6 +10,7 @@ const useDrawCommand = () => {
             currentlyCreatedElement,
             addCurrentlyCreatedElement,
             removeCurrentlyCreatedElement,
+            snappedPoint,
             clearSnappedPoint
         },
         history: {
@@ -17,7 +18,7 @@ const useDrawCommand = () => {
         }
     } = useElementsContext()
 
-    const { tool, addToolClick } = useToolsContext()
+    const { tool, addToolClick, clearCurrentTool } = useToolsContext()
 
     const handleDrawCmd = useCallback((event, clickedPoint) => {
         if (!currentlyCreatedElement) {
@@ -33,21 +34,26 @@ const useDrawCommand = () => {
         if (currentlyCreatedElement.isFullyDefined && currentlyCreatedElement.type !== 'polyline') {
             clearSnappedPoint()
             addElements([currentlyCreatedElement])
-
+            clearCurrentTool()
             removeCurrentlyCreatedElement()
             return
         }
+        
+        const copiedPoint = snappedPoint ? createPoint(clickedPoint.x, clickedPoint.y) : clickedPoint
+        currentlyCreatedElement.defineNextAttribute(copiedPoint)
 
-        currentlyCreatedElement.defineNextAttribute(clickedPoint)
-        addToolClick(clickedPoint)
+        const isReferenceClick = tool.name !== 'arc'
+        addToolClick(clickedPoint, isReferenceClick)
     }, [
         addCurrentlyCreatedElement, 
         addElements, 
         clearSnappedPoint, 
+        snappedPoint,
         currentlyCreatedElement, 
         removeCurrentlyCreatedElement, 
         tool.name,
-        addToolClick
+        addToolClick,
+        clearCurrentTool
     ])
 
     return handleDrawCmd

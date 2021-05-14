@@ -124,5 +124,5 @@ const drawSnappedPoint = (context, snappedPoint, currentScale) => {
 export {
     draw,
     drawSelectionPoints,
-    drawSnappedPoint
+    drawSnappedPoint,
 }

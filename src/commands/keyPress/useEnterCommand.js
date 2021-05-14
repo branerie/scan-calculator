@@ -15,7 +15,7 @@ const useEnterCommand = () => {
         }
     } = useElementsContext()
 
-    const { setTool } = useToolsContext()
+    const { clearCurrentTool } = useToolsContext()
 
     const handleEnterCmd = useCallback(() => {
         if (!currentlyCreatedElement || currentlyCreatedElement.baseType !== 'polyline') return
@@ -30,8 +30,8 @@ const useEnterCommand = () => {
         addElements([currentlyCreatedElement])
 
         removeCurrentlyCreatedElement()
-        setTool({ type: 'select', name: 'select'})
-    }, [addElements, clearSnappedPoint, currentlyCreatedElement, removeCurrentlyCreatedElement, setTool])
+        clearCurrentTool()
+    }, [addElements, clearSnappedPoint, currentlyCreatedElement, removeCurrentlyCreatedElement, clearCurrentTool])
 
     return handleEnterCmd
 }

@@ -42,7 +42,7 @@ const createEditedElement = (element, payload) => {
 }
 
 const createPoint = (pointX, pointY) => createElement('point', pointX, pointY)
-const createLine = (initialPointX, initialPointY, groupId, lastPointX, lastPointY) => {
+const createLine = (initialPointX, initialPointY, lastPointX, lastPointY, groupId = null) => {
     const line = createElement('line', initialPointX, initialPointY, groupId)
 
     if ((lastPointX || lastPointX === 0) && (lastPointY || lastPointY === 0)) {

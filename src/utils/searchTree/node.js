@@ -2,11 +2,11 @@ const filterData = (data, dataFilters, shouldFulfillFilters = true) => {
     return data.filter(dataEntry => {
         for (const key of Object.keys(dataFilters)) {
             if (dataEntry[key] !== dataFilters[key]) {
-                return shouldFulfillFilters ? false : true
+                return !shouldFulfillFilters
             }
         }
 
-        return shouldFulfillFilters ? true : false
+        return shouldFulfillFilters
     })
 }
 

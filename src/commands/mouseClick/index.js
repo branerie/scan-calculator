@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 import { createPoint } from '../../utils/elementFactory'
+import { getOrthoCoordinates } from '../../utils/options'
 import useCopyCommand from './useCopyCommand'
 import useDrawCommand from './useDrawCommand'
 import useEditCommand from './useEditCommand'
@@ -25,7 +26,7 @@ const useMouseClickCommands = () => {
         transform: useTransformCommand()
     }
 
-    const executeKeyPressCommand = useCallback((event) => {
+    const executeMouseClickCommand = useCallback((event) => {
         if (!(tool.type in commands)) {
             return
         }
@@ -33,15 +34,9 @@ const useMouseClickCommands = () => {
         let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
         if (options.ortho && tool.clicks) {
             const lastClick = tool.clicks[tool.clicks.length - 1]
-
-            const xDiff = Math.abs(lastClick.x - realClientX)
-            const yDiff = Math.abs(lastClick.y - realClientY)
-
-            if (xDiff < yDiff) {
-                realClientX = lastClick.x
-            } else {
-                realClientY = lastClick.y
-            }
+            const [finalX, finalY] = getOrthoCoordinates(lastClick.x, lastClick.y, realClientX, realClientY)
+            realClientX = finalX
+            realClientY = finalY
         }
 
         const clickedPoint = snappedPoint ? snappedPoint : createPoint(realClientX, realClientY)
@@ -49,7 +44,7 @@ const useMouseClickCommands = () => {
         commands[tool.type](event, clickedPoint)
     }, [commands, getRealMouseCoordinates, snappedPoint, tool.type, tool.clicks, options.ortho])
 
-    return executeKeyPressCommand
+    return executeMouseClickCommand
 }
 
 export default useMouseClickCommands

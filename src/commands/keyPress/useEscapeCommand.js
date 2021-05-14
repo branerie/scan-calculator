@@ -20,7 +20,7 @@ const useEscapeCommand = () => {
         }
     } = useElementsContext() 
 
-    const { setTool } = useToolsContext()
+    const { resetTool, clearCurrentTool } = useToolsContext()
 
     const handleEscapeCmd = useCallback(() => {
         if (currentlyCreatedElement) {
@@ -31,11 +31,12 @@ const useEscapeCommand = () => {
             }
     
             clearSnappedPoint()
+            clearCurrentTool()
             removeCurrentlyCreatedElement()
             return
         }
     
-        setTool({ type: 'select', name: 'select'})
+        resetTool()
     
         if (currentlyEditedElements) {
             stopEditingElements()
@@ -65,7 +66,8 @@ const useEscapeCommand = () => {
         removeCurrentlyCreatedElement, 
         selectedElements, 
         stopEditingElements,
-        setTool
+        resetTool,
+        clearCurrentTool
     ])
 
     return handleEscapeCmd
