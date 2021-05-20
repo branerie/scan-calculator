@@ -1,4 +1,4 @@
-import { click, matchSnapshot, pressEnter, pressEscape, selectTool } from '../../../utils/canvas'
+import { click, matchSnapshot, moveMouse, pressEnter, pressEscape, selectTool } from '../../../utils/canvas'
 import { visitPage } from '../../../utils/main'
 
 describe('Elements select command', () => {
@@ -79,19 +79,16 @@ describe('Elements select command', () => {
         drawElements()
 
         click(260, 30)
-        click(10, 70)
+        click(10, 70) // should select line and polyline
 
         click(70, 380)
         click(30, 420) // should NOT select arc by center
 
-        click(290, 230)
-        click(210, 160)
-
         click(330, 260)
-        click(260, 340)
+        click(260, 340) // should select circle
 
         click(700, 500)
-        click(550, 400)
+        click(550, 400) // should select rectangle
     })
 
     it('should not select partial elements with whole-select window', () => {

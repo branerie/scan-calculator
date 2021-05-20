@@ -191,7 +191,6 @@ const Canvas = () => {
             { tool &&
                 <ToolInputMapper inputValues={inputValues} setInputValue={setInputValue} toolName={tool.name} />
             }
-            <ul id="clicks"></ul>
         </>
     )
 }

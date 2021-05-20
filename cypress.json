@@ -6,10 +6,11 @@
     "env": {
         "cypress-plugin-snapshots": {
             "imageConfig": {
-                "threshold": 0.0005
+                "threshold": 0.005
             }
         }
     },
     "viewportWidth": 1800,
-    "viewportHeight": 1080
+    "viewportHeight": 1080,
+    "video": false
 }

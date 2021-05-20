@@ -28,8 +28,8 @@ describe('<Canvas />', () => {
 
         // draw arc
         selectTool('arc')
-        click(300, 250)
         click(250, 250)
+        click(300, 250)
         click(200, 250)
 
         // draw circle
@@ -43,6 +43,7 @@ describe('<Canvas />', () => {
         click(350, 300)
         click(600, 600)
 
+        pressEscape()
         pressEscape()
     }
 
