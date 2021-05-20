@@ -46,15 +46,15 @@ class ElementManipulator {
     }
 
     static copyPolyline(polyline, keepIds = false) {
-        let newPolyline
+        const copiedElements = polyline.elements.map(e => ElementManipulator.copyElement(e, keepIds))
         if (keepIds) {
             const newInitialPoint = ElementManipulator.copyPoint(polyline.basePoint, keepIds)
-            newPolyline = new Polyline(newInitialPoint, { id: polyline.id, groupId: polyline.groupId })
-        } else {
-            newPolyline = createElement('polyline', polyline.basePoint.x, polyline.basePoint.y)
+            return new Polyline(newInitialPoint, { id: polyline.id, groupId: polyline.groupId, elements: copiedElements })
         }
+        
+        const newPolyline = createElement('polyline', polyline.basePoint.x, polyline.basePoint.y)
+        newPolyline.elements = copiedElements
     
-        newPolyline.elements = polyline.elements.map(e => ElementManipulator.copyElement(e, keepIds))
         return newPolyline
     }
 

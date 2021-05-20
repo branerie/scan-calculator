@@ -59,7 +59,7 @@ class Arc extends Element {
         }
 
         if (startLine && endLine) {
-            this.__updateMidLine()
+            this.__updateDetails()
         }
     }
 
@@ -78,6 +78,8 @@ class Arc extends Element {
         this.#startLine.setLength(value, false)
         this.#endLine.setLength(value, false)
         this.#midLine.setLength(value, false)
+
+        this.__updateBoundingBox()
     }
 
     get isFullyDefined() {

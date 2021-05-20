@@ -35,8 +35,12 @@ const useDrawing = () => {
         canvasContext.scale(currentScale, currentScale)
     }, [canvasContext, currentScale, currentTranslate])
 
-    const drawElement = useCallback((element, isSelected = false) => {
+    const drawElement = useCallback((element, isSelected = false, options) => {
         canvasContext.beginPath()
+        if (options && options.color) {
+            canvasContext.strokeStyle = options.color
+        }
+
         if (isSelected) {
             canvasContext.setLineDash([LINE_DASH_LINE_SIZE / currentScale, LINE_DASH_SPACE_SIZE / currentScale])
         }
@@ -79,6 +83,7 @@ const useDrawing = () => {
         }
 
         canvasContext.stroke()
+        canvasContext.strokeStyle = '#000000'
         canvasContext.setLineDash([])
 
     }, [canvasContext, currentScale])

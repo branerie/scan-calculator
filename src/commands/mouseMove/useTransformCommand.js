@@ -12,18 +12,13 @@ const useTransformCommand = () => {
         elements: {
             currentlyEditedElements,
             changeEditingElements,
-            snappedPoint,
             getElementById
         }
     } = useElementsContext()
 
-    const { tool, getRealMouseCoordinates, currentScale } = useToolsContext()
+    const { tool, currentScale } = useToolsContext()
 
     const handleTransformCmd = useCallback(({ mouseX, mouseY }) => {
-        const [realClientX, realClientY] = snappedPoint
-            ? getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
-            : getRealMouseCoordinates(mouseX, mouseY)
-
         if (tool.name === 'move') {
             const initialClick = tool.clicks[0]
 
@@ -32,8 +27,8 @@ const useTransformCommand = () => {
             const previousDx = firstEditedElement.basePoint.x - originalFirstElement.basePoint.x
             const previousDy = firstEditedElement.basePoint.y - originalFirstElement.basePoint.y
 
-            const dX = realClientX - initialClick.x - previousDx
-            const dY = realClientY - initialClick.y - previousDy
+            const dX = mouseX - initialClick.x - previousDx
+            const dY = mouseY - initialClick.y - previousDy
 
             const newCurrentlyEditedElements = [...currentlyEditedElements]
             newCurrentlyEditedElements.forEach(ncee => ncee.move(dX, dY))
@@ -45,7 +40,7 @@ const useTransformCommand = () => {
         if (tool.name === 'rotate') {
             const pivotPoint = tool.clicks[0]
 
-            const lineFromPivot = createLine(pivotPoint.x, pivotPoint.y, realClientX, realClientY)
+            const lineFromPivot = createLine(pivotPoint.x, pivotPoint.y, mouseX, mouseY)
             const angle = 360 - lineFromPivot.angle
 
             const newCurrentlyEditedElements = [...currentlyEditedElements]
@@ -66,7 +61,7 @@ const useTransformCommand = () => {
 
         if (tool.name === 'mirror') {
             const mirrorFirstPoint = tool.clicks[0]
-            const mirrorLine = createLine(mirrorFirstPoint.x, mirrorFirstPoint.y, realClientX, realClientY)
+            const mirrorLine = createLine(mirrorFirstPoint.x, mirrorFirstPoint.y, mouseX, mouseY)
 
             const newCurrentlyEditedElements = [...currentlyEditedElements]
             for (const editedElement of newCurrentlyEditedElements) {
@@ -98,8 +93,8 @@ const useTransformCommand = () => {
         if (tool.name === 'scale') {
             const initialClick = tool.clicks[0]
 
-            const distanceFromInitial = getPointDistance(initialClick, { x: realClientX, y: realClientY })
-            const scalingFactor = Math.max(distanceFromInitial * SCALE_SMOOTHING_FACTOR * currentScale ** 2, 0.001)
+            const distanceFromInitial = getPointDistance(initialClick, { x: mouseX, y: mouseY })
+            const scalingFactor = Math.max(distanceFromInitial * SCALE_SMOOTHING_FACTOR * currentScale, 0.001)
 
             const newCurrentlyEditedElements = [...currentlyEditedElements]
             for (const editedElement of newCurrentlyEditedElements) {
@@ -126,15 +121,7 @@ const useTransformCommand = () => {
             changeEditingElements(newCurrentlyEditedElements)
             return
         }
-    }, [
-        snappedPoint, 
-        getRealMouseCoordinates, 
-        tool, 
-        currentlyEditedElements, 
-        changeEditingElements, 
-        getElementById,
-        currentScale
-    ])
+    }, [tool, currentlyEditedElements, changeEditingElements, getElementById, currentScale])
 
     return handleTransformCmd
 }

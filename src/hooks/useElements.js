@@ -5,8 +5,8 @@ import ElementIntersector from '../utils/elementIntersector'
 import ElementManipulator from '../utils/elementManipulator'
 import HashGrid from '../utils/hashGrid'
 
-const HASH_GRID_DIV_SIZE_X = 50 
-const HASH_GRID_DIV_SIZE_Y = 25 
+const HASH_GRID_DIV_SIZE_X = 50
+const HASH_GRID_DIV_SIZE_Y = 25
 
 const elementsReducer = (state, action) => {
     switch (action.type) {
@@ -16,8 +16,8 @@ const elementsReducer = (state, action) => {
                 newStateElements[newElement.id] = newElement
             })
 
-            return { 
-                ...state, 
+            return {
+                ...state,
                 elements: newStateElements,
                 currentlyCreatedElement: null
             }
@@ -52,10 +52,10 @@ const elementsReducer = (state, action) => {
             return { ...state, elements: newElements, currentlyEditedElements: newCurrentlyEditedElements }
         }
         case 'setElements': {
-            return { 
+            return {
                 ...state,
-                elements: action.newElements, 
-                currentlyCreatedElement: null, 
+                elements: action.newElements,
+                currentlyCreatedElement: null,
                 currentlyEditedElements: null,
                 snappedPoint: null
             }
@@ -77,7 +77,7 @@ const elementsReducer = (state, action) => {
                 }
 
                 newCurrentlyEditedElements[editedElement.id] = editedElementCopy
-            }   
+            }
 
             return { ...state, currentlyEditedElements: newCurrentlyEditedElements, elements: newElements }
         }
@@ -116,24 +116,63 @@ const elementsReducer = (state, action) => {
             return { ...state, elements: newElements, currentlyEditedElements: null, snappedPoint: null }
         }
         case 'startCopyingElements': {
-            const newCopiedElements = {}
-            action.elementsToCopy.forEach(element => {
+            const { elementsToCopy } = action
+            const newCopiedElements = []
+            elementsToCopy.forEach(element => {
                 const copyOfElement = ElementManipulator.copyElement(element, false)
-                newCopiedElements[copyOfElement.id] = copyOfElement
+                newCopiedElements.push(copyOfElement)
             })
 
-            return { ...state, currentlyCopiedElements: newCopiedElements }
+            return {
+                ...state,
+                currentlyCopiedElements: {
+                    original: elementsToCopy,
+                    current: newCopiedElements,
+                    positioned: []
+                }
+            }
         }
-        case 'changeCopyingElements': {
-            const newCopiedElements = state.currentlyCopiedElements ? { ...state.currentlyCopiedElements } : {}
-            action.newElementsToCopy.forEach(changedElement => {
-                newCopiedElements[changedElement.id] = changedElement
+        case 'moveCopyingElements': {
+            const { currentlyCopiedElements } = state
+            if (!currentlyCopiedElements) {
+                return state
+            }
+
+            const { newCurrentElements } = action
+
+            return {
+                ...state,
+                currentlyCopiedElements: {
+                    ...currentlyCopiedElements,
+                    current: newCurrentElements
+                }
+            }
+        }
+        case 'continueCopyingElements': {
+            if (!state.currentlyCopiedElements) {
+                return state
+            }
+
+            const { original, current, positioned } = state.currentlyCopiedElements
+            const newPositionedElements = [...positioned, ...current]
+
+            const newCurrent = []
+            current.forEach(element => {
+                const copyOfElement = ElementManipulator.copyElement(element, false)
+                newCurrent.push(copyOfElement)
             })
 
-            return { ...state, currentlyCopiedElements: newCopiedElements }
+            return {
+                ...state,
+                currentlyCopiedElements: {
+                    original,
+                    current: newCurrent,
+                    positioned: newPositionedElements
+                }
+            }
         }
-        case 'clearCopyingElements': {
-            return { ...state, currentlyCopiedElements: null } 
+        case 'finishCopyingElements': {
+            return { ...state, currentlyCopiedElements: null }
         }
         case 'setSnappedPoint': {
             return { ...state, snappedPoint: action.value }
@@ -147,7 +186,7 @@ const elementsReducer = (state, action) => {
 }
 
 const useElements = () => {
-    const [elementsState, elementsDispatch] = useReducer(elementsReducer, { 
+    const [elementsState, elementsDispatch] = useReducer(elementsReducer, {
         elements: {},
         currentlyCreatedElement: null,
         currentlyEditedElements: null,
@@ -156,9 +195,9 @@ const useElements = () => {
     })
 
     const hashGrid = useRef(new HashGrid(
-        Math.ceil(CANVAS_WIDTH / HASH_GRID_DIV_SIZE_X), 
+        Math.ceil(CANVAS_WIDTH / HASH_GRID_DIV_SIZE_X),
         HASH_GRID_DIV_SIZE_X,
-        Math.ceil(CANVAS_HEIGHT / HASH_GRID_DIV_SIZE_Y), 
+        Math.ceil(CANVAS_HEIGHT / HASH_GRID_DIV_SIZE_Y),
         HASH_GRID_DIV_SIZE_Y
     ))
 
@@ -167,7 +206,7 @@ const useElements = () => {
         hashGrid.current.addElements(newElements)
     }, [])
 
-    const removeElements = useCallback((removedElements) =>  {
+    const removeElements = useCallback((removedElements) => {
         elementsDispatch({ type: 'removeElements', removedElements })
         hashGrid.current.removeElements(removedElements)
     }, [])
@@ -233,23 +272,40 @@ const useElements = () => {
         return elementsInContainer.length > 0 ? elementsInContainer : null
     }, [elementsState.elements])
 
-    const addCurrentlyCreatedElement = (createdElement) => 
+    const addCurrentlyCreatedElement = (createdElement) =>
             elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
-    const removeCurrentlyCreatedElement = () => elementsDispatch({ type: 'removeCurrentlyCreated' })
-    const startEditingElements = (editedElements, shouldHideOriginal = true) => 
+    const removeCurrentlyCreatedElement = () =>     elementsDispatch({ type: 'removeCurrentlyCreated' })
+    const startEditingElements = (editedElements, shouldHideOriginal = true) =>
             elementsDispatch({ type: 'startEditingElements', editedElements, shouldHideOriginal })
-    const changeEditingElements = (newEditingElements) => 
+    const changeEditingElements = (newEditingElements) =>
             elementsDispatch({ type: 'changeEditingElements', newEditingElements })
     const stopEditingElements = () => elementsDispatch({ type: 'stopEditingElements' })
     const startCopyingElements = (elementsToCopy) => elementsDispatch({ type: 'startCopyingElements', elementsToCopy })
-    const changeCopyingElements = (newElementsToCopy) => 
-            elementsDispatch({ type: 'changeCopyingElements', newElementsToCopy })
-    const clearCopyingElements = () => elementsDispatch({ type: 'clearCopyingElements' })
+    const moveCopyingElements = (dX, dY) => {
+        const newCurrentElements = [...elementsState.currentlyCopiedElements.current]
+        for (const currentElement of newCurrentElements) {
+            currentElement.move(dX, dY)
+        }
+
+        elementsDispatch({ type: 'moveCopyingElements', newCurrentElements })
+    }
+
+    const continueCopyingElements = () => elementsDispatch({ type: 'continueCopyingElements' })
+    const finishCopyingElements = () => {
+        const positionedCopies = elementsState.currentlyCopiedElements
+            ? elementsState.currentlyCopiedElements.positioned
+            : []
+
+        elementsDispatch({ type: 'finishCopyingElements' })
+        return positionedCopies
+    }
 
     const completeEditingElements = () => {
         const editedElements = Object.values(elementsState.currentlyEditedElements)
 
         elementsDispatch({ type: 'completeEditingElements' })
+        hashGrid.current.changeElements(editedElements)
+
         return editedElements
     }
 
@@ -261,12 +317,14 @@ const useElements = () => {
     return {
         elements: Object.values(elementsState.elements),
         currentlyCreatedElement: elementsState.currentlyCreatedElement,
-        currentlyEditedElements: elementsState.currentlyEditedElements 
-                                    ? Object.values(elementsState.currentlyEditedElements)
-                                    : null,
-        currentlyCopiedElements: elementsState.currentlyCopiedElements 
-                                    ? Object.values(elementsState.currentlyCopiedElements)
-                                    : null,
+        currentlyEditedElements: elementsState.currentlyEditedElements
+            ? Object.values(elementsState.currentlyEditedElements)
+            : null,
+        currentlyCopiedElements: elementsState.currentlyCopiedElements
+            ? elementsState.currentlyCopiedElements
+                .current
+                .concat(elementsState.currentlyCopiedElements.positioned)
+            : null,
         snappedPoint: elementsState.snappedPoint,
         addElements,
         removeElements,
@@ -280,8 +338,9 @@ const useElements = () => {
         stopEditingElements,
         completeEditingElements,
         startCopyingElements,
-        changeCopyingElements,
-        clearCopyingElements,
+        moveCopyingElements,
+        continueCopyingElements,
+        finishCopyingElements,
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,

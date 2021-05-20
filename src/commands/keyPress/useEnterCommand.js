@@ -21,7 +21,7 @@ const useEnterCommand = () => {
         if (!currentlyCreatedElement || currentlyCreatedElement.baseType !== 'polyline') return
 
         if (currentlyCreatedElement.type === 'polyline') {
-            currentlyCreatedElement.elements.pop()
+            currentlyCreatedElement.completeDefinition()
         }
 
         clearSnappedPoint()

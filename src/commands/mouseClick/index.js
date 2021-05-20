@@ -32,7 +32,7 @@ const useMouseClickCommands = () => {
         }
 
         let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
-        if (options.ortho && tool.clicks) {
+        if (tool.type !== 'select' && options.ortho && tool.clicks) {
             const lastClick = tool.clicks[tool.clicks.length - 1]
             const [finalX, finalY] = getOrthoCoordinates(lastClick.x, lastClick.y, realClientX, realClientY)
             realClientX = finalX

@@ -24,7 +24,7 @@ const useSelectCommand = () => {
 
     const handleSelectCmd = useCallback((event, clickedPoint) => {
         if (selectedElements && selectedElements.length > 0) {
-            const nearbyPoints = findNearbyPoints(clickedPoint.x, clickedPoint.y, SELECT_DELTA)
+            const nearbyPoints = findNearbyPoints(clickedPoint.x, clickedPoint.y, SELECT_DELTA / currentScale)
 
             const selectedPoints = []
             const editedElements = []
@@ -38,10 +38,11 @@ const useSelectCommand = () => {
             }
 
             if (editedElements.length > 0) {
-                startEditingElements(editedElements)
+                startEditingElements(editedElements, false)
                 setSelectedPoints(selectedPoints)
                 setSelectedElements([...selectedElements])
                 setTool({ type: 'edit', name: 'edit' })
+                addToolClick(selectedPoints[0])
                 return
             }
         }

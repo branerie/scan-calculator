@@ -18,6 +18,10 @@ class Circle extends Element {
         this.#radius = radius
         this.#endPoints = endPoints
 
+        if (this.radius) {
+            this.__setDetails()
+        }
+
         this.__verifyConsistency()
     }
 
@@ -104,6 +108,11 @@ class Circle extends Element {
             ep.x += dX
             ep.y += dY
         })
+
+        this.#boundingBox.left += dX
+        this.#boundingBox.top += dY
+        this.#boundingBox.right += dX
+        this.#boundingBox.bottom += dY
     }
 
     getBoundingBox() { return this.#boundingBox }

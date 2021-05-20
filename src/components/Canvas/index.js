@@ -11,6 +11,7 @@ import useKeyPressCommands from '../../commands/keyPress'
 import useMouseClickCommands from '../../commands/mouseClick'
 import useDrawing from '../../hooks/useDrawing'
 import useMouseMoveCommands from '../../commands/mouseMove'
+import Line from '../../drawingElements/line'
 
 const Canvas = () => {
     const {
@@ -56,6 +57,12 @@ const Canvas = () => {
             if (e.isShown && !hasSelectedElement(e)) {
                 drawElement(e, false)
             }
+
+            // const bb = e.getBoundingBox()
+            // drawElement(new Line({ x: bb.left, y: bb.top }, { pointB: { x: bb.left, y: bb.bottom } }), false, { color: 'red' })
+            // drawElement(new Line({ x: bb.left, y: bb.bottom }, { pointB: { x: bb.right, y: bb.bottom } }), false, { color: 'red' })
+            // drawElement(new Line({ x: bb.right, y: bb.bottom }, { pointB: { x: bb.right, y: bb.top } }), false, { color: 'red' })
+            // drawElement(new Line({ x: bb.right, y: bb.top }, { pointB: { x: bb.left, y: bb.top } }), false, { color: 'red' })
         })
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
@@ -82,14 +89,19 @@ const Canvas = () => {
 
         if (!selectedElements) return
 
-        const elementsWithHighlightedPoints = selectedElements.concat(currentlyEditedElements || [])
-        elementsWithHighlightedPoints.forEach(selectedElement => {
+        selectedElements.forEach(selectedElement => {
             if (!selectedElement.isShown) return
 
             drawElement(selectedElement, true)
 
             const selectionPoints = selectedElement.getSelectionPoints()
             drawSelectionPoints(selectionPoints)
+        })
+
+        if (!currentlyEditedElements) return
+
+        currentlyEditedElements.forEach(cee => {
+            drawElement(cee, false)
         })
     }, 
     [

@@ -10,8 +10,6 @@ const useEscapeCommand = () => {
             removeCurrentlyCreatedElement,
             currentlyEditedElements,
             stopEditingElements,
-            currentlyCopiedElements,
-            clearCopyingElements,
         },
         selection: {
             selectedElements,
@@ -43,12 +41,6 @@ const useEscapeCommand = () => {
             clearSelectedPoints()
             return
         }
-
-        if (currentlyCopiedElements) {
-            clearCopyingElements()
-            clearSnappedPoint()
-            return
-        }
     
         if (selectedElements && selectedElements.length > 0) {
             clearSelection()
@@ -56,11 +48,9 @@ const useEscapeCommand = () => {
     
         clearSnappedPoint()
     }, [
-        clearCopyingElements,
         clearSelectedPoints, 
         clearSelection, 
         clearSnappedPoint, 
-        currentlyCopiedElements,
         currentlyCreatedElement, 
         currentlyEditedElements, 
         removeCurrentlyCreatedElement, 

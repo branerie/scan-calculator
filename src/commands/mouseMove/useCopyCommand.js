@@ -5,31 +5,26 @@ import { useToolsContext } from '../../contexts/ToolsContext'
 const useCopyCommand = () => {
     const {
         elements: {
-            currentlyCopiedElements,
-            changeCopyingElements,
+            moveCopyingElements,
         }
     } = useElementsContext()
 
-    const { tool, editLastToolClick } = useToolsContext()
+    const { tool, setTool } = useToolsContext()
     
     const handleCopyCmd = useCallback((mousePosition) => {
         const { mouseX, mouseY } = mousePosition
 
         if (tool.name === 'copy') {
-            const basePoint = tool.clicks[0]
+            const basePoint = tool.currentPos ? tool.currentPos : tool.clicks[0]
+
             const dX = mouseX - basePoint.x
             const dY = mouseY - basePoint.y
 
-            const newCurrentlyCopiedElements = [...currentlyCopiedElements]
-            for (const editedElement of newCurrentlyCopiedElements) {
-                editedElement.move(dX, dY)
-            }
-
-            changeCopyingElements(newCurrentlyCopiedElements)
-            editLastToolClick({ x: mouseX, y: mouseY })
+            moveCopyingElements(dX, dY)
+            setTool(currTool => ({ ...currTool, currentPos: { x: mouseX, y: mouseY } }))
             return
         }
-    }, [currentlyCopiedElements, changeCopyingElements, tool, editLastToolClick])
+    }, [moveCopyingElements, tool, setTool])
 
     return handleCopyCmd
 }
