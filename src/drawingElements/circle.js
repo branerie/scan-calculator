@@ -1,3 +1,4 @@
+import { MAX_NUM_ERROR } from '../utils/constants'
 import { createPoint } from '../utils/elementFactory'
 import { getPointDistance } from '../utils/point'
 import Element from './element'
@@ -18,11 +19,11 @@ class Circle extends Element {
         this.#radius = radius
         this.#endPoints = endPoints
 
-        if (this.radius) {
+        this.__verifyConsistency()
+
+        if (this.#radius) {
             this.__setDetails()
         }
-
-        this.__verifyConsistency()
     }
 
     get basePoint() { return this.#centerPoint }
@@ -159,7 +160,24 @@ class Circle extends Element {
 
         // radius is not set yet, we will not check further for points consistency
         if (!this.#radius) {
-            return
+            if (!this.#endPoints) return
+
+            if (this.#endPoints.length !== 4) {
+                throw new Error('Circle must contain exactly four(4) end points')
+            }
+
+            const firstPointDistance = getPointDistance(this.#endPoints[0], this.#centerPoint)
+            const secondPointDistance = getPointDistance(this.#endPoints[1], this.#centerPoint)
+            const thirdPointDistance = getPointDistance(this.#endPoints[2], this.#centerPoint)
+            const fourthPointDistance = getPointDistance(this.#endPoints[3], this.#centerPoint)
+
+            if (Math.abs(firstPointDistance - secondPointDistance) > MAX_NUM_ERROR ||
+                Math.abs(firstPointDistance - thirdPointDistance) > MAX_NUM_ERROR ||
+                Math.abs(firstPointDistance - fourthPointDistance) > MAX_NUM_ERROR) {
+                throw new Error('Circle end points must be an equal distance from the circle center (its radius)')
+            }
+
+            this.#radius = firstPointDistance
         }
 
         if (isNaN(Number(this.#radius) || this.#radius <= 0)) {

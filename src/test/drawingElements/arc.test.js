@@ -225,11 +225,14 @@ describe('arc', () => {
             const endPoint = new Point(50, 0)
             endPoint.pointId = 2
 
+            const midPoint = new Point(0, 50)
+            midPoint.pointId = 3
+
             const arc = new Arc(new Point(50, 50), { 
                 startLine: new Line(new Point(50, 50), { pointB: startPoint }),
                 endLine: new Line(new Point(50, 50), { pointB: endPoint }),
+                midLine: new Line(new Point(50, 50), { pointB: midPoint })
             })
-
             
             expect(arc.getPointById(1)).toEqual(startPoint)
             expect(arc.getPointById(2)).toEqual(endPoint)
@@ -240,7 +243,6 @@ describe('arc', () => {
             expect(arc.getPointById(2).x).toEqual(endPoint.x)
             expect(arc.getPointById(2).y).toEqual(endPoint.y)
             
-            arc.midLine.pointB.pointId = 3
             expect(arc.getPointById(3)).toEqual(arc.midLine.pointB)
             expect(arc.getPointById(3).x).toEqual(arc.midLine.pointB.x)
             expect(arc.getPointById(3).y).toEqual(arc.midLine.pointB.y)

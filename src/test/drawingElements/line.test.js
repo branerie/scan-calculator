@@ -49,7 +49,7 @@ describe('line', () => {
         it('should return true when point is close to line', () => {
             const line = new Line(new Point(100, 100), { pointB: new Point(200, 100) })
             const pointOnLine = new Point(130, 100)
-            const pointCloseToLine = new Point(130, 103)
+            const pointCloseToLine = new Point(129, 101)
             
             expect(line.checkIfPointOnElement(pointOnLine, SELECT_DELTA)).toEqual(true)
             expect(line.checkIfPointOnElement(pointCloseToLine, SELECT_DELTA)).toEqual(true)

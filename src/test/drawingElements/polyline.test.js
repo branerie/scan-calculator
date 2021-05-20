@@ -100,14 +100,12 @@ describe('polyline', () => {
     })
 
     describe('setLastAttribute', () => {
-        it('should define last element and set isFullyDefined to true once used first time', () => {
+        it('should complete definition of last element in polyline.elements', () => {
             const polyline = new Polyline(new Point(100, 100))
 
-            expect(polyline.isFullyDefined).toEqual(false)
             expect(polyline.elements[polyline.elements.length - 1].isFullyDefined).toEqual(false)
             
             polyline.setLastAttribute(200, 200)
-            expect(polyline.isFullyDefined).toEqual(true)
             expect(polyline.elements[polyline.elements.length - 1].isFullyDefined).toEqual(true)
         })
     })
