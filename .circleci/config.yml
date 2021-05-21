@@ -28,12 +28,10 @@ jobs:
       - node/install-packages
       # If you are using yarn instead npm, remove the line above and uncomment the two lines below.
       # - node/install-packages:
-      #     pkg-manager: yarn 
+      #     pkg-manager: yarn
       - run:
           name: Run tests
           command: npm test
-  cypress-run:
-    
 
 workflows:
   # Below is the definition of your workflow.
@@ -46,9 +44,6 @@ workflows:
       start: npm start
       wait-on: 'http://localhost:3000'
   sample:
-    run:
-      name: Start server
-      command: npm start
     jobs:
       - build-and-test
       - cypress/run
