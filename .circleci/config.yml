@@ -32,12 +32,19 @@ jobs:
       - run:
           name: Run tests
           command: npm test
+  cypress-run:
+    
 
 workflows:
   # Below is the definition of your workflow.
   # Inside the workflow, you provide the jobs you want to run, e.g this workflow runs the build-and-test job above.
   # CircleCI will run this workflow on every commit.
   # For more details on extending your workflow, see the configuration docs: https://circleci.com/docs/2.0/configuration-reference/#workflows
+  build:
+    jobs:
+    - cypress/run:
+      start: npm start
+      wait-on: 'http://localhost:3000'
   sample:
     run:
       name: Start server
