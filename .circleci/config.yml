@@ -42,7 +42,7 @@ workflows:
     jobs:
       - start-server:
           start: npm start
-          wait-on: 'http-get://localhost:3000'
+          # wait-on: 'http-get://localhost:3000'
   sample:
     jobs:
       - build-and-test
