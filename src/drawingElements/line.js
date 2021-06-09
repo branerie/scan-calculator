@@ -139,7 +139,7 @@ class Line extends Element {
         return null
     }
 
-    getSelectionPoints() {
+    getSelectionPoints(pointType) {
         if (!this.isFullyDefined) {
             return []
         }
@@ -147,9 +147,11 @@ class Line extends Element {
         // this.__updateDetails()
 
         return [
-            { ...this.#pointA, pointType: 'endPoint' },
-            { ...this.#pointB, pointType: 'endPoint' },
-            { ...this.#midPoint, pointType: 'midPoint' }
+            ...(!pointType || pointType === 'endPoint') ? [
+                { ...this.#pointA, pointType: 'endPoint' },
+                { ...this.#pointB, pointType: 'endPoint' }
+            ] : [],
+            ...(!pointType || pointType === 'midPoint') ? [{ ...this.#midPoint, pointType: 'midPoint' }] : []
         ]
     }
 
@@ -294,7 +296,7 @@ class Line extends Element {
         this.setPointB(this.#pointA.x + dX, this.#pointA.y + dY)
     }
 
-    getBoundingBox() { return this.#boundingBox }
+    getBoundingBox() { return { ...this.#boundingBox } }
 
     move(dX, dY) {
         this.#pointA.x += dX

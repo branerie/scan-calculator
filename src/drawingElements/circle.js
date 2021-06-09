@@ -45,10 +45,12 @@ class Circle extends Element {
 
     get isAlmostDefined() { return !!(this.#centerPoint) }
 
-    getSelectionPoints() {
+    getSelectionPoints(pointType) {
         return [ 
-            { ...this.#centerPoint, pointType: 'center' },
-            ...this.#endPoints.map(ep => ({ ...ep, pointType: 'endPoint' }))
+            ...(!pointType || pointType === 'center' ) ? [{ ...this.#centerPoint, pointType: 'center' }] : [],
+            ...(!pointType || pointType === 'endPoint' ) 
+                    ? this.#endPoints.map(ep => ({ ...ep, pointType: 'endPoint' }))
+                    : []
         ]
     }
 
@@ -116,7 +118,7 @@ class Circle extends Element {
         this.#boundingBox.bottom += dY
     }
 
-    getBoundingBox() { return this.#boundingBox }
+    getBoundingBox() { return { ...this.#boundingBox } }
 
     __setDetails() {
         this.__setEndPoints()

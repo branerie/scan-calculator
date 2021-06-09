@@ -30,6 +30,25 @@ class Rectangle extends Polyline {
 
         const firstLine = this.elements[0]
         firstLine.setLastAttribute(pointX, firstLine.pointA.y)
+        
+        if (this.elements.length === 4) {
+            const firstLine = this.elements[0]
+            this.elements[1].setPointA(pointX, firstLine.pointA.y)
+            this.elements[1].setPointB(pointX, pointY)
+
+            this.elements[2].setPointA(pointX, pointY)
+            this.elements[2].setPointB(firstLine.pointA.x, pointY)
+
+            this.elements[2].setPointA(pointX, pointY)
+            this.elements[2].setPointB(firstLine.pointA.x, pointY)
+
+            this.elements[3].setPointA(firstLine.pointA.x, pointY)
+            this.elements[3].setPointB(firstLine.pointA.x, firstLine.pointA.y)
+            
+            this._updateBoundingBox()
+            return
+        }
+
         this.elements = [
             firstLine,
             createLine(pointX, firstLine.pointA.y, pointX, pointY, this.groupId),

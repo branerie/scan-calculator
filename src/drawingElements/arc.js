@@ -99,12 +99,14 @@ class Arc extends Element {
         )
     }
 
-    getSelectionPoints() {
+    getSelectionPoints(pointType) {
         return [
-            { ...this.#centerPoint, pointType: 'center' },
-            { ...this.#startLine.pointB, pointType: 'endPoint' },
-            { ...this.#endLine.pointB, pointType: 'endPoint' },
-            { ...this.#midLine.pointB, pointType: 'midPoint' }
+            ...(!pointType || pointType === 'center') ? [{ ...this.#centerPoint, pointType: 'center' }] : [],
+            ...(!pointType || pointType === 'endPoint') ? [
+                { ...this.#startLine.pointB, pointType: 'endPoint' },
+                { ...this.#endLine.pointB, pointType: 'endPoint' }
+            ] : [],
+            ...(!pointType || pointType === 'midPoint') ? [{ ...this.#midLine.pointB, pointType: 'midPoint' }] : []
         ]
     }
 
@@ -209,7 +211,7 @@ class Arc extends Element {
         return true
     }
 
-    getBoundingBox() { return this.#boundingBox }
+    getBoundingBox() { return { ...this.#boundingBox } }
 
     move(dX, dY) {
         this.#centerPoint.x += dX

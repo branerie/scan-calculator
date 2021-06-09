@@ -20,11 +20,11 @@ const useSelectCommand = () => {
         }
     } = useElementsContext()
 
-    const { tool, setTool, currentScale, addToolClick, clearCurrentTool } = useToolsContext()
+    const { tool, setTool, selectDelta, addToolClick, clearCurrentTool } = useToolsContext()
 
     const handleSelectCmd = useCallback((event, clickedPoint) => {
         if (selectedElements && selectedElements.length > 0) {
-            const nearbyPoints = findNearbyPoints(clickedPoint.x, clickedPoint.y, SELECT_DELTA / currentScale)
+            const nearbyPoints = findNearbyPoints(clickedPoint.x, clickedPoint.y, selectDelta)
 
             const selectedPoints = []
             const editedElements = []
@@ -47,7 +47,7 @@ const useSelectCommand = () => {
             }
         }
 
-        const clickedElements = getElementsContainingPoint(clickedPoint.x, clickedPoint.y, SELECT_DELTA / currentScale)
+        const clickedElements = getElementsContainingPoint(clickedPoint.x, clickedPoint.y, selectDelta)
         if (!tool.clicks) {
             if (clickedElements) {
                 if (event.shiftKey) {
@@ -77,7 +77,7 @@ const useSelectCommand = () => {
         return
     }, [
         getElementsContainingPoint, 
-        currentScale, 
+        selectDelta, 
         tool.clicks, 
         getElementsInContainer, 
         clearCurrentTool, 

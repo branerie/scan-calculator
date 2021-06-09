@@ -78,10 +78,10 @@ class Polyline extends Element {
         this.#elements.push(line)
     }
 
-    getSelectionPoints() {
+    getSelectionPoints(pointType) {
         return this.#elements.reduce((acc, element) => {
-            const snappingPoints = element.getSelectionPoints()
-            return [...acc, ...snappingPoints]
+            const selectionPoints = element.getSelectionPoints(pointType)
+            return [...acc, ...selectionPoints]
         }, [])
     }
 
@@ -133,7 +133,7 @@ class Polyline extends Element {
         this.#boundingBox.bottom += dY
     }
 
-    getBoundingBox() { return this.#boundingBox }
+    getBoundingBox() { return { ...this.#boundingBox } }
 
     stretchByMidPoint(dX, dY, midPointId) {
         const movedLineIndex = this.#elements.findIndex(e => e.getPointById(midPointId))

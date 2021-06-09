@@ -6,11 +6,11 @@ import { getPointDistance, getRotatedPointAroundPivot } from './point'
 import { capitalize } from './text'
 
 class ElementIntersector {
-    static getIntersections(elementA, elementB) {
+    static getIntersections(elementA, elementB, shouldLieOnElements = true) {
         let results = []
         if (elementA.baseType === 'polyline') {
             for (const element of elementA.elements) {
-                const intersections = ElementIntersector.getIntersections(element, elementB)
+                const intersections = ElementIntersector.getIntersections(element, elementB, shouldLieOnElements)
                 if (intersections) {
                     results = results.concat(intersections)
                 }
@@ -19,7 +19,7 @@ class ElementIntersector {
             return results.length > 0 ? results : null
         } else if (elementB.baseType === 'polyline') {
             for (const element of elementB.elements) {
-                const intersections = ElementIntersector.getIntersections(elementA, element)
+                const intersections = ElementIntersector.getIntersections(elementA, element, shouldLieOnElements)
                 if (intersections) {
                     results = results.concat(intersections)
                 }
@@ -36,14 +36,15 @@ class ElementIntersector {
         return ElementIntersector[methodName](firstElement, secondElement)
     }
 
-    static getArcArcIntersections(arcA, arcB) {
+    static getArcArcIntersections(arcA, arcB, shouldLieOnElements = true) {
         const circleIntersections = this.getCircleCircleIntersections(arcA, arcB)
         if (!circleIntersections) return null
 
         const arcIntersections = []
         for (const intersection of circleIntersections) {
-            if (arcA.checkIfPointOnElement(intersection, MAX_NUM_ERROR) && 
-                arcB.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+            if (!shouldLieOnElements ||
+                (arcA.checkIfPointOnElement(intersection, MAX_NUM_ERROR) && 
+                 arcB.checkIfPointOnElement(intersection, MAX_NUM_ERROR))) {
                 arcIntersections.push(intersection)
             }
         }
@@ -53,13 +54,13 @@ class ElementIntersector {
         return arcIntersections
     }
     
-    static getArcLineIntersections(arc, line) {
-        const circleLineIntersections = ElementIntersector.getCircleLineIntersections(arc, line)
+    static getArcLineIntersections(arc, line, shouldLieOnElements = true) {
+        const circleLineIntersections = ElementIntersector.getCircleLineIntersections(arc, line, shouldLieOnElements)
         if (!circleLineIntersections) return null
 
         const arcLineIntersections = []
         for (const intersection of circleLineIntersections) {
-            if (arc.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+            if (!shouldLieOnElements || arc.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
                 arcLineIntersections.push(intersection)
             }
         }
@@ -69,13 +70,13 @@ class ElementIntersector {
         return arcLineIntersections
     }
     
-    static getArcCircleIntersections(arc, circle) {
+    static getArcCircleIntersections(arc, circle, shouldLieOnElements = true) {
         const circleCircleIntersections = ElementIntersector.getCircleCircleIntersections(arc, circle)
         if (!circleCircleIntersections) return null
 
         const arcCircleIntersections = []
         for (const intersection of circleCircleIntersections) {
-            if (arc.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+            if (!shouldLieOnElements || arc.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
                 arcCircleIntersections.push(intersection)
             }
         }
@@ -122,7 +123,7 @@ class ElementIntersector {
         return [intersection1, intersection2]
     }
     
-    static getCircleLineIntersections(circle, line) {
+    static getCircleLineIntersections(circle, line, shouldLieOnElements = true) {
         const perpPoint = getPerpendicularPointToLine(circle.centerPoint, line)
         const distanceToCenter = getPointDistance(circle.centerPoint, perpPoint) 
         if (distanceToCenter > (circle.radius + MAX_NUM_ERROR)) {
@@ -151,11 +152,11 @@ class ElementIntersector {
 
         // check if intersections lie on finite-length line
         const finalIntersections = []
-        if (line.checkIfPointOnElement(intersection1, MAX_NUM_ERROR)) {
+        if (!shouldLieOnElements || line.checkIfPointOnElement(intersection1, MAX_NUM_ERROR)) {
             finalIntersections.push(intersection1)
         }
 
-        if (line.checkIfPointOnElement(intersection2, MAX_NUM_ERROR)) {
+        if (!shouldLieOnElements || line.checkIfPointOnElement(intersection2, MAX_NUM_ERROR)) {
             finalIntersections.push(intersection2)
         }
 
@@ -164,7 +165,7 @@ class ElementIntersector {
         return finalIntersections
     }
     
-    static getLineLineIntersections(lineA, lineB) {
+    static getLineLineIntersections(lineA, lineB, shouldLieOnElements = true) {
         const intersections = []
         if (getPointDistance(lineA.pointA, lineB.pointA) < MAX_NUM_ERROR || 
             getPointDistance(lineA.pointA, lineB.pointB) < MAX_NUM_ERROR) {
@@ -211,8 +212,9 @@ class ElementIntersector {
             intersection = createPoint(x, y)
         }
 
-        if (!lineA.checkIfPointOnElement(intersection, MAX_NUM_ERROR) ||
-            !lineB.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+        if (shouldLieOnElements && 
+            (!lineA.checkIfPointOnElement(intersection, MAX_NUM_ERROR) ||
+             !lineB.checkIfPointOnElement(intersection, MAX_NUM_ERROR))) {
             return null
         }
             

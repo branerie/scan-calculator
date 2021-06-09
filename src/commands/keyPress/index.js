@@ -4,9 +4,11 @@ import useCopyCommand from './useCopyCommand'
 import useDeleteCommand from './useDeleteCommand'
 import useEnterCommand from './useEnterCommand'
 import useEscapeCommand from './useEscapeCommand'
+import useTrimCommand from './useTrimCommand'
 import useUndoRedoCommand from './useUndoRedoCommand'
 
 const ENTER_KEY_CODE = 13
+const SPACE_KEY_CODE = 32
 const ESCAPE_KEY_CODE = 27
 const DELETE_KEY_CODE = 46
 
@@ -17,6 +19,7 @@ const useKeyPressCommands = () => {
         enter: useEnterCommand(),
         escape: useEscapeCommand(),
         copy: useCopyCommand(),
+        trim: useTrimCommand(),
     }
 
     const { tool } = useToolsContext()
@@ -38,7 +41,12 @@ const useKeyPressCommands = () => {
             return
         }
         
-        if (keyCode === ENTER_KEY_CODE) { // enter
+        if (keyCode === ENTER_KEY_CODE || keyCode === SPACE_KEY_CODE) { // enter/spacebar
+            if (tool.type === 'trim') {
+                commands.trim(event)
+                return
+            }
+
             commands.enter(event)
             return
         }

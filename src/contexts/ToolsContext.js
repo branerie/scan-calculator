@@ -1,5 +1,5 @@
 import React, { useState, useContext, createContext, useCallback, useLayoutEffect } from 'react'
-import { MAX_NUM_ERROR } from '../utils/constants'
+import { MAX_NUM_ERROR, SELECT_DELTA } from '../utils/constants'
 
 const VIEW_ZOOM_STEP_UP = 1.2
 const VIEW_ZOOM_STEP_DOWN = 1 / 1.2
@@ -98,8 +98,8 @@ export default function ToolsContextProvider({ children }) {
         return [(clientX - translateX) / currentScale, (clientY - translateY) / currentScale]
     }, [currentScale, currentTranslate])
 
-    const addToolLine = useCallback((line) => {
-        setTool(tool => ({ ...tool, line }))
+    const addToolProp = useCallback((propName, propValue) => {
+        setTool(tool => ({ ...tool, [propName]: propValue }))
     }, [])
 
     return (
@@ -108,11 +108,13 @@ export default function ToolsContextProvider({ children }) {
             setCurrentTranslate,
             currentScale,
             setCurrentScale,
+            selectDelta: SELECT_DELTA / currentScale,
             tool,
             setTool,
             resetTool,
             addToolClick,
             editLastToolClick,
+            addToolProp,
             clearCurrentTool,
             getLastReferenceClick,
             getRealMouseCoordinates,
@@ -123,7 +125,6 @@ export default function ToolsContextProvider({ children }) {
             setMouseDrag,
             options,
             setOptions,
-            addToolLine,
         }}>
             {children}
         </Context.Provider>

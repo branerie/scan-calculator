@@ -11,7 +11,6 @@ import useKeyPressCommands from '../../commands/keyPress'
 import useMouseClickCommands from '../../commands/mouseClick'
 import useDrawing from '../../hooks/useDrawing'
 import useMouseMoveCommands from '../../commands/mouseMove'
-import Line from '../../drawingElements/line'
 
 const Canvas = () => {
     const {

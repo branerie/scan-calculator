@@ -24,7 +24,7 @@ const useMouseMoveCommands = () => {
             selectedPoints
         }
     } = useElementsContext()
-    const { mouseDrag, options, tool, getRealMouseCoordinates, getLastReferenceClick, addToolLine } = useToolsContext()
+    const { mouseDrag, options, tool, getRealMouseCoordinates, getLastReferenceClick, addToolProp } = useToolsContext()
 
     const commands = {
         drag: useDragCommand(),
@@ -74,7 +74,7 @@ const useMouseMoveCommands = () => {
             const refClick = getLastReferenceClick()
             if (refClick) {
                 const toolLine = createLine(refClick.x, refClick.y, realClientX, realClientY)
-                addToolLine(toolLine)
+                addToolProp('line', toolLine)
             }
         }
         
@@ -113,7 +113,7 @@ const useMouseMoveCommands = () => {
         snappedPoint,
         getRealMouseCoordinates,
         getLastReferenceClick,
-        addToolLine
+        addToolProp
     ])
 
     return executeMouseMoveCommand

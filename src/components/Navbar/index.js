@@ -129,6 +129,15 @@ const Navbar = ({ changeTool }) => {
                         onChange={() => changeTool({ type: 'copy', name: 'copy' })}
                     />
                 </label>
+                <label>
+                    Trim
+                    <input
+                        type='radio'
+                        name='trim'
+                        checked={tool.name === 'trim'}
+                        onChange={() => changeTool({ type: 'trim', name: 'trim' })}
+                    />
+                </label>
             </div>
             {/* <div>
                 <button onClick={undo}>Undo</button>
