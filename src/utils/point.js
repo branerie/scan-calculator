@@ -26,7 +26,23 @@ const getRotatedPointAroundPivot = (point, pivotPoint, angle) => {
     return rotatedPoint
 }
 
+const getUniquePoints = (points) => {
+    const pointsByCoordinates = {}
+    for (const point of points) {
+        const coordinatesKey = `${point.x},${point.y}`
+
+        if (pointsByCoordinates[coordinatesKey]) {
+            continue
+        }
+
+        pointsByCoordinates[coordinatesKey] = point
+    }
+
+    return Object.values(pointsByCoordinates)
+}
+
 export {
     getPointDistance,
-    getRotatedPointAroundPivot
+    getRotatedPointAroundPivot,
+    getUniquePoints
 }

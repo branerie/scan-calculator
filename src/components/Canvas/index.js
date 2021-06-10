@@ -159,7 +159,7 @@ const Canvas = () => {
 
         setTool(tool)
 
-        if (tool.type !== 'transform' && tool.type !== 'copy') {
+        if (tool.type !== 'transform' && tool.type !== 'copy' && tool.type !== 'trim') {
             clearSelection()
         }
     }

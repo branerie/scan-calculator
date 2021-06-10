@@ -57,6 +57,8 @@ const elementsReducer = (state, action) => {
                 elements: action.newElements,
                 currentlyCreatedElement: null,
                 currentlyEditedElements: null,
+                currentlyCopiedElements: null,
+                currentlyReplacedElements: null,
                 snappedPoint: null
             }
         }
@@ -171,8 +173,39 @@ const elementsReducer = (state, action) => {
                 }
             }
         }
-        case 'finishCopyingElements': {
+        case 'completeCopyingElements': {
             return { ...state, currentlyCopiedElements: null }
+        }
+        case 'startReplacingElements': {
+            return {
+                ...state,
+                currentlyReplacedElements: {
+                    replacedIds: action.replacedIds,
+                    replacingElements: action.replacingElements
+                }
+            }
+        }
+        case 'clearReplacingElements': {
+            return { ...state, currentlyReplacedElements: null }
+        }
+        case 'completeReplacingElements': {
+            if (!state.currentlyReplacedElements) return state
+
+            const { currentlyReplacedElements: { replacedIds, replacingElements } } = state
+            const newElements = { ...state.elements }
+            for (const replacedId of replacedIds) {
+                delete newElements[replacedId]
+            }
+
+            for (const replacingElement of replacingElements) {
+                newElements[replacingElement.id] = replacingElement
+            }
+            
+            return {
+                ...state,
+                elements: newElements,
+                currentlyReplacedElements: null
+            }
         }
         case 'setSnappedPoint': {
             return { ...state, snappedPoint: action.value }
@@ -191,6 +224,7 @@ const useElements = () => {
         currentlyCreatedElement: null,
         currentlyEditedElements: null,
         currentlyCopiedElements: null,
+        currentlyReplacedElements: null,
         snappedPoint: null,
     })
 
@@ -291,12 +325,12 @@ const useElements = () => {
     }
 
     const continueCopyingElements = () => elementsDispatch({ type: 'continueCopyingElements' })
-    const finishCopyingElements = () => {
+    const completeCopyingElements = () => {
         const positionedCopies = elementsState.currentlyCopiedElements
             ? elementsState.currentlyCopiedElements.positioned
             : []
 
-        elementsDispatch({ type: 'finishCopyingElements' })
+        elementsDispatch({ type: 'completeCopyingElements' })
         return positionedCopies
     }
 
@@ -307,6 +341,24 @@ const useElements = () => {
         hashGrid.current.changeElements(editedElements)
 
         return editedElements
+    }
+
+    const startReplacingElements = (replacedIds, replacingElements) => 
+                    elementsDispatch({ type: 'startReplacingElements', replacedIds, replacingElements })
+    const clearReplacingElements = () => {
+        if (!elementsState.currentlyReplacedElements) return
+
+        elementsDispatch({ type: 'clearReplacingElements' })
+    }
+    const completeReplacingElements = () => {
+        const { currentlyReplacedElements } = elementsState
+        if (!currentlyReplacedElements) return
+
+        const { replacedIds, replacingElements } = currentlyReplacedElements
+        
+        elementsDispatch({ type: 'completeReplacingElements' })
+        hashGrid.current.addElements(replacingElements)
+        hashGrid.current.removeElementsById(replacedIds)
     }
 
     const getElementById = (elementId) => elementsState.elements[elementId]
@@ -325,6 +377,7 @@ const useElements = () => {
                 .current
                 .concat(elementsState.currentlyCopiedElements.positioned)
             : null,
+        currentlyReplacedElements: elementsState.currentlyReplacedElements,
         snappedPoint: elementsState.snappedPoint,
         addElements,
         removeElements,
@@ -340,7 +393,10 @@ const useElements = () => {
         startCopyingElements,
         moveCopyingElements,
         continueCopyingElements,
-        finishCopyingElements,
+        completeCopyingElements,
+        startReplacingElements,
+        clearReplacingElements,
+        completeReplacingElements,
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,

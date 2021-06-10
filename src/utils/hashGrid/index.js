@@ -20,7 +20,7 @@ class HashGrid {
         // this.#maxDivIndexY = initialNumDivsY
         this.initialNumDivsX = initialNumDivsX
         this.initialNumDivsY = initialNumDivsY
-        
+
         this.__initializeGrid()
     }
 
@@ -47,12 +47,13 @@ class HashGrid {
 
     removeElements(removedElements) {
         for (const removedElement of removedElements) {
-            const elementDivs = this.#divsById[removedElement.id]
-            for (const elementDiv of elementDivs) {
-                this.#idsByDiv[elementDiv].delete(removedElement.id)
-            }
+            this.__removeElementById(removedElement.id)
+        }
+    }
 
-            delete this.#divsById[removedElement.id]
+    removeElementsById(elementIds) {
+        for (const elementId of elementIds) {
+            this.__removeElementById(elementId)
         }
     }
 
@@ -85,14 +86,14 @@ class HashGrid {
         const startPointY = Math.min(firstContainerPoint.y, secondContainerPoint.y)
         const startDivX = getDimensionDivision1d(startPointX, this.startPosX, this.divSizeX)
         const startDivY = getDimensionDivision1d(startPointY, this.startPosY, this.divSizeY)
-        
+
         const endPointX = Math.max(firstContainerPoint.x, secondContainerPoint.x)
         const endPointY = Math.max(firstContainerPoint.y, secondContainerPoint.y)
         const endDivX = getDimensionDivision1d(endPointX, this.startPosX, this.divSizeX)
         const endDivY = getDimensionDivision1d(endPointY, this.startPosY, this.divSizeY)
 
         let elementIds = new Set()
-        for (let xIndex =  startDivX; xIndex <= endDivX; xIndex++) {
+        for (let xIndex = startDivX; xIndex <= endDivX; xIndex++) {
             for (let yIndex = startDivY; yIndex <= endDivY; yIndex++) {
                 const container = this.#idsByDiv[`${xIndex},${yIndex}`]
                 if (!container || container.size === 0) continue
@@ -146,7 +147,7 @@ class HashGrid {
     //         }
     //     }
     // }
-    
+
     __initializeGrid() {
         this.#divsById = {}
         this.#idsByDiv = {}
@@ -165,7 +166,16 @@ class HashGrid {
         const rightDiv = getDimensionDivision1d(boundingBox.right, this.startPosX, this.divSizeX)
         const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this.startPosY, this.divSizeY)
 
-        return [ leftDiv, topDiv, rightDiv, bottomDiv ]
+        return [leftDiv, topDiv, rightDiv, bottomDiv]
+    }
+
+    __removeElementById(elementId) {
+        const elementDivs = this.#divsById[elementId]
+        for (const elementDiv of elementDivs) {
+            this.#idsByDiv[elementDiv].delete(elementId)
+        }
+
+        delete this.#divsById[elementId]
     }
 }
 

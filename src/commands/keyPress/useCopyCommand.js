@@ -5,7 +5,7 @@ import { useToolsContext } from '../../contexts/ToolsContext'
 const useCopyCommand = () => {
     const {
         elements: {
-            finishCopyingElements
+            completeCopyingElements
         },
         history: {
             addElements
@@ -15,10 +15,10 @@ const useCopyCommand = () => {
     const { resetTool } = useToolsContext()
 
     const handleCopyCmd = useCallback(() => {
-        const positionedCopies = finishCopyingElements()
+        const positionedCopies = completeCopyingElements()
         addElements(positionedCopies)
         resetTool()
-    }, [addElements, finishCopyingElements, resetTool])
+    }, [addElements, completeCopyingElements, resetTool])
 
     return handleCopyCmd
 }

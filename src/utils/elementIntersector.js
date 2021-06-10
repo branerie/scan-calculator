@@ -2,31 +2,31 @@ import { radiansToDegrees } from './angle'
 import { MAX_NUM_ERROR } from './constants'
 import { createLine, createPoint } from './elementFactory'
 import { getPerpendicularPointToLine } from './line'
-import { getPointDistance, getRotatedPointAroundPivot } from './point'
+import { getPointDistance, getRotatedPointAroundPivot, getUniquePoints } from './point'
 import { capitalize } from './text'
 
 class ElementIntersector {
     static getIntersections(elementA, elementB, shouldLieOnElements = true) {
         let results = []
-        if (elementA.baseType === 'polyline') {
-            for (const element of elementA.elements) {
-                const intersections = ElementIntersector.getIntersections(element, elementB, shouldLieOnElements)
-                if (intersections) {
-                    results = results.concat(intersections)
-                }
-            }
-    
-            return results.length > 0 ? results : null
-        } else if (elementB.baseType === 'polyline') {
-            for (const element of elementB.elements) {
-                const intersections = ElementIntersector.getIntersections(elementA, element, shouldLieOnElements)
-                if (intersections) {
-                    results = results.concat(intersections)
-                }
+
+        const polylineElement = elementA.baseType === 'polyline' 
+                                        ? elementA 
+                                        : elementB.baseType === 'polyline' ? elementB : null
+
+        if (polylineElement) {
+            const nonPolylineElement = elementA.baseType === 'polyline' ? elementB : elementA
+
+            for (const element of polylineElement.elements) {
+                const intersections = ElementIntersector.getIntersections(element, nonPolylineElement, shouldLieOnElements)
+                if (!intersections) continue
+
+                const uniqueIntersections = getUniquePoints(intersections)
+                results = results.concat(uniqueIntersections)
             }
     
             return results.length > 0 ? results : null
         }
+
     
         const [firstElement, secondElement] = [elementA, elementB].sort((a, b) => a.type.localeCompare(b.type))
         const firstCapitalizedType = capitalize(firstElement.type)

@@ -79,18 +79,27 @@ export default function ToolsContextProvider({ children }) {
         newClicks.pop()
         newClicks.push(newPoint)
 
-        setTool(tool => ({ ...tool, clicks: newClicks }))
+        setTool(currTool => ({ ...currTool, clicks: newClicks }))
     }, [tool])
 
     const clearCurrentTool = useCallback(() => {
-        setTool(tool => ({ type: tool.type, name: tool.name }))
-    }, [])
+        setTool(currTool => ({ type: currTool.type, name: tool.name }))
+    }, [tool.name])
 
     const getLastReferenceClick = useCallback(() => {
         if (!tool.clicks || (!tool.refClickIndex && tool.refClickIndex !== 0)) return null
         
         return tool.clicks[tool.refClickIndex]
     }, [tool])
+
+    const removeLastToolClick = useCallback(() => {
+        if (!tool.clicks) return
+
+        const newClicks = [...tool.clicks]
+        newClicks.pop()
+
+        setTool(currTool => ({ ...currTool, clicks: newClicks.length > 0 ? newClicks : null }))
+    }, [tool.clicks])
 
     const getRealMouseCoordinates = useCallback((clientX, clientY) => {
         const [translateX, translateY] = currentTranslate
@@ -117,6 +126,7 @@ export default function ToolsContextProvider({ children }) {
             addToolProp,
             clearCurrentTool,
             getLastReferenceClick,
+            removeLastToolClick,
             getRealMouseCoordinates,
             panView,
             zoomView,

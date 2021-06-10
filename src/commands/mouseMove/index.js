@@ -10,6 +10,7 @@ import useSelectCommand from './useSelectCommand'
 import useTransformCommand from './useTransformCommand'
 import { getOrthoCoordinates } from '../../utils/options'
 import { createLine } from '../../utils/elementFactory'
+import useTrimCommand from './useTrimCommand'
 
 
 const useMouseMoveCommands = () => {
@@ -34,6 +35,7 @@ const useMouseMoveCommands = () => {
         transform: useTransformCommand(),
         copy: useCopyCommand(),
         select: useSelectCommand(),
+        trim: useTrimCommand(),
     }
 
     const executeMouseMoveCommand = useCallback((event) => {
@@ -97,6 +99,10 @@ const useMouseMoveCommands = () => {
 
         if (currentlyCopiedElements) {
             commands.copy(realMousePosition)
+        }
+
+        if (tool.type === 'trim') {
+            commands.trim(realMousePosition)
         }
     }, [
         commands, 

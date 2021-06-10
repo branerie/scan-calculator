@@ -1,35 +1,43 @@
 import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
-import ElementIntersector from '../../utils/elementIntersector'
 
 const useTrimCommand = () => {
     const { 
         elements: {
-            getElementsContainingPoint
+            currentlyReplacedElements
         },
-        selection: {
-            selectedElements
+        history: {
+            replaceElements
         }
     } = useElementsContext()
 
-    const { selectDelta } = useToolsContext()
+    const { tool, resetTool, addToolClick, removeLastToolClick } = useToolsContext()
 
     const handleTrimCmd = useCallback((event, clickedPoint) => {
-        const clickedElements = getElementsContainingPoint(clickedPoint.x, clickedPoint.y, selectDelta)
-        const isTrim = !event.shiftKey
+        if (!tool.isStarted) return
 
-        let intersections = []
-        for (const clickedElement of clickedElements) {
-            for (const selectedElement of selectedElements) {
-                const currIntersections = ElementIntersector.getIntersections(clickedElement, selectedElement, isTrim)
-
-                if (currIntersections) {
-                    intersections = intersections.concat(currIntersections)
-                }
-            }
+        if (currentlyReplacedElements) {
+            replaceElements()
+            resetTool()
+            return
         }
-    }, [getElementsContainingPoint, selectDelta, selectedElements])
+
+        if (tool.clicks) {
+            removeLastToolClick()
+            return
+        }
+        
+        addToolClick(clickedPoint)
+    }, [
+        currentlyReplacedElements,
+        addToolClick, 
+        removeLastToolClick,
+        replaceElements,
+        tool.clicks, 
+        tool.isStarted,
+        resetTool
+    ])
 
     return handleTrimCmd
 }

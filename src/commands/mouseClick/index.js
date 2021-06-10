@@ -8,6 +8,7 @@ import useDrawCommand from './useDrawCommand'
 import useEditCommand from './useEditCommand'
 import useSelectCommand from './useSelectCommand'
 import useTransformCommand from './useTransformCommand'
+import useTrimCommand from './useTrimCommand'
 
 const useMouseClickCommands = () => {
     const {
@@ -23,7 +24,8 @@ const useMouseClickCommands = () => {
         draw: useDrawCommand(),
         select: useSelectCommand(),
         edit: useEditCommand(),
-        transform: useTransformCommand()
+        transform: useTransformCommand(),
+        trim: useTrimCommand()
     }
 
     const executeMouseClickCommand = useCallback((event) => {

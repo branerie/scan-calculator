@@ -31,27 +31,29 @@ const useKeyPressCommands = () => {
         }
 
         const { keyCode } = event
-        if (tool.type === 'copy' && (keyCode === ESCAPE_KEY_CODE || keyCode === ENTER_KEY_CODE)) {
-            commands.copy(event)
-            return
-        }
-    
-        if (keyCode === ESCAPE_KEY_CODE) { // escape
+
+        if (keyCode === ESCAPE_KEY_CODE) {
             commands.escape(event)
             return
         }
         
-        if (keyCode === ENTER_KEY_CODE || keyCode === SPACE_KEY_CODE) { // enter/spacebar
+        if (keyCode === ENTER_KEY_CODE || keyCode === SPACE_KEY_CODE) {
+            commands.enter(event)
+
             if (tool.type === 'trim') {
                 commands.trim(event)
                 return
             }
 
-            commands.enter(event)
+            if (tool.type === 'copy') {
+                commands.copy(event)
+                return
+            }
+
             return
         }
         
-        if (keyCode === DELETE_KEY_CODE) { // delete
+        if (keyCode === DELETE_KEY_CODE) {
             commands.delete()
             return
         }

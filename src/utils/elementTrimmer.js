@@ -61,7 +61,7 @@ class ElementTrimmer {
 
             let { point: trimSectionStartPoint } = queue.pop()
             if (distanceFromStart < trimSectionStartPoint) {
-                // if | designate start and end of line and x - intersections with elements we are trimming by:
+                // if | designates start of line, || end of line and x - intersections with elements we are trimming by:
                 // |----<trimmedSection>---x---x---...---||
                 const trimmedLine = ElementManipulator.copyElement(element, false)
                 trimmedLine.setPointA(trimSectionStartPoint.x, trimSectionStartPoint.y)
@@ -126,27 +126,31 @@ class ElementTrimmer {
             const isEndInSelect = selectLeft <= sectionEndPoint.x && selectRight >= sectionEndPoint.x &&
                                   selectTop <= sectionEndPoint.y && selectBottom >= sectionEndPoint.y
 
+            let isSectionTrimmed = false
             if (isStartInSelect || isEndInSelect) {
-                sectionsPostTrim = updateTrimmedSections(sectionsPostTrim, { start: sectionStartPoint, end: sectionEndPoint })
-                continue
-            }
-
-            if (selectIntersections.length > 0) {
+                isSectionTrimmed = true
+            } else if (selectIntersections.length > 0) {
                 const nextIntersection = selectIntersections[selectIntersections.length - 1]
 
                 if (
                     nextIntersection.distanceFromStart >= sectionStartDistance &&
                     nextIntersection.distanceFromStart <= sectionEndDistance
                 ) {
+                    // an intersection of the element with the selection box occurs in this section
+                    // therefore, it needs to be trimmed 
                     selectIntersections.pop()
-                    sectionsPostTrim = updateTrimmedSections(
-                        sectionsPostTrim, 
-                        { start: sectionStartPoint, end: sectionEndPoint }
-                    )
+                    isSectionTrimmed = true
                 }
             }
 
+            if (!isSectionTrimmed) {
+                sectionsPostTrim = updateTrimmedSections(sectionsPostTrim, { start: sectionStartPoint, end: sectionEndPoint })
+            }
+
             const nextSectionStart = queue.pop()
+            if (!nextSectionStart) break
+            
+            // move to next section for next loop iteration
             sectionStartPoint = nextSectionStart.point
             sectionStartDistance = nextSectionStart.distanceFromStart
 
@@ -155,6 +159,30 @@ class ElementTrimmer {
             sectionEndPoint = nextSectionEnd.point
             sectionEndDistance = nextSectionEnd.distanceFromStart
         }
+
+        if (sectionsPostTrim.length === 0) return null
+
+        if (sectionsPostTrim.length === 1) {
+            const trimmedSection = sectionsPostTrim[0]
+            if (
+                trimmedSection.start.x === startPoint.x && 
+                trimmedSection.start.y === startPoint.y &&
+                trimmedSection.end.x === endPoint.x &&
+                trimmedSection.end.y === endPoint.y
+            ) {
+                // user is trying to trim the whole element, abort command
+                return null
+            }
+        }
+
+        const newElements = sectionsPostTrim.map(section => {
+            const newLine = createElement('line', section.start.x, section.start.y)
+            newLine.setLastAttribute(section.end.x, section.end.y)
+
+            return newLine
+        })
+
+        return newElements
     }
 }
 

@@ -20,6 +20,7 @@ export default function ElementsContextProvider({ children }) {
         currentlyCreatedElement,
         currentlyEditedElements,
         currentlyCopiedElements,
+        currentlyReplacedElements,
         snappedPoint,
         addCurrentlyCreatedElement,
         removeCurrentlyCreatedElement,
@@ -34,7 +35,10 @@ export default function ElementsContextProvider({ children }) {
         startCopyingElements,
         moveCopyingElements,
         continueCopyingElements,
-        finishCopyingElements,
+        completeCopyingElements,
+        startReplacingElements,
+        clearReplacingElements,
+        completeReplacingElements,
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,
@@ -70,14 +74,35 @@ export default function ElementsContextProvider({ children }) {
         setActionHistory([...newActionHistory, newEvent])
     }, [actionHistory, historyPointer])
 
+    const addElementsFromHistory = useCallback((elementsToAdd) => {
+        let pointsToAdd = []
+        for (const element of elementsToAdd) {
+            pointsToAdd = pointsToAdd.concat(element.getSelectionPoints())
+        }
+
+        addSelectionPoints(pointsToAdd)
+        addElementsToState(elementsToAdd)
+    }, [addElementsToState, addSelectionPoints])
+
+    const removeElementsFromHistory = useCallback((elementsToRemove) => {
+        // remove selection points of deleted elements
+        for (const removedElement of elementsToRemove) {
+            const selectionPoints = removedElement.getSelectionPoints()
+            removeSelectionPoints(selectionPoints)
+        }
+
+        removeElements(elementsToRemove)
+        removeSelectedElements(elementsToRemove)
+    }, [removeElements, removeSelectedElements, removeSelectionPoints])
+
     const addElements = useCallback((newElements) => {
         let newSelectionPoints = []
         newElements.forEach(newElement => {
             newElement.id = uuidv4()
-            
+
             newSelectionPoints = newSelectionPoints.concat(newElement.getSelectionPoints())
         })
-        
+
         addElementsToState(newElements)
         addSelectionPoints(newSelectionPoints)
 
@@ -96,9 +121,9 @@ export default function ElementsContextProvider({ children }) {
         })
 
         // update selection points for edited elements
-        const pointsToReplace = selectedPoints 
-                                ? selectedPoints 
-                                : currentlyEditedElements.reduce((acc, cee) => [...acc, ...cee.getSelectionPoints()], [])
+        const pointsToReplace = selectedPoints
+            ? selectedPoints
+            : currentlyEditedElements.reduce((acc, cee) => [...acc, ...cee.getSelectionPoints()], [])
 
         // TODO: Maybe add elementId to selection points to make finding the element easier?
         pointsToReplace.forEach(pointToReplace => {
@@ -140,6 +165,41 @@ export default function ElementsContextProvider({ children }) {
         removeElements(deletedElements)
     }, [removeElements, removeSelectionPoints, updateHistoryEvents])
 
+    const replaceElements = useCallback(() => {
+        if (!currentlyReplacedElements) return
+
+        const { replacedIds, replacingElements } = currentlyReplacedElements
+
+        const removedElements = []
+        let removedSelectionPoints = []
+        for (const replacedId of replacedIds) {
+            const replacedElement = getElementById(replacedId)
+            removedElements.push(replacedElement)
+
+            removedSelectionPoints = removedSelectionPoints.concat(replacedElement.getSelectionPoints())
+        }
+
+        removeSelectionPoints(removedSelectionPoints)
+
+        let newSelectionPoints = []
+        for (const replacingElement of replacingElements) {
+            replacingElement.id = uuidv4()
+            newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
+        }
+
+        addSelectionPoints(newSelectionPoints)
+
+        updateHistoryEvents({ action: 'replace', removedElements, addedElements: replacingElements })
+        completeReplacingElements()
+    }, [
+        addSelectionPoints,
+        completeReplacingElements,
+        currentlyReplacedElements,
+        getElementById,
+        removeSelectionPoints,
+        updateHistoryEvents
+    ])
+
     const updateElementsFromHistory = useCallback((lastEventIndex, isUndo) => {
         const lastHistoryEvent = actionHistory[lastEventIndex]
         let updateOperation = lastHistoryEvent.action
@@ -155,14 +215,12 @@ export default function ElementsContextProvider({ children }) {
         }
 
         if (updateOperation === 'add') {
-            let pointsToAdd = []
-            for (const element of lastHistoryEvent.elements) {
-                pointsToAdd = pointsToAdd.concat(element.getSelectionPoints()) 
-            }
+            addElementsFromHistory(lastHistoryEvent.elements)
+            return
+        }
 
-            addSelectionPoints(pointsToAdd)
-            addElementsToState(lastHistoryEvent.elements)
-            
+        if (updateOperation === 'delete') {
+            removeElementsFromHistory(lastHistoryEvent.elements)
             return
         }
 
@@ -203,33 +261,30 @@ export default function ElementsContextProvider({ children }) {
             return
         }
 
-        if (updateOperation === 'delete') {
-            const elementsToRemove = lastHistoryEvent.elements
+        if (updateOperation === 'replace') {
+            const { addedElements, removedElements } = lastHistoryEvent
 
-            // remove selection points of deleted elements
-            for (const removedElement of elementsToRemove) {
-                const selectionPoints = removedElement.getSelectionPoints()
-                removeSelectionPoints(selectionPoints)
+            if (isUndo) {
+                addElementsFromHistory(removedElements)
+                removeElementsFromHistory(addedElements)
+                return
             }
 
-            removeElements(elementsToRemove)
-            removeSelectedElements(elementsToRemove)
+            addElementsFromHistory(addedElements)
+            removeElementsFromHistory(removedElements)
             return
         }
 
         throw new Error('Invalid event action')
     }, [
         actionHistory,
-        addElementsToState,
         addSelectedElements,
-        addSelectionPoints,
         changeElements,
         getElementById,
         hasSelectedElement,
-        removeElements,
-        removeSelectedElements,
-        removeSelectionPoints,
-        replaceSelectionPoints
+        replaceSelectionPoints,
+        addElementsFromHistory,
+        removeElementsFromHistory
     ])
 
     const undo = useCallback(() => {
@@ -268,6 +323,7 @@ export default function ElementsContextProvider({ children }) {
                 currentlyCreatedElement,
                 currentlyEditedElements,
                 currentlyCopiedElements,
+                currentlyReplacedElements,
                 snappedPoint,
                 getElementById,
                 addCurrentlyCreatedElement,
@@ -278,7 +334,9 @@ export default function ElementsContextProvider({ children }) {
                 startCopyingElements,
                 moveCopyingElements,
                 continueCopyingElements,
-                finishCopyingElements,
+                completeCopyingElements,
+                startReplacingElements,
+                clearReplacingElements,
                 setSnappedPoint,
                 clearSnappedPoint,
                 findNearbyPoints,
@@ -300,6 +358,7 @@ export default function ElementsContextProvider({ children }) {
                 addElements,
                 editElements,
                 deleteElements,
+                replaceElements,
                 undo,
                 redo,
             }

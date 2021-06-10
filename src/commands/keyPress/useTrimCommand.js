@@ -11,7 +11,7 @@ const useTrimCommand = () => {
 
     const { tool, addToolProp, resetTool } = useToolsContext()
     
-    const handleTrimCmd = useCallback(() => {
+    const handleTrimCmd = useCallback((event) => {
         if (!selectedElements) return
 
         if (!tool.isStarted) {
