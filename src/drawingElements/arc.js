@@ -136,7 +136,7 @@ class Arc extends Element {
     }
 
     setLastAttribute(pointX, pointY) {
-        this.#endLine = createLine(this.#centerPoint.x, this.#centerPoint.y, pointX, pointY, this.groupId)
+        this.#endLine = createLine(this.#centerPoint.x, this.#centerPoint.y, pointX, pointY, { groupId: this.groupId })
         this.#endLine.setLength(this.#radius, false)
         this.__updateDetails()
     }
@@ -251,7 +251,7 @@ class Arc extends Element {
 
     __updateMidLine() {
         if (!this.#midLine) {
-            this.#midLine = createLine(this.#centerPoint.x, this.#centerPoint.y, null, null, this.groupId)
+            this.#midLine = createLine(this.#centerPoint.x, this.#centerPoint.y, null, null, { groupId: this.groupId })
         }
 
         const angleStartToEnd = Math.abs(this.#startLine.angle - this.#endLine.angle)

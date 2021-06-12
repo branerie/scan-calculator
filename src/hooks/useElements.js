@@ -177,35 +177,105 @@ const elementsReducer = (state, action) => {
             return { ...state, currentlyCopiedElements: null }
         }
         case 'startReplacingElements': {
+            const { currentlyReplacedElements } = state
+            const currentReplacements = (currentlyReplacedElements && currentlyReplacedElements.currentReplacements)
+                        ? { ...currentlyReplacedElements.currentReplacements }
+                        : {}
+            
+            const newElements = { ...state.elements }
+            for (const replacedId of Object.keys(action.replacements)) {
+                const { replacingElements, removedSections } = action.replacements[replacedId]
+                
+                if (currentReplacements[replacedId]) {
+                    for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
+                        delete newElements[oldReplacingElement.id]
+                    }
+                } else {
+                    newElements[replacedId].isShown = false
+                }
+                
+                for (const replacingElement of replacingElements) {
+                    newElements[replacingElement.id] = replacingElement
+                }
+                
+                currentReplacements[replacedId] = { replacingElements, removedSections }
+            }
+            
+            const completed = state.currentlyReplacedElements ? state.currentlyReplacedElements.completed : null
             return {
                 ...state,
+                elements: newElements,
                 currentlyReplacedElements: {
-                    replacedIds: action.replacedIds,
-                    replacingElements: action.replacingElements
+                    currentReplacements,
+                    ...(!!(completed) && { completed })
                 }
             }
         }
         case 'clearReplacingElements': {
-            return { ...state, currentlyReplacedElements: null }
+            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) return state
+
+            const { currentlyReplacedElements: { currentReplacements, completed } } = state
+
+            const newElements = { ...state.elements }
+            for (const replacedId of Object.keys(currentReplacements)) {
+                newElements[replacedId].isShown = true
+
+                const replacingElements = currentReplacements[replacedId].replacingElements
+                for (const replacingElement of replacingElements) {
+                    delete newElements[replacingElement.id]
+                }
+            }
+
+            return { 
+                ...state, 
+                elements: newElements, 
+                currentlyReplacedElements: completed ? { completed } : null 
+            }
         }
         case 'completeReplacingElements': {
             if (!state.currentlyReplacedElements) return state
 
-            const { currentlyReplacedElements: { replacedIds, replacingElements } } = state
-            const newElements = { ...state.elements }
-            for (const replacedId of replacedIds) {
-                delete newElements[replacedId]
-            }
+            // const { currentlyReplacedElements: { completed } } = state
+            // if (!completed) {
+            //     return { ...state, currentlyReplacedElements: null }
+            // }
 
-            for (const replacingElement of replacingElements) {
-                newElements[replacingElement.id] = replacingElement
+            // const newElements = { ...state.elements }
+            // for (const replacedId of completed.replacedIds) {
+            //     delete newElements[replacedId]
+            // }
+
+            // for (const replacingElement of completed.replacingElements) {
+            //     newElements[replacingElement.id] = replacingElement
+            // }
+
+            const { completed } = state.currentlyReplacedElements
+            if (!completed) {
+                return {  ...state, currentlyReplacedElements: null }
             }
+            
+            const newElements = { ...state.elements }
+            for (const replacedId of Object.keys(completed)) {
+                delete newElements[replacedId]
+            }   
             
             return {
                 ...state,
                 elements: newElements,
                 currentlyReplacedElements: null
             }
+        }
+        case 'continueReplacingElements': {
+            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) return state
+
+            const { currentlyReplacedElements: { currentReplacements, completed } } = state
+
+            const newCompleted = completed ? { ...completed } : {}
+            for (const replacedId of Object.keys(currentReplacements)) {
+                newCompleted[replacedId] = currentReplacements[replacedId]
+            }
+
+            return { ...state, currentlyReplacedElements: { completed: newCompleted } }            
         }
         case 'setSnappedPoint': {
             return { ...state, snappedPoint: action.value }
@@ -343,22 +413,46 @@ const useElements = () => {
         return editedElements
     }
 
-    const startReplacingElements = (replacedIds, replacingElements) => 
-                    elementsDispatch({ type: 'startReplacingElements', replacedIds, replacingElements })
+    const startReplacingElements = (replacements) => 
+                    elementsDispatch({ type: 'startReplacingElements', replacements })
     const clearReplacingElements = () => {
-        if (!elementsState.currentlyReplacedElements) return
+        if (!elementsState.currentlyReplacedElements || !elementsState.currentlyReplacedElements.currentReplacements) return
 
         elementsDispatch({ type: 'clearReplacingElements' })
     }
+
     const completeReplacingElements = () => {
         const { currentlyReplacedElements } = elementsState
         if (!currentlyReplacedElements) return
 
-        const { replacedIds, replacingElements } = currentlyReplacedElements
+        const { completed } = currentlyReplacedElements
         
         elementsDispatch({ type: 'completeReplacingElements' })
+
+        return completed
+    }
+
+    const continueReplacingElements = () => {
+        const { currentlyReplacedElements } = elementsState
+        if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return
+
+        const { currentReplacements } = currentlyReplacedElements
+        const replacingElements = Object.values(currentReplacements).reduce((acc, cr) => [...acc, ...cr.replacingElements], [])
+        const replacedIds = Object.keys(currentReplacements)
+
+        elementsDispatch({ type: 'continueReplacingElements' })
         hashGrid.current.addElements(replacingElements)
         hashGrid.current.removeElementsById(replacedIds)
+    }
+
+    const isReplacingElement = (elementId) => {
+        const { currentlyReplacedElements } = elementsState
+        if (!currentlyReplacedElements || !currentlyReplacedElements.replacingElements) return false
+
+        const { replacingElements } = currentlyReplacedElements
+
+        // TODO: replacedIds - move away from array implementation?
+        return replacingElements.some(id => id === elementId)
     }
 
     const getElementById = (elementId) => elementsState.elements[elementId]
@@ -397,6 +491,8 @@ const useElements = () => {
         startReplacingElements,
         clearReplacingElements,
         completeReplacingElements,
+        continueReplacingElements,
+        isReplacingElement,
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,

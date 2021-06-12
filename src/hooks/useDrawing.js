@@ -12,10 +12,13 @@ const LINE_DASH_SPACE_SIZE = 10
 
 const LINE_DASH_CONTAINER_SIZE = 5
 
+const REPLACED_COLOR = '#6a6e6b'
+
 const useDrawing = () => {
     const {
         elements: {
-            snappedPoint
+            snappedPoint,
+            currentlyReplacedElements,
         },
         selection: {
             selectedPoints,
@@ -35,14 +38,17 @@ const useDrawing = () => {
         canvasContext.scale(currentScale, currentScale)
     }, [canvasContext, currentScale, currentTranslate])
 
-    const drawElement = useCallback((element, isSelected = false, options) => {
+    const drawElement = useCallback((element, options = {}) => {
         canvasContext.beginPath()
-        if (options && options.color) {
-            canvasContext.strokeStyle = options.color
+
+        const { color, lineDash } = options
+
+        if (color) {
+            canvasContext.strokeStyle = color
         }
 
-        if (isSelected) {
-            canvasContext.setLineDash([LINE_DASH_LINE_SIZE / currentScale, LINE_DASH_SPACE_SIZE / currentScale])
+        if (lineDash) {
+            canvasContext.setLineDash(lineDash)
         }
 
         canvasContext.lineWidth = 1 / currentScale
@@ -65,7 +71,7 @@ const useDrawing = () => {
                 break
             case 'polyline':
             case 'rectangle':
-                element.elements.forEach(e => drawElement(e, isSelected))
+                element.elements.forEach(e => drawElement(e, options))
                 return
             case 'circle':
                 canvasContext.moveTo(element.centerPoint.x + element.radius, element.centerPoint.y)
@@ -87,6 +93,24 @@ const useDrawing = () => {
         canvasContext.setLineDash([])
 
     }, [canvasContext, currentScale])
+
+    const drawSelectedElement = useCallback((element, options = {}) => {
+        drawElement(element, { 
+            ...options, 
+            lineDash: [LINE_DASH_LINE_SIZE / currentScale, LINE_DASH_SPACE_SIZE / currentScale] 
+        })
+    }, [currentScale, drawElement])
+
+    const drawReplacedElements = useCallback((options = {}) => {
+        if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return
+
+        const replacements = Object.values(currentlyReplacedElements.currentReplacements)
+        for (const replacement of replacements) {
+            for (const element of replacement.removedSections) {
+                drawElement(element, { ...options, color: REPLACED_COLOR })
+            }
+        }
+    }, [currentlyReplacedElements, drawElement])
 
     const drawSelectionPoints = useCallback((selectionPoints) => {
         for (const selectionPoint of selectionPoints) {
@@ -158,9 +182,9 @@ const useDrawing = () => {
     }, [canvasContext, currentScale, snappedPoint])
 
     const drawToolComponents = useCallback(() => {
-        if (tool.name === 'select' && tool.clicks && tool.mousePosition) {
+        if (tool.clicks && tool.mousePosition) {
             const { clicks: [initialClick], mousePosition: { mouseX, mouseY } } = tool
-            const isPartialSelect = mouseX < initialClick.x
+            const isPartialSelect = mouseX < initialClick.x || tool.type === 'trim'
 
             const startX = Math.min(initialClick.x, mouseX)
             const startY = Math.min(initialClick.y, mouseY)
@@ -199,6 +223,8 @@ const useDrawing = () => {
 
     return {
         drawElement,
+        drawSelectedElement,
+        drawReplacedElements,
         drawSelectionPoints,
         drawSnappedPoint,
         drawToolComponents,

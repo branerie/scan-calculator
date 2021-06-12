@@ -95,10 +95,20 @@ export default function ToolsContextProvider({ children }) {
     const removeLastToolClick = useCallback(() => {
         if (!tool.clicks) return
 
-        const newClicks = [...tool.clicks]
-        newClicks.pop()
+        setTool(currTool => {
+            const newTool = { ...currTool }
+            
+            const newClicks = [...currTool.clicks]
+            newClicks.pop()
+            
+            if (newClicks.length === 0) {
+                delete newTool.clicks
+                delete newTool.mousePosition
+                return newTool
+            }
 
-        setTool(currTool => ({ ...currTool, clicks: newClicks.length > 0 ? newClicks : null }))
+            return { ...newTool, clicks: newClicks }
+        })
     }, [tool.clicks])
 
     const getRealMouseCoordinates = useCallback((clientX, clientY) => {

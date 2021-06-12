@@ -6,7 +6,7 @@ import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
 import Rectangle from '../drawingElements/rectangle'
 
-const createElement = (type, initialX, initialY, groupId = null) => {
+const createElement = (type, initialX, initialY, { groupId = null, assignId = false } = {}) => {
     if ((!initialX && initialX !== 0) || (!initialY && initialY !== 0)) {
         throw new Error('Cannot create element with undefined initial point coordinates.')
     }
@@ -14,7 +14,12 @@ const createElement = (type, initialX, initialY, groupId = null) => {
     const initialPoint = new Point(initialX, initialY)
     initialPoint.pointId = uuidv4()
 
-    return createElementFromInitialPoint(type, initialPoint, groupId)
+    const createdElement = createElementFromInitialPoint(type, initialPoint, groupId)
+    if (assignId) {
+        createdElement.id = uuidv4()
+    }
+
+    return createdElement
 }
 
 const createEditedElement = (element, payload) => {
@@ -42,8 +47,8 @@ const createEditedElement = (element, payload) => {
 }
 
 const createPoint = (pointX, pointY) => createElement('point', pointX, pointY)
-const createLine = (initialPointX, initialPointY, lastPointX, lastPointY, groupId = null) => {
-    const line = createElement('line', initialPointX, initialPointY, groupId)
+const createLine = (initialPointX, initialPointY, lastPointX, lastPointY, { groupId = null, assignId = false } = {}) => {
+    const line = createElement('line', initialPointX, initialPointY, { groupId, assignId })
 
     if ((lastPointX || lastPointX === 0) && (lastPointY || lastPointY === 0)) {
         line.setPointB(lastPointX, lastPointY)

@@ -39,6 +39,8 @@ export default function ElementsContextProvider({ children }) {
         startReplacingElements,
         clearReplacingElements,
         completeReplacingElements,
+        continueReplacingElements,
+        isReplacingElement,
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,
@@ -166,30 +168,32 @@ export default function ElementsContextProvider({ children }) {
     }, [removeElements, removeSelectionPoints, updateHistoryEvents])
 
     const replaceElements = useCallback(() => {
-        if (!currentlyReplacedElements) return
+        if (!currentlyReplacedElements || !currentlyReplacedElements.completed) return
 
-        const { replacedIds, replacingElements } = currentlyReplacedElements
+        const { completed } = currentlyReplacedElements
 
         const removedElements = []
+        const addedElements = []
         let removedSelectionPoints = []
-        for (const replacedId of replacedIds) {
+        let newSelectionPoints = []
+        for (const replacedId of Object.keys(completed)) {
             const replacedElement = getElementById(replacedId)
+            replacedElement.isShown = true
             removedElements.push(replacedElement)
-
+    
             removedSelectionPoints = removedSelectionPoints.concat(replacedElement.getSelectionPoints())
+
+            const { replacingElements } = completed[replacedId]
+            for (const replacingElement of replacingElements) {
+                addedElements.push(replacingElement)
+                newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
+            }
         }
 
         removeSelectionPoints(removedSelectionPoints)
-
-        let newSelectionPoints = []
-        for (const replacingElement of replacingElements) {
-            replacingElement.id = uuidv4()
-            newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
-        }
-
         addSelectionPoints(newSelectionPoints)
 
-        updateHistoryEvents({ action: 'replace', removedElements, addedElements: replacingElements })
+        updateHistoryEvents({ action: 'replace', removedElements, addedElements })
         completeReplacingElements()
     }, [
         addSelectionPoints,
@@ -337,6 +341,8 @@ export default function ElementsContextProvider({ children }) {
                 completeCopyingElements,
                 startReplacingElements,
                 clearReplacingElements,
+                continueReplacingElements,
+                isReplacingElement,
                 setSnappedPoint,
                 clearSnappedPoint,
                 findNearbyPoints,

@@ -67,7 +67,9 @@ class PriorityQueue {
             (leftIndex < heapSize && this._checkIfGreater(leftIndex, nodeIndex)) ||
             (rightIndex < heapSize && this._checkIfGreater(rightIndex, nodeIndex))
         ) {
-            const maxChildIndex = (rightIndex < heapSize && this._greater(rightIndex, leftIndex)) ? rightIndex : leftIndex
+            const maxChildIndex = (rightIndex < heapSize && this._checkIfGreater(rightIndex, leftIndex)) 
+                        ? rightIndex 
+                        : leftIndex
             this._swap(nodeIndex, maxChildIndex)
             nodeIndex = maxChildIndex
             leftIndex = getLeftIndex(nodeIndex)

@@ -1,42 +1,26 @@
-import { createElement } from './elementFactory'
+import { createElement, createLine } from './elementFactory'
 import ElementIntersector from './elementIntersector'
-import ElementManipulator from './elementManipulator'
 import { getPointDistance } from './point'
 import PriorityQueue from './priorityQueue'
 import { capitalize } from './text'
 
-/*
-const endPoints = elementToTrim.getSelectionPoints('endPoint')
 
-const copiedElement = ElementManipulator.copyElement(elementToTrim)
-for (const pointOfTrim of pointsOfTrim) {
-    let nearestEndPoint = null
-    let nearestPointDistance = Number.POSITIVE_INFINITY
+const updateTrimmedSections = (trimmedSections, newSection, isSectionTrimmed) => {
+    const sectionType = isSectionTrimmed ? 'removed' : 'remaining'
+    const sectionsOfType = trimmedSections[sectionType]
 
-    for (const endPoint of endPoints) {
-        const pointDistance = getPointDistance(pointOfTrim, endPoint)
-
-        if (pointDistance < nearestPointDistance) {
-            nearestEndPoint = endPoint
-            nearestPointDistance = pointDistance
-        }
-    }
-    
-    copiedElement.setPointById(nearestEndPoint.pointId, pointOfTrim.x, pointOfTrim.y)
-} 
-*/
-const updateTrimmedSections = (trimmedSections, newSection) => {
-    if (trimmedSections.length > 0) {
-        const lastSection = trimmedSections[trimmedSections.length - 1]
-
+    if (sectionsOfType) {
+        const lastSection = sectionsOfType[sectionsOfType.length - 1]
         if (lastSection.end.x === newSection.start.x && lastSection.end.y === newSection.start.y) {
-            const newTrimmedSections = [...trimmedSections]
-            newTrimmedSections[newTrimmedSections.length - 1].end = newSection.end
-            return newTrimmedSections
+            sectionsOfType[sectionsOfType.length - 1].end = newSection.end
+            return
         }
+
+        sectionsOfType.push(newSection)
+        return
     }
 
-    return [...trimmedSections, newSection]
+    trimmedSections[sectionType] = [newSection]
 }
 
 class ElementTrimmer {
@@ -59,39 +43,48 @@ class ElementTrimmer {
         if (selectPoints.length === 1) {
             const distanceFromStart = getPointDistance(startPoint, selectPoints[0])
 
-            let { point: trimSectionStartPoint } = queue.pop()
-            if (distanceFromStart < trimSectionStartPoint) {
+            let { point: trimSectionStartPoint, distanceFromStart: trimSectionDistance } = queue.pop()
+            if (distanceFromStart < trimSectionDistance) {
                 // if | designates start of line, || end of line and x - intersections with elements we are trimming by:
                 // |----<trimmedSection>---x---x---...---||
-                const trimmedLine = ElementManipulator.copyElement(element, false)
-                trimmedLine.setPointA(trimSectionStartPoint.x, trimSectionStartPoint.y)
-                return [trimmedLine]
+                const remainingLine = createLine(trimSectionStartPoint.x, trimSectionStartPoint.y, endPoint.x, endPoint.y, { assignId: true })
+
+                const removedLine = createLine(startPoint.x, startPoint.y, trimSectionStartPoint.x, trimSectionStartPoint.y)
+                return { remaining: [remainingLine], removed: [removedLine] }
             }
 
-            let trimSectionEndPoint
+            const nextValue = queue.peek()
+            let trimSectionEndPoint = nextValue ? nextValue.point : endPoint
             while (queue.size > 0 && distanceFromStart > queue.peek().distanceFromStart) {
-                trimSectionStartPoint = queue.pop()
-                trimSectionEndPoint = queue.peek()
+                trimSectionStartPoint = queue.pop().point
+                const nextValue = queue.peek()
+
+                trimSectionEndPoint = nextValue ? queue.peek().point : null
             }
 
             if (queue.size === 0) {
                 // if | designates start of line, || end of line and x - intersections with elements we are trimming by:
                 // |---x---x---...--x---<trimmedSection>--||
-                const trimmedLine = ElementManipulator.copyElement(element, false)
-                trimmedLine.setPointB(trimSectionStartPoint.x, trimSectionStartPoint.y)
-                return [trimmedLine]
+                const remainingLine = createLine(startPoint.x, startPoint.y, trimSectionStartPoint.x, trimSectionStartPoint.y, { assignId: true })
+
+                const removedLine = createLine(trimSectionStartPoint.x, trimSectionStartPoint.y, endPoint.x, endPoint.y)
+                return { remaining: [remainingLine], removed: [removedLine] }
             }
 
             // if | designates start of line, || end of line and x - intersections with elements we are trimming by:
             // |---x---x---<trimmedSection>---x---...--x---||
             // i.e. original line is split into two lines
-            const firstLine = ElementManipulator.copyElement(element, false)
-            const secondLine = ElementManipulator.copyElement(element, false)
+            const firstLine = createLine(startPoint.x, startPoint.y, trimSectionStartPoint.x, trimSectionStartPoint.y, { assignId: true })
+            const secondLine = createLine(trimSectionEndPoint.x, trimSectionEndPoint.y, endPoint.x, endPoint.y, { assignId: true })
 
-            firstLine.setPointB(trimSectionStartPoint.x, trimSectionStartPoint.y)
-            secondLine.setPointA(trimSectionEndPoint.x, trimSectionEndPoint.y)
+            const removedLine = createLine(
+                trimSectionStartPoint.x, 
+                trimSectionStartPoint.y, 
+                trimSectionEndPoint.x, 
+                trimSectionEndPoint.y
+            )
 
-            return [firstLine, secondLine]
+            return { remaining: [firstLine, secondLine], removed: [removedLine] }
         }
 
         const selectRect = createElement('rectangle', selectPoints[0].x, selectPoints[0].y)
@@ -118,7 +111,7 @@ class ElementTrimmer {
         let sectionStartPoint = startPoint
         let sectionStartDistance = 0
         let { point: sectionEndPoint, distanceFromStart: sectionEndDistance } = queue.peek()
-        let sectionsPostTrim = []
+        let sectionsPostTrim = {}
         while (queue.size >= 0) {
             const isStartInSelect = selectLeft <= sectionStartPoint.x && selectRight >= sectionStartPoint.x &&
                                     selectTop <= sectionStartPoint.y && selectBottom >= sectionStartPoint.y
@@ -143,9 +136,7 @@ class ElementTrimmer {
                 }
             }
 
-            if (!isSectionTrimmed) {
-                sectionsPostTrim = updateTrimmedSections(sectionsPostTrim, { start: sectionStartPoint, end: sectionEndPoint })
-            }
+            updateTrimmedSections(sectionsPostTrim, { start: sectionStartPoint, end: sectionEndPoint }, isSectionTrimmed)
 
             const nextSectionStart = queue.pop()
             if (!nextSectionStart) break
@@ -160,29 +151,17 @@ class ElementTrimmer {
             sectionEndDistance = nextSectionEnd.distanceFromStart
         }
 
-        if (sectionsPostTrim.length === 0) return null
+        if (!sectionsPostTrim.remaining || !sectionsPostTrim.removed) return null
 
-        if (sectionsPostTrim.length === 1) {
-            const trimmedSection = sectionsPostTrim[0]
-            if (
-                trimmedSection.start.x === startPoint.x && 
-                trimmedSection.start.y === startPoint.y &&
-                trimmedSection.end.x === endPoint.x &&
-                trimmedSection.end.y === endPoint.y
-            ) {
-                // user is trying to trim the whole element, abort command
-                return null
-            }
-        }
+        const remaining = sectionsPostTrim.remaining.map(section => 
+            createLine(section.start.x, section.start.y, section.end.x, section.end.y, { assignId: true })
+        )
 
-        const newElements = sectionsPostTrim.map(section => {
-            const newLine = createElement('line', section.start.x, section.start.y)
-            newLine.setLastAttribute(section.end.x, section.end.y)
+        const removed = sectionsPostTrim.removed.map(section => 
+            createLine(section.start.x, section.start.y, section.end.x, section.end.y)
+        )
 
-            return newLine
-        })
-
-        return newElements
+        return { remaining, removed }
     }
 }
 

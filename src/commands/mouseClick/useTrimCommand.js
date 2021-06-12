@@ -5,22 +5,20 @@ import { useToolsContext } from '../../contexts/ToolsContext'
 const useTrimCommand = () => {
     const { 
         elements: {
-            currentlyReplacedElements
+            currentlyReplacedElements,
+            continueReplacingElements,
         },
-        history: {
-            replaceElements
-        }
     } = useElementsContext()
 
-    const { tool, resetTool, addToolClick, removeLastToolClick } = useToolsContext()
+    const { tool, addToolClick, removeLastToolClick } = useToolsContext()
 
     const handleTrimCmd = useCallback((event, clickedPoint) => {
         if (!tool.isStarted) return
 
-        if (currentlyReplacedElements) {
-            replaceElements()
-            resetTool()
-            return
+        let shouldAddClick = true
+        if (currentlyReplacedElements && currentlyReplacedElements.currentReplacements) {
+            continueReplacingElements()
+            shouldAddClick = false
         }
 
         if (tool.clicks) {
@@ -28,15 +26,16 @@ const useTrimCommand = () => {
             return
         }
         
-        addToolClick(clickedPoint)
+        if (shouldAddClick) {
+            addToolClick(clickedPoint)
+        }
     }, [
         currentlyReplacedElements,
         addToolClick, 
         removeLastToolClick,
-        replaceElements,
+        continueReplacingElements,
         tool.clicks, 
         tool.isStarted,
-        resetTool
     ])
 
     return handleTrimCmd

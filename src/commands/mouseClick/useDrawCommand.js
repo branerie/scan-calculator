@@ -23,7 +23,7 @@ const useDrawCommand = () => {
     const handleDrawCmd = useCallback((event, clickedPoint) => {
         if (!currentlyCreatedElement) {
             const newGroupId = tool.name === 'polyline' || tool.name === 'rectangle' ? uuidv4() : null
-            const newElement = createElement(tool.name, clickedPoint.x, clickedPoint.y, newGroupId)
+            const newElement = createElement(tool.name, clickedPoint.x, clickedPoint.y, { groupId: newGroupId })
 
             addCurrentlyCreatedElement(newElement)
             addToolClick(clickedPoint)

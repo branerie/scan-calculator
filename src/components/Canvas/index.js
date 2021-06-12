@@ -22,6 +22,7 @@ const Canvas = () => {
             snappedPoint,
             removeCurrentlyCreatedElement,
             stopEditingElements,
+            isReplacingElement
         },
         selection: {
             selectedElements,
@@ -41,7 +42,15 @@ const Canvas = () => {
         setMouseDrag
     } = useToolsContext()
 
-    const { drawElement, drawSelectionPoints, drawSnappedPoint, resetCanvas, drawToolComponents } = useDrawing()
+    const { 
+        drawElement, 
+        drawSelectedElement,
+        drawReplacedElements,
+        drawSelectionPoints, 
+        drawSnappedPoint,
+        resetCanvas, 
+        drawToolComponents 
+    } = useDrawing()
 
     const executeKeyPressCommand = useKeyPressCommands()
     const executeMouseClickCommand = useMouseClickCommands()
@@ -54,18 +63,21 @@ const Canvas = () => {
 
         elements.forEach(e => {
             if (e.isShown && !hasSelectedElement(e)) {
-                drawElement(e, false)
+                drawElement(e)
             }
-
+            
             // const bb = e.getBoundingBox()
             // drawElement(new Line({ x: bb.left, y: bb.top }, { pointB: { x: bb.left, y: bb.bottom } }), false, { color: 'red' })
             // drawElement(new Line({ x: bb.left, y: bb.bottom }, { pointB: { x: bb.right, y: bb.bottom } }), false, { color: 'red' })
             // drawElement(new Line({ x: bb.right, y: bb.bottom }, { pointB: { x: bb.right, y: bb.top } }), false, { color: 'red' })
             // drawElement(new Line({ x: bb.right, y: bb.top }, { pointB: { x: bb.left, y: bb.top } }), false, { color: 'red' })
         })
+        
+        drawReplacedElements()
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
-            if (currentlyCreatedElement.type === 'polyline' && !currentlyCreatedElement.elements[currentlyCreatedElement.elements.length - 1].isFullyDefined) {
+            if (currentlyCreatedElement.type === 'polyline' && 
+                !currentlyCreatedElement.elements[currentlyCreatedElement.elements.length - 1].isFullyDefined) {
                 for (let i = 0; i < currentlyCreatedElement.elements.length - 1; i++) {
                     drawElement(currentlyCreatedElement.elements[i])
                 }
@@ -81,7 +93,7 @@ const Canvas = () => {
         }
 
         if (currentlyCopiedElements) {
-            currentlyCopiedElements.forEach(cce => drawElement(cce, false))
+            currentlyCopiedElements.forEach(cce => drawElement(cce))
         }
 
         drawToolComponents()
@@ -91,7 +103,7 @@ const Canvas = () => {
         selectedElements.forEach(selectedElement => {
             if (!selectedElement.isShown) return
 
-            drawElement(selectedElement, true)
+            drawSelectedElement(selectedElement)
 
             const selectionPoints = selectedElement.getSelectionPoints()
             drawSelectionPoints(selectionPoints)
@@ -105,20 +117,24 @@ const Canvas = () => {
     }, 
     [
         elements, 
-        currentlyCreatedElement,
-        currentlyCopiedElements,
+        currentlyCreatedElement, 
+        currentlyCopiedElements, 
         selectedElements, 
         selectedPoints, 
         currentlyEditedElements, 
-        currentTranslate,
-        currentScale,
-        hasSelectedElement,
-        snappedPoint,
-        drawElement,
+        currentTranslate, 
+        currentScale, 
+        hasSelectedElement, 
+        snappedPoint, 
+        drawElement, 
+        drawReplacedElements, 
+        drawSelectedElement, 
         drawSelectionPoints,
-        drawSnappedPoint,
-        drawToolComponents,
-        resetCanvas
+        drawSnappedPoint, 
+        drawToolComponents, 
+        resetCanvas, 
+        tool.type, 
+        isReplacingElement
     ])
 
     const handleKeyPress = useCallback((event) => {

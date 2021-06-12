@@ -7,10 +7,10 @@ class Rectangle extends Polyline {
 
         if (pointB) {
             this.elements = [
-                createLine(pointA.x, pointA.y, pointB.x, pointA.y, groupId),
-                createLine(pointB.x, pointA.y, pointB.x, pointB.y, groupId),
-                createLine(pointB.x, pointB.y, pointA.x, pointB.y, groupId),
-                createLine(pointA.x, pointB.y, pointA.x, pointA.y, groupId)
+                createLine(pointA.x, pointA.y, pointB.x, pointA.y, { groupId }),
+                createLine(pointB.x, pointA.y, pointB.x, pointB.y, { groupId }),
+                createLine(pointB.x, pointB.y, pointA.x, pointB.y, { groupId }),
+                createLine(pointA.x, pointB.y, pointA.x, pointA.y, { groupId })
             ]
         }
     }
@@ -51,9 +51,9 @@ class Rectangle extends Polyline {
 
         this.elements = [
             firstLine,
-            createLine(pointX, firstLine.pointA.y, pointX, pointY, this.groupId),
-            createLine(pointX, pointY, firstLine.pointA.x, pointY, this.groupId),
-            createLine(firstLine.pointA.x, pointY, firstLine.pointA.x, firstLine.pointA.y, this.groupId)
+            createLine(pointX, firstLine.pointA.y, pointX, pointY, { groupId: this.groupId }),
+            createLine(pointX, pointY, firstLine.pointA.x, pointY, { groupId: this.groupId }),
+            createLine(firstLine.pointA.x, pointY, firstLine.pointA.x, firstLine.pointA.y, { groupId: this.groupId })
         ]
 
         this._updateBoundingBox()

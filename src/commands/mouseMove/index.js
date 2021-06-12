@@ -45,6 +45,12 @@ const useMouseMoveCommands = () => {
         }
 
         let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
+        const realMousePosition = { mouseX: realClientX, mouseY: realClientY }
+
+        if (tool.type === 'trim') {
+            commands.trim(realMousePosition)
+            return
+        }
         
         if (options.snap && tool.type !== 'select') {
             commands.snap({ mouseX: realClientX, mouseY: realClientY })
@@ -59,14 +65,12 @@ const useMouseMoveCommands = () => {
             }
         }
         
-        
         if (snappedPoint) {
             // [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
             realClientX = snappedPoint.x
             realClientY = snappedPoint.y
         }
         
-        const realMousePosition = { mouseX: realClientX, mouseY: realClientY }
         if (tool.clicks) {
             if (tool.name === 'select') {
                 commands.select(realMousePosition)
@@ -99,10 +103,6 @@ const useMouseMoveCommands = () => {
 
         if (currentlyCopiedElements) {
             commands.copy(realMousePosition)
-        }
-
-        if (tool.type === 'trim') {
-            commands.trim(realMousePosition)
         }
     }, [
         commands, 

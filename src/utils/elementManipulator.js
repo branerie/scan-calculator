@@ -36,7 +36,7 @@ class ElementManipulator {
             return newLine
         }
     
-        const newLine = createElement('line', line.pointA.x, line.pointA.y, line.groupId)
+        const newLine = createElement('line', line.pointA.x, line.pointA.y, { groupId: line.groupId })
 
         if (line.pointB) {
             newLine.setLastAttribute(line.pointB.x, line.pointB.y)

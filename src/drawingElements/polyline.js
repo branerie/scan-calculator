@@ -20,7 +20,7 @@ class Polyline extends Element {
             return
         }
 
-        this.#elements = [createLine(initialPoint.x, initialPoint.y, null, null, groupId)]
+        this.#elements = [createLine(initialPoint.x, initialPoint.y, null, null, { groupId })]
         this.#isFullyDefined = false
     }
 
@@ -74,7 +74,7 @@ class Polyline extends Element {
         const elementToDefine = this.#elements[this.#elements.length - 1]
         elementToDefine.defineNextAttribute(definingPoint)
 
-        const line = createLine(definingPoint.x, definingPoint.y, null, null, this.groupId)
+        const line = createLine(definingPoint.x, definingPoint.y, null, null, { groupId: this.groupId })
         this.#elements.push(line)
     }
 

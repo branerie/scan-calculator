@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
-import { createElement } from '../../utils/elementFactory'
 import ElementIntersector from '../../utils/elementIntersector'
 import ElementTrimmer from '../../utils/elementTrimmer'
 
@@ -12,6 +11,7 @@ const useTrimCommand = () => {
             getElementsInContainer,
             startReplacingElements,
             clearReplacingElements,
+            isReplacingElement,
         },
         selection: {
             selectedElements,
@@ -24,30 +24,24 @@ const useTrimCommand = () => {
     const handleTrimCmd = useCallback(({ mouseX, mouseY }) => {
         if (!tool.isStarted) return
 
-        const mousePoint = { x: mouseX, y: mouseY }
-        let { selectRect } = tool
         const lastClick = getLastReferenceClick()
-
         if (lastClick) {
-            if (!selectRect) {
-                selectRect = createElement('rectangle', lastClick.x, lastClick.y)
-            }
-            
-            selectRect.setLastAttribute(mouseX, mouseY)
-            addToolProp('selectRect', selectRect)
+            addToolProp('mousePosition', { mouseX, mouseY })
         }
-
+        
+        const mousePoint = { x: mouseX, y: mouseY }
         let elementsToTrim = lastClick
-                                    ? getElementsInContainer(lastClick, mousePoint, false)
-                                    : getElementsContainingPoint(mouseX, mouseY, selectDelta)
+                                ? getElementsInContainer(lastClick, mousePoint, false)
+                                : getElementsContainingPoint(mouseX, mouseY, selectDelta)
 
         if (!elementsToTrim) {
             return clearReplacingElements()
         }
 
-        elementsToTrim = elementsToTrim.filter(ett => !hasSelectedElement(ett.id))
+        elementsToTrim = elementsToTrim.filter(ett => !hasSelectedElement(ett.id) && !isReplacingElement(ett.id))
 
-        const commandResult = { replacedIds: [], replacingElements: [] }
+        // const commandResult = { replacedIds: [], replacingElements: [], removedSections: [] }
+        const commandResult = {}
         for (const elementToTrim of elementsToTrim) {
             const pointsOfTrim = selectedElements.reduce((acc, cse) => {
                 const intersections = ElementIntersector.getIntersections(elementToTrim, cse)
@@ -64,16 +58,21 @@ const useTrimCommand = () => {
 
             const resultElements = ElementTrimmer.trimElement(elementToTrim, pointsOfTrim, pointsOfSelection)
             if (resultElements) {
-                commandResult.replacedIds.push(elementToTrim.id)
-                commandResult.replacingElements = commandResult.replacingElements.concat(resultElements)
+                commandResult[elementToTrim.id] = {
+                    replacingElements: resultElements.remaining,
+                    removedSections: resultElements.removed
+                }
+                // commandResult.replacedIds.push(elementToTrim.id)
+                // commandResult.replacingElements = commandResult.replacingElements.concat(resultElements.remaining)
+                // commandResult.removedSections = commandResult.removedSections.concat(resultElements.removed)
             }        
         }
 
-        if (commandResult.replacedIds.length === 0) {
+        if (Object.keys(commandResult).length === 0) {
             return clearReplacingElements()
         }
 
-        startReplacingElements(commandResult.replacedIds, commandResult.replacingElements)
+        startReplacingElements(commandResult)
     }, [
         addToolProp, 
         clearReplacingElements, 
@@ -84,6 +83,7 @@ const useTrimCommand = () => {
         selectDelta, 
         startReplacingElements,
         hasSelectedElement,
+        isReplacingElement,
         tool
     ])
 

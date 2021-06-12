@@ -10,8 +10,6 @@ const useEscapeCommand = () => {
             removeCurrentlyCreatedElement,
             currentlyEditedElements,
             stopEditingElements,
-            currentlyReplacedElements,
-            clearReplacingElements,
             currentlyCopiedElements,
             completeCopyingElements,
         },
@@ -50,11 +48,6 @@ const useEscapeCommand = () => {
             completeCopyingElements()
             return
         }
-
-        if (currentlyReplacedElements) {
-            clearReplacingElements()
-            return
-        }
     
         if (selectedElements && selectedElements.length > 0) {
             clearSelection()
@@ -68,8 +61,6 @@ const useEscapeCommand = () => {
         currentlyCreatedElement, 
         currentlyEditedElements, 
         removeCurrentlyCreatedElement,
-        currentlyReplacedElements,
-        clearReplacingElements, 
         selectedElements, 
         stopEditingElements,
         resetTool,
