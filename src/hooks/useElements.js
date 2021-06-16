@@ -249,12 +249,23 @@ const elementsReducer = (state, action) => {
             //     newElements[replacingElement.id] = replacingElement
             // }
 
-            const { completed } = state.currentlyReplacedElements
+            const { completed, currentReplacements } = state.currentlyReplacedElements
+            let newElements = null
+            if (currentReplacements) {
+                newElements = { ...state.elements }
+                for (const replacedId of Object.keys(currentReplacements)) {
+                    newElements[replacedId].isShown = true
+                }
+            }
+
             if (!completed) {
-                return {  ...state, currentlyReplacedElements: null }
+                return {  ...state, currentlyReplacedElements: null, elements: newElements || state.elements }
             }
             
-            const newElements = { ...state.elements }
+            if (!newElements) {
+                newElements = { ...state.elements }
+            }
+
             for (const replacedId of Object.keys(completed)) {
                 delete newElements[replacedId]
             }   

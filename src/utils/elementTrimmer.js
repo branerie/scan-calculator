@@ -1,6 +1,6 @@
 import { createElement, createLine } from './elementFactory'
 import ElementIntersector from './elementIntersector'
-import { getPointDistance } from './point'
+import { getPointDistance, pointsMatch } from './point'
 import PriorityQueue from './priorityQueue'
 import { capitalize } from './text'
 
@@ -11,7 +11,7 @@ const updateTrimmedSections = (trimmedSections, newSection, isSectionTrimmed) =>
 
     if (sectionsOfType) {
         const lastSection = sectionsOfType[sectionsOfType.length - 1]
-        if (lastSection.end.x === newSection.start.x && lastSection.end.y === newSection.start.y) {
+        if (pointsMatch(lastSection.end, newSection.start)) {
             sectionsOfType[sectionsOfType.length - 1].end = newSection.end
             return
         }
@@ -122,17 +122,22 @@ class ElementTrimmer {
             let isSectionTrimmed = false
             if (isStartInSelect || isEndInSelect) {
                 isSectionTrimmed = true
-            } else if (selectIntersections.length > 0) {
-                const nextIntersection = selectIntersections[selectIntersections.length - 1]
+            } else {
+                let isIntersectionInSection = true
+                while (selectIntersections.length > 0 && isIntersectionInSection) {
+                    const nextIntersection = selectIntersections[selectIntersections.length - 1]
 
-                if (
-                    nextIntersection.distanceFromStart >= sectionStartDistance &&
-                    nextIntersection.distanceFromStart <= sectionEndDistance
-                ) {
-                    // an intersection of the element with the selection box occurs in this section
-                    // therefore, it needs to be trimmed 
-                    selectIntersections.pop()
-                    isSectionTrimmed = true
+                    if (
+                        nextIntersection.distanceFromStart >= sectionStartDistance &&
+                        nextIntersection.distanceFromStart <= sectionEndDistance
+                    ) {
+                        // an intersection of the element with the selection box occurs in this section
+                        // therefore, it needs to be trimmed 
+                        selectIntersections.pop()
+                        isSectionTrimmed = true
+                    } else {
+                        isIntersectionInSection = false
+                    }
                 }
             }
 

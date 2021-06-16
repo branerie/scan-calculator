@@ -168,7 +168,12 @@ export default function ElementsContextProvider({ children }) {
     }, [removeElements, removeSelectionPoints, updateHistoryEvents])
 
     const replaceElements = useCallback(() => {
-        if (!currentlyReplacedElements || !currentlyReplacedElements.completed) return
+        if (!currentlyReplacedElements) return
+
+        if (!currentlyReplacedElements.completed) {
+            clearReplacingElements()
+            return
+        }
 
         const { completed } = currentlyReplacedElements
 

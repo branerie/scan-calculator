@@ -1,5 +1,6 @@
-import { degreesToRadians } from "./angle"
-import { createPoint } from "./elementFactory"
+import { degreesToRadians } from './angle'
+import { MAX_NUM_ERROR } from './constants'
+import { createPoint } from './elementFactory'
 
 const getPointDistance = (a, b) => {
     return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
@@ -41,8 +42,14 @@ const getUniquePoints = (points) => {
     return Object.values(pointsByCoordinates)
 }
 
+const pointsMatch = (pointA, pointB, { checkX = true, checkY = true } = {}) => {
+    return (checkX && Math.abs(pointA.x - pointB.x) < MAX_NUM_ERROR) && 
+           (checkY && Math.abs(pointA.y - pointB.y) < MAX_NUM_ERROR)
+}
+
 export {
     getPointDistance,
     getRotatedPointAroundPivot,
-    getUniquePoints
+    getUniquePoints,
+    pointsMatch
 }
