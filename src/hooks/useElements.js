@@ -456,14 +456,14 @@ const useElements = () => {
         hashGrid.current.removeElementsById(replacedIds)
     }
 
-    const isReplacingElement = (elementId) => {
+    const isReplacingElement = (element) => {
         const { currentlyReplacedElements } = elementsState
         if (!currentlyReplacedElements || !currentlyReplacedElements.replacingElements) return false
 
         const { replacingElements } = currentlyReplacedElements
 
         // TODO: replacedIds - move away from array implementation?
-        return replacingElements.some(id => id === elementId)
+        return replacingElements.some(id => id === element.id)
     }
 
     const getElementById = (elementId) => elementsState.elements[elementId]

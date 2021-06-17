@@ -12,6 +12,8 @@ class Rectangle extends Polyline {
                 createLine(pointB.x, pointB.y, pointA.x, pointB.y, { groupId }),
                 createLine(pointA.x, pointB.y, pointA.x, pointA.y, { groupId })
             ]
+
+            this.joinEnds()
         }
     }
 
@@ -46,6 +48,8 @@ class Rectangle extends Polyline {
             this.elements[3].setPointB(firstLine.pointA.x, firstLine.pointA.y)
             
             this._updateBoundingBox()
+            this.joinEnds()
+
             return
         }
 
@@ -57,6 +61,7 @@ class Rectangle extends Polyline {
         ]
 
         this._updateBoundingBox()
+        this.joinEnds()
     }
 }
 

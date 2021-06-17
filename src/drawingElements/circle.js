@@ -28,6 +28,8 @@ class Circle extends Element {
 
     get basePoint() { return this.#centerPoint }
     get centerPoint() { return this.#centerPoint }
+    get startPoint() { return createPoint(this.#centerPoint.x + this.#radius, this.#centerPoint.y) }
+    get endPoint() { return createPoint(this.#centerPoint.x + this.#radius, this.#centerPoint.y) }
     get radius() { return this.#radius }
     get endPoints() { return this.#endPoints }
 

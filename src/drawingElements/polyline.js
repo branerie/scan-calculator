@@ -3,11 +3,13 @@ import { createLine } from '../utils/elementFactory'
 
 class Polyline extends Element {
     #isFullyDefined
+    #isJoined
     #boundingBox
     #elements
 
     constructor(initialPoint, { id = null, groupId = null, elements = null } = {}) {
         super(id, groupId)
+        this.#isJoined = false
 
         if (elements) {
             this.#elements = elements
@@ -24,26 +26,14 @@ class Polyline extends Element {
         this.#isFullyDefined = false
     }
 
-    get basePoint() {
-        return this.#elements.length > 0 ? this.#elements[0].basePoint : null
-    }
-
-    get startPoint() {
-        return this.#elements[0].startPoint
-    }
-
-    get endPoint() {
-        return this.#elements[this.#elements.length - 1].endPoint
-    }
-
-    get isFullyDefined() {
-        return this.#isFullyDefined
-    }
+    get basePoint() { return this.#elements.length > 0 ? this.#elements[0].basePoint : null }
+    get startPoint() { return this.#elements[0].startPoint }
+    get endPoint() { return this.#elements[this.#elements.length - 1].endPoint }
+    get isFullyDefined() { return this.#isFullyDefined }
+    get elements() { return this.#elements }
 
     /* Should return true if all but the last dimension of the element are defined */
-    get isAlmostDefined() {
-        return !!(this.#elements[0].pointA)
-    }
+    get isAlmostDefined() { return !!(this.#elements[0].pointA) }
 
     get isClosed() {
         if (this.#elements.length < 2) return false
@@ -55,7 +45,8 @@ class Polyline extends Element {
         return true
     }
 
-    get elements() { return this.#elements }
+    get isJoined() { return this.#isJoined }
+
 
     set elements(newElements) {
         this.#elements = newElements
@@ -134,6 +125,12 @@ class Polyline extends Element {
     }
 
     getBoundingBox() { return { ...this.#boundingBox } }
+
+    joinEnds() {
+        if (!this.isClosed) return
+
+        this.#isJoined = true
+    }
 
     stretchByMidPoint(dX, dY, midPointId) {
         const movedLineIndex = this.#elements.findIndex(e => e.getPointById(midPointId))

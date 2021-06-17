@@ -16,7 +16,14 @@ const useTrimCommand = () => {
     const { tool, addToolProp, resetTool } = useToolsContext()
     
     const handleTrimCmd = useCallback((event) => {
-        if (!selectedElements) return
+        const isEscape = event.keyCode === ESCAPE_KEY_CODE
+        if (!selectedElements) {
+            if (isEscape) {
+                resetTool()
+            }
+
+            return
+        }
 
         const isEnterOrSpace = event.keyCode === ENTER_KEY_CODE || event.keyCode === SPACE_KEY_CODE
         if (!tool.isStarted && isEnterOrSpace) {
@@ -24,7 +31,7 @@ const useTrimCommand = () => {
             return
         }
 
-        if (isEnterOrSpace || event.keyCode === ESCAPE_KEY_CODE) {
+        if (isEnterOrSpace || isEscape) {
             replaceElements()
             resetTool()
             return

@@ -158,7 +158,10 @@ const Canvas = () => {
     const handleMouseDown = (event) => {
         if (event.button === 1) {
             setMouseDrag([event.clientX, event.clientY])
+            return
         }
+
+        executeMouseClickCommand(event)
     }
 
     const changeTool = (tool) => {
@@ -187,7 +190,7 @@ const Canvas = () => {
                 id='canvas'
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
-                onClick={executeMouseClickCommand}
+                // onClick={executeMouseClickCommand}
                 onAuxClick={() => setMouseDrag(null)}
                 onMouseDown={handleMouseDown}
                 onWheel={handleMouseWheel}

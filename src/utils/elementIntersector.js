@@ -8,7 +8,6 @@ import { capitalize } from './text'
 class ElementIntersector {
     static getIntersections(elementA, elementB, shouldLieOnElements = true) {
         let results = []
-
         const polylineElement = elementA.baseType === 'polyline' 
                                         ? elementA 
                                         : elementB.baseType === 'polyline' ? elementB : null

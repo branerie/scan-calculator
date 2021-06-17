@@ -39,7 +39,7 @@ const useTrimCommand = () => {
             return clearReplacingElements()
         }
 
-        elementsToTrim = elementsToTrim.filter(ett => !hasSelectedElement(ett.id) && !isReplacingElement(ett.id))
+        elementsToTrim = elementsToTrim.filter(ett => !hasSelectedElement(ett) && !isReplacingElement(ett))
 
         // const commandResult = { replacedIds: [], replacingElements: [], removedSections: [] }
         const commandResult = {}

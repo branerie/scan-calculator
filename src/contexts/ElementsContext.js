@@ -206,7 +206,8 @@ export default function ElementsContextProvider({ children }) {
         currentlyReplacedElements,
         getElementById,
         removeSelectionPoints,
-        updateHistoryEvents
+        updateHistoryEvents,
+        clearReplacingElements
     ])
 
     const updateElementsFromHistory = useCallback((lastEventIndex, isUndo) => {
