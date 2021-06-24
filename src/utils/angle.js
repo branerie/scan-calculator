@@ -11,7 +11,7 @@ const getQuadrant = (deltaX, deltaY) => {
         }
 
         return 4
-    } 
+    }
 
     // deltaX is negative
     if (deltaY > 0) {
@@ -60,14 +60,14 @@ const getAngleBetweenPoints = (firstPoint, secondPoint) => {
     }
 }
 
-const getAngleBetweenLines = ({ 
-    lineA = null, 
+const getAngleBetweenLines = ({
+    lineA = null,
     lineB = null,
-    lineAFirstPointX = null, 
+    lineAFirstPointX = null,
     lineAFirstPointY = null,
     lineASecondPointX = null,
     lineASecondPointY = null,
-    lineBFirstPointX = null, 
+    lineBFirstPointX = null,
     lineBFirstPointY = null,
     lineBSecondPointX = null,
     lineBSecondPointY = null,
@@ -101,5 +101,5 @@ export {
     getAngleBetweenPoints,
     getAngleBetweenLines,
     radiansToDegrees,
-    degreesToRadians,
+    degreesToRadians
 }

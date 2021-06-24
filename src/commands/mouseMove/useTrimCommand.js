@@ -13,6 +13,7 @@ const useTrimCommand = () => {
             startReplacingElements,
             clearReplacingElements,
             isReplacingElement,
+            getElementById
         },
         selection: {
             selectedElements,
@@ -21,6 +22,23 @@ const useTrimCommand = () => {
     } = useElementsContext()
 
     const { getLastReferenceClick, selectDelta, addToolProp, tool } = useToolsContext()
+
+    const getElementTrimPoints = useCallback((elementToTrim) => {
+        return selectedElements.reduce((acc, cse) => {
+            let intersections = ElementIntersector.getIntersections(elementToTrim, cse)
+            if (intersections) {
+                const elementStartPoint = elementToTrim.startPoint
+                if (elementStartPoint) {
+                    intersections = intersections.filter(int => 
+                        !pointsMatch(int, elementStartPoint) && !pointsMatch(int, elementToTrim.endPoint))
+                }
+
+                return [...acc, ...intersections]
+            }
+
+            return acc
+        }, [])
+    }, [selectedElements])
 
     const handleTrimCmd = useCallback(({ mouseX, mouseY }) => {
         if (!tool.isStarted) return
@@ -31,44 +49,43 @@ const useTrimCommand = () => {
         }
         
         const mousePoint = { x: mouseX, y: mouseY }
+        
         let elementsToTrim = lastClick
-                                ? getElementsInContainer(lastClick, mousePoint, false)
-                                : getElementsContainingPoint(mouseX, mouseY, selectDelta)
-
+                                ? getElementsInContainer(lastClick, mousePoint, false, false)
+                                : getElementsContainingPoint(mouseX, mouseY, selectDelta, false)
+        
         if (!elementsToTrim) {
             return clearReplacingElements()
         }
-
+        
         elementsToTrim = elementsToTrim.filter(ett => !hasSelectedElement(ett) && !isReplacingElement(ett))
-
+        
         // const commandResult = { replacedIds: [], replacingElements: [], removedSections: [] }
+        const pointsOfSelection = lastClick ? [lastClick, mousePoint] : [mousePoint]
+
         const commandResult = {}
+        const polylines = {}
         for (const elementToTrim of elementsToTrim) {
-            const pointsOfTrim = selectedElements.reduce((acc, cse) => {
-                let intersections = ElementIntersector.getIntersections(elementToTrim, cse)
-                if (intersections) {
-                    // TODO: Improve below logic
-                    intersections = intersections.filter(i => elementToTrim.getSelectionPoints('endPoint').every(ep => !pointsMatch(ep, i)))
-                    return [...acc, ...intersections]
+            const pointsOfTrim = getElementTrimPoints(elementToTrim)
+
+            if (pointsOfTrim.length === 0) continue
+
+            if (elementToTrim.groupId) {
+                const polylineId = elementToTrim.groupId
+
+                if (!polylines[polylineId]) {
+                    polylines[polylineId] = {}
                 }
 
-                return acc
-            }, [])
-
-            if (pointsOfTrim.length === 0) {
+                polylines[polylineId][elementToTrim.id] = pointsOfTrim
                 continue
-            } else if (pointsOfTrim.length === 1) {
-                const startPoint = elementToTrim.startPoint
-                const endPoint = elementToTrim.endPoint
-
-                const trimPoint = pointsOfTrim[0]
-                const isTrimStart = pointsMatch(trimPoint, startPoint)
-                const isTrimEnd = pointsMatch(trimPoint, endPoint)
-
-                if (isTrimStart || isTrimEnd) continue
             }
             
-            const pointsOfSelection = lastClick ? [lastClick, mousePoint] : [mousePoint]
+            // if (pointsOfTrim.length === 1 && 
+            //     checkIfEdgeTrim(pointsOfTrim[0], elementToTrim.startPoint, elementToTrim.endPoint)
+            // ) {
+            //     continue
+            // }
 
             const resultElements = ElementTrimmer.trimElement(elementToTrim, pointsOfTrim, pointsOfSelection)
             if (resultElements) {
@@ -82,6 +99,25 @@ const useTrimCommand = () => {
             }        
         }
 
+        for (const [polylineId, trimPoints] of Object.entries(polylines)) {
+            const elementToTrim = getElementById(polylineId)
+
+            for (const subElement of elementToTrim.elements) {
+                if (trimPoints[subElement.id]) continue
+
+                const newTrimPoints = getElementTrimPoints(subElement)
+                trimPoints[subElement.id] = newTrimPoints
+            }
+            
+            const resultElements = ElementTrimmer.trimElement(elementToTrim, trimPoints, pointsOfSelection)
+            if (resultElements) {
+                commandResult[elementToTrim.id] = {
+                    replacingElements: resultElements.remaining,
+                    removedSections: resultElements.removed
+                }
+            }
+        }
+
         if (Object.keys(commandResult).length === 0) {
             return clearReplacingElements()
         }
@@ -90,15 +126,16 @@ const useTrimCommand = () => {
     }, [
         addToolProp, 
         clearReplacingElements, 
-        selectedElements, 
         getElementsContainingPoint, 
         getElementsInContainer, 
-        getLastReferenceClick,
+        getElementById, 
+        getLastReferenceClick, 
         selectDelta, 
-        startReplacingElements,
-        hasSelectedElement,
-        isReplacingElement,
-        tool
+        startReplacingElements, 
+        hasSelectedElement, 
+        isReplacingElement, 
+        tool, 
+        getElementTrimPoints
     ])
 
     return handleTrimCmd

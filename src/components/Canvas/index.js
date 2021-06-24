@@ -156,12 +156,16 @@ const Canvas = () => {
     }
 
     const handleMouseDown = (event) => {
-        if (event.button === 1) {
-            setMouseDrag([event.clientX, event.clientY])
-            return
+        switch(event.button) {
+            case 0:
+                executeMouseClickCommand(event)
+                break
+            case 1:
+                setMouseDrag([event.clientX, event.clientY])
+                break
+            default:
+                return
         }
-
-        executeMouseClickCommand(event)
     }
 
     const changeTool = (tool) => {

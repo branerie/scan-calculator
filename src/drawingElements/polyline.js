@@ -1,34 +1,38 @@
 import Element from './element'
 import { createLine } from '../utils/elementFactory'
+import { pointsMatch } from '../utils/point'
 
 class Polyline extends Element {
     #isFullyDefined
     #isJoined
     #boundingBox
     #elements
+    #startPoint
+    #endPoint
 
     constructor(initialPoint, { id = null, groupId = null, elements = null } = {}) {
         super(id, groupId)
+        if (groupId && !id) {
+            this.id = groupId
+            delete this.groupId
+        }
+        
         this.#isJoined = false
 
         if (elements) {
-            this.#elements = elements
-            this.#isFullyDefined = elements.every(e => e.isFullyDefined)
-
-            if (this.#isFullyDefined) {
-                this._updateBoundingBox()
-            }
-
+            // do not use this.#elements directly; must go through setter logic
+            this.elements = elements
             return
         }
 
-        this.#elements = [createLine(initialPoint.x, initialPoint.y, null, null, { groupId })]
+        this.#elements = [createLine(initialPoint.x, initialPoint.y, null, null, { groupId: this.id })]
         this.#isFullyDefined = false
     }
 
+    get id() { return super.id }
     get basePoint() { return this.#elements.length > 0 ? this.#elements[0].basePoint : null }
-    get startPoint() { return this.#elements[0].startPoint }
-    get endPoint() { return this.#elements[this.#elements.length - 1].endPoint }
+    get startPoint() { return this.#startPoint ? this.#startPoint : this.#elements[0].startPoint }
+    get endPoint() { return this.#endPoint ? this.#endPoint : this.#elements[this.#elements.length - 1].endPoint }
     get isFullyDefined() { return this.#isFullyDefined }
     get elements() { return this.#elements }
 
@@ -47,14 +51,46 @@ class Polyline extends Element {
 
     get isJoined() { return this.#isJoined }
 
-
     set elements(newElements) {
         this.#elements = newElements
 
-        this.#isFullyDefined = newElements.every(e => e.isFullyDefined)
-        if (this.#isFullyDefined) {
+        let isFullyDefined = true
+        for (const element of newElements) {
+            element.groupId = this.id
+            isFullyDefined = isFullyDefined && element.isFullyDefined
+        }
+
+        this.#isFullyDefined = isFullyDefined
+        if (isFullyDefined) {
             this._updateBoundingBox()
         }
+    }
+
+    set id(value) {
+        super.id = value
+    
+        if (this.#elements) {
+            for (const element of this.#elements) {
+                element.groupId = value
+            }
+        }
+    }
+
+    set startPoint(value) {
+        if (!pointsMatch(value, this.elements[0].startPoint) && pointsMatch(value, this.elements[0].endPoint)) {
+            throw new Error('Cannot set a polyline start point which is not an end point for the first element.')
+        }
+
+        this.#startPoint = value
+    }
+
+    set endPoint(value) {
+        const lastElement = this.elements[this.elements.length - 1]
+        if (!pointsMatch(value, lastElement.startPoint) && pointsMatch(value, lastElement.endPoint)) {
+            throw new Error('Cannot set a polyline end point which is not an end point for the last element.')
+        }
+
+        this.#endPoint = value
     }
 
     checkIfPointOnElement(point, maxDiff) {
@@ -65,8 +101,9 @@ class Polyline extends Element {
         const elementToDefine = this.#elements[this.#elements.length - 1]
         elementToDefine.defineNextAttribute(definingPoint)
 
-        const line = createLine(definingPoint.x, definingPoint.y, null, null, { groupId: this.groupId })
+        const line = createLine(definingPoint.x, definingPoint.y, null, null, { groupId: this.id })
         this.#elements.push(line)
+        this.#endPoint = null
     }
 
     getSelectionPoints(pointType) {
@@ -84,6 +121,7 @@ class Polyline extends Element {
         const elementToDefine = this.#elements[this.#elements.length - 1]
 
         elementToDefine.setPointB(pointX, pointY)
+        this.#isFullyDefined = this.#elements.every(e => e.isFullyDefined)
         
         if (this.#isFullyDefined) {
             this._updateBoundingBox()
@@ -167,6 +205,8 @@ class Polyline extends Element {
     completeDefinition() {
         this.#isFullyDefined = true
         this.#elements.pop()
+        this.#elements.forEach(e => e.groupId = this.id)
+
         this._updateBoundingBox()
     }
 

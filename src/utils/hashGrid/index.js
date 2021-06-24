@@ -26,27 +26,37 @@ class HashGrid {
 
     addElements(newElements) {
         for (const newElement of newElements) {
-            const [leftDiv, topDiv, rightDiv, bottomDiv] = this.__getElementDivRanges(newElement)
+           if (newElement.baseType === 'polyline') {
+               this.addElements(newElement.elements)
+               continue
+           }
 
-            this.#divsById[newElement.id] = new Set()
-            for (let xDivIndex = leftDiv; xDivIndex <= rightDiv; xDivIndex++) {
-                for (let yDivIndex = topDiv; yDivIndex <= bottomDiv; yDivIndex++) {
-                    const divKey = `${xDivIndex},${yDivIndex}`
+           const [leftDiv, topDiv, rightDiv, bottomDiv] = this.__getElementDivRanges(newElement)
 
-                    this.#divsById[newElement.id].add(divKey)
+           this.#divsById[newElement.id] = new Set()
+           for (let xDivIndex = leftDiv; xDivIndex <= rightDiv; xDivIndex++) {
+               for (let yDivIndex = topDiv; yDivIndex <= bottomDiv; yDivIndex++) {
+                   const divKey = `${xDivIndex},${yDivIndex}`
 
-                    if (!this.#idsByDiv[divKey]) {
-                        this.#idsByDiv[divKey] = new Set()
-                    }
+                   this.#divsById[newElement.id].add(divKey)
 
-                    this.#idsByDiv[divKey].add(newElement.id)
-                }
-            }
+                   if (!this.#idsByDiv[divKey]) {
+                       this.#idsByDiv[divKey] = new Set()
+                   }
+
+                   this.#idsByDiv[divKey].add(newElement.id)
+               }
+           }
         }
     }
 
     removeElements(removedElements) {
         for (const removedElement of removedElements) {
+            if (removedElement.baseType === 'polyline') {
+                this.removeElements(removedElement.elements)
+                continue
+            }
+
             this.__removeElementById(removedElement.id)
         }
     }

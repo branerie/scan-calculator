@@ -88,7 +88,7 @@ const useSelectCommand = () => {
         startEditingElements, 
         setSelectedPoints, 
         setSelectedElements, 
-        setTool
+        setTool,
     ])
 
     return handleSelectCmd

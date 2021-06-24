@@ -12,14 +12,20 @@ const elementsReducer = (state, action) => {
     switch (action.type) {
         case 'addElements': {
             const newStateElements = { ...state.elements }
+            const newGroupedElements = {}
             action.newElements.forEach(newElement => {
                 newStateElements[newElement.id] = newElement
+
+                if (newElement.baseType === 'polyline') {
+                    newElement.elements.forEach(e => newGroupedElements[e.id] = e)
+                }
             })
 
             return {
                 ...state,
                 elements: newStateElements,
-                currentlyCreatedElement: null
+                currentlyCreatedElement: null,
+                ...(Object.keys(newGroupedElements).length && { groupedElements: { ...state.groupedElements, ...newGroupedElements } })
             }
         }
         case 'changeElements': {
@@ -32,13 +38,23 @@ const elementsReducer = (state, action) => {
         }
         case 'removeElements': {
             const { removedElements } = action
-            const elementIds = removedElements.map(re => re.id)
-
             const newElements = { ...state.elements }
             const { currentlyEditedElements } = state
             let newCurrentlyEditedElements = currentlyEditedElements
-            for (const elementId of elementIds) {
+            let newGroupedElements = null
+            for (const removedElement of removedElements) {
+                const elementId = removedElement.id
                 delete newElements[elementId]
+
+                if (removedElement.baseType === 'polyline') {
+                    if (!newGroupedElements) {
+                        newGroupedElements = { ...state.groupedElements }
+                    }
+
+                    for (const element of removedElement.elements) {
+                        delete newGroupedElements[element.id]
+                    }
+                }
 
                 if (newCurrentlyEditedElements && elementId in newCurrentlyEditedElements) {
                     if (newCurrentlyEditedElements === currentlyEditedElements) {
@@ -49,17 +65,11 @@ const elementsReducer = (state, action) => {
                 }
             }
 
-            return { ...state, elements: newElements, currentlyEditedElements: newCurrentlyEditedElements }
-        }
-        case 'setElements': {
-            return {
-                ...state,
-                elements: action.newElements,
-                currentlyCreatedElement: null,
-                currentlyEditedElements: null,
-                currentlyCopiedElements: null,
-                currentlyReplacedElements: null,
-                snappedPoint: null
+            return { 
+                ...state, 
+                elements: newElements, 
+                currentlyEditedElements: newCurrentlyEditedElements,
+                ...(newGroupedElements && { groupedElements: newGroupedElements })
             }
         }
         case 'addCurrentlyCreated': {
@@ -302,6 +312,7 @@ const elementsReducer = (state, action) => {
 const useElements = () => {
     const [elementsState, elementsDispatch] = useReducer(elementsReducer, {
         elements: {},
+        groupedElements: {},
         currentlyCreatedElement: null,
         currentlyEditedElements: null,
         currentlyCopiedElements: null,
@@ -331,12 +342,9 @@ const useElements = () => {
         hashGrid.current.changeElements(elementsAfterChange)
     }, [])
 
-    const setElements = useCallback((newElements) => {
-        elementsDispatch({ type: 'setElements', newElements })
-        hashGrid.current.setElements(newElements)
-    }, [])
+    const getElementById = useCallback((elementId) => elementsState.elements[elementId], [elementsState.elements])
 
-    const getElementsContainingPoint = useCallback((pointX, pointY, maxPointDiff) => {
+    const getElementsContainingPoint = useCallback((pointX, pointY, maxPointDiff, returnGroup = true) => {
         const elementIdsInDivision = hashGrid.current.getDivisionContents(pointX, pointY)
         if (!elementIdsInDivision) return null
 
@@ -344,16 +352,17 @@ const useElements = () => {
 
         const elementsWithPoint = []
         for (const elementId of elementIdsInDivision) {
-            const element = elementsState.elements[elementId]
+            const element = elementsState.elements[elementId] || elementsState.groupedElements[elementId]
             if (element.checkIfPointOnElement(point, maxPointDiff)) {
-                elementsWithPoint.push(element)
+                const elementToAdd = (element.groupId && returnGroup) ? getElementById(element.groupId) : element
+                elementsWithPoint.push(elementToAdd)
             }
         }
 
         return elementsWithPoint.length > 0 ? elementsWithPoint : null
-    }, [elementsState.elements])
+    }, [elementsState.elements, elementsState.groupedElements, getElementById])
 
-    const getElementsInContainer = useCallback((boxStartPoint, boxEndPoint, shouldSkipPartial = true) => {
+    const getElementsInContainer = useCallback((boxStartPoint, boxEndPoint, shouldSkipPartial = true, returnGroup = true) => {
         const startPoint = { x: Math.min(boxStartPoint.x, boxEndPoint.x), y: Math.min(boxStartPoint.y, boxEndPoint.y) }
         const endPoint = { x: Math.max(boxStartPoint.x, boxEndPoint.x), y: Math.max(boxStartPoint.y, boxEndPoint.y) }
 
@@ -362,7 +371,7 @@ const useElements = () => {
 
         const elementsInContainer = []
         for (const elementId of elementIds) {
-            const element = elementsState.elements[elementId]
+            const element = elementsState.elements[elementId] ||  elementsState.groupedElements[elementId]
             const boundingBox = element.getBoundingBox()
 
             const isLeftInContainer = boundingBox.left >= startPoint.x
@@ -371,7 +380,8 @@ const useElements = () => {
             const isBottomInContainer = boundingBox.bottom <= endPoint.y
 
             if (isLeftInContainer && isTopInContainer && isRightInContainer && isBottomInContainer) {
-                elementsInContainer.push(element)
+                const elementToAdd = (element.groupId && returnGroup) ? getElementById(element.groupId) : element
+                elementsInContainer.push(elementToAdd)
             }
 
             if (shouldSkipPartial) continue
@@ -380,12 +390,13 @@ const useElements = () => {
             container.setLastAttribute(endPoint.x, endPoint.y)
             const intersections = ElementIntersector.getIntersections(element, container)
             if (intersections) {
-                elementsInContainer.push(element)
+                const elementToAdd = (element.groupId && returnGroup) ? getElementById(element.groupId) : element
+                elementsInContainer.push(elementToAdd)
             }
         }
 
         return elementsInContainer.length > 0 ? elementsInContainer : null
-    }, [elementsState.elements])
+    }, [elementsState.elements, elementsState.groupedElements, getElementById])
 
     const addCurrentlyCreatedElement = (createdElement) =>
             elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
@@ -453,7 +464,16 @@ const useElements = () => {
 
         elementsDispatch({ type: 'continueReplacingElements' })
         hashGrid.current.addElements(replacingElements)
-        hashGrid.current.removeElementsById(replacedIds)
+
+        for (const replacedId of replacedIds) {
+            const element = elementsState.elements[replacedId] 
+            if (element.baseType === 'polyline') {
+                hashGrid.current.removeElements(element.elements)
+                continue
+            }
+
+            hashGrid.current.removeElementsById(replacedIds)
+        }
     }
 
     const isReplacingElement = (element) => {
@@ -465,8 +485,6 @@ const useElements = () => {
         // TODO: replacedIds - move away from array implementation?
         return replacingElements.some(id => id === element.id)
     }
-
-    const getElementById = (elementId) => elementsState.elements[elementId]
 
     const setSnappedPoint = (snappedPoint) => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
     const clearSnappedPoint = () => elementsDispatch({ type: 'clearSnappedPoint' })
@@ -488,7 +506,6 @@ const useElements = () => {
         removeElements,
         changeElements,
         getElementById,
-        setElements,
         addCurrentlyCreatedElement,
         removeCurrentlyCreatedElement,
         startEditingElements,

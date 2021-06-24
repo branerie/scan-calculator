@@ -69,6 +69,9 @@ class Arc extends Element {
     get startPoint() { return { ...this.#startLine.pointB } }
     get endPoint() { return { ...this.#endLine.pointB } }
 
+    set startPoint(value) { this.#startLine.setPointB(value.x, value.y) }
+    set endPoint(value) { this.#endLine.setPointB(value.x, value.y) }
+
     get startLine() { return this.#startLine }
     get endLine() { return this.#endLine }
     get midLine() { return this.#midLine }
@@ -97,6 +100,20 @@ class Arc extends Element {
             this.#radius > 0 &&
             (!!(this.#startLine) && this.#startLine.angle >= 0 && this.#startLine.angle <= 360)
         )
+    }
+    
+    get angle() {
+        if (!this.containsAngle(0)) {
+            return Math.abs(this.#startLine.angle - this.#endLine.angle)
+        }
+    
+        return 360 - this.#endLine.angle + this.#startLine.angle
+    }
+
+    get length() {
+        const arcAngle = this.angle
+
+        return 2 * Math.PI * this.#radius * (arcAngle) / 360 
     }
 
     getSelectionPoints(pointType) {
@@ -227,22 +244,33 @@ class Arc extends Element {
         this.#boundingBox.bottom += dY
     }
 
+    containsAngle(angle) {
+        const startAngle = this.#startLine.angle
+        const endAngle = this.#endLine.angle
+    
+        if (startAngle > endAngle) {
+            return angle <= startAngle && angle >= endAngle
+        }
+    
+        return angle <= startAngle || angle >= endAngle
+    }
+
     __updateDetails() {
         this.__updateMidLine()
         this.__updateBoundingBox()
     }
 
     __updateBoundingBox() {
-        const left = this.__isAngleInArc(180) 
+        const left = this.containsAngle(180) 
                         ? this.#centerPoint.x - this.#radius 
                         : Math.min(this.#startLine.pointB.x, this.#endLine.pointB.x)
-        const right = this.__isAngleInArc(0) 
+        const right = this.containsAngle(0) 
                         ? this.#centerPoint.x + this.#radius  
                         : Math.max(this.#startLine.pointB.x, this.#endLine.pointB.x)
-        const top = this.__isAngleInArc(270) 
+        const top = this.containsAngle(270) 
                         ? this.#centerPoint.y - this.#radius 
                         : Math.min(this.#startLine.pointB.y, this.#endLine.pointB.y)
-        const bottom = this.__isAngleInArc(90) 
+        const bottom = this.containsAngle(90) 
                         ? this.centerPoint.y + this.#radius 
                         : Math.max(this.#startLine.pointB.y, this.#endLine.pointB.y)
     
@@ -274,17 +302,6 @@ class Arc extends Element {
             : -this.#radius
 
         this.#midLine.setLength(newLength, false)
-    }
-
-    __isAngleInArc(angle) {
-        const startAngle = this.#startLine.angle
-        const endAngle = this.#endLine.angle
-
-        if (startAngle > endAngle) {
-            return angle <= startAngle && angle >= endAngle
-        }
-
-        return angle <= startAngle || angle >= endAngle
     }
 }
 

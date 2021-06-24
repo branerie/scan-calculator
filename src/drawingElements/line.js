@@ -29,6 +29,9 @@ class Line extends Element {
     get startPoint() { return this.pointA }
     get endPoint() { return this.pointB }
 
+    set startPoint(value) { return this.setPointA(value.x, value.y) }
+    set endPoint(value) { return this.setPointB(value.x, value.y) }
+
     get pointA() { return this.#pointA ? { ...this.#pointA } : null }
     get pointB() { return this.#pointB ? { ...this.#pointB } : null }
     get midPoint() { return this.#midPoint ? { ...this.#midPoint } : null }

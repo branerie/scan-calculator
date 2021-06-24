@@ -11,7 +11,8 @@ const useSnapCommand = () => {
             currentlyCreatedElement,
             currentlyEditedElements,
             findNearbyPoints,
-            setSnappedPoint
+            snappedPoint,
+            setSnappedPoint,
         },
         selection: {
             selectedPoints
@@ -53,6 +54,14 @@ const useSnapCommand = () => {
                     return cee.getPointById(nbp.pointId)
                 }))
         }
+
+        if (nearbyPoints.length === 0) {
+            if (snappedPoint) {
+                return setSnappedPoint(null)
+            }
+
+            return
+        }
         
         const mousePoint = createPoint(mouseX, mouseY)
 
@@ -74,7 +83,8 @@ const useSnapCommand = () => {
         currentlyCreatedElement, 
         currentlyEditedElements, 
         findNearbyPoints, 
-        selectedPoints, 
+        selectedPoints,
+        snappedPoint,
         setSnappedPoint
     ])
 

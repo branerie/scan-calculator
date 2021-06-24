@@ -1,9 +1,16 @@
 class Element {
+    #id
+
     constructor(id, groupId) {
-        this.id = id
-        this.groupId = groupId
+        this.#id = id
+        if (groupId) {
+            this.groupId = groupId
+        }
+        
         this.isShown = true
     }
+
+    get id() { return this.#id }
 
     get basePoint() {
         throw new Error('Property basePoint is not implemented')
@@ -33,7 +40,9 @@ class Element {
 
     get endPoint() {
         throw new Error('Property endPoint is not implemented')
-    } 
+    }
+
+    set id(value) { this.#id = value }
 
     getPointById(pointId) {
         throw new Error('Method getPointById is not implemented')

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 import { createElement, createPoint } from '../../utils/elementFactory'
+import ElementManipulator from '../../utils/elementManipulator'
 
 const useDrawCommand = () => {
     const {
@@ -40,7 +41,10 @@ const useDrawCommand = () => {
         }
         
         const copiedPoint = snappedPoint ? createPoint(clickedPoint.x, clickedPoint.y) : clickedPoint
-        currentlyCreatedElement.defineNextAttribute(copiedPoint)
+
+        const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, true)
+        newCurrentlyCreatedElement.defineNextAttribute(copiedPoint)
+        addCurrentlyCreatedElement(newCurrentlyCreatedElement)
 
         const isReferenceClick = tool.name !== 'arc'
         addToolClick(clickedPoint, isReferenceClick)
