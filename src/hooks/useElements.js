@@ -193,12 +193,17 @@ const elementsReducer = (state, action) => {
                         : {}
             
             const newElements = { ...state.elements }
+            const newGroupedElements = { ...state.groupedElements }
             for (const replacedId of Object.keys(action.replacements)) {
                 const { replacingElements, removedSections } = action.replacements[replacedId]
                 
                 if (currentReplacements[replacedId]) {
                     for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
                         delete newElements[oldReplacingElement.id]
+
+                        if (oldReplacingElement.baseType === 'polyline') {
+                            oldReplacingElement.elements.forEach(e => delete newGroupedElements[e.id])
+                        }
                     }
                 } else {
                     newElements[replacedId].isShown = false
@@ -206,6 +211,10 @@ const elementsReducer = (state, action) => {
                 
                 for (const replacingElement of replacingElements) {
                     newElements[replacingElement.id] = replacingElement
+
+                    if (replacingElement.baseType === 'polyline') {
+                        replacingElement.elements.forEach(e => newGroupedElements[e.id] = e)
+                    }
                 }
                 
                 currentReplacements[replacedId] = { replacingElements, removedSections }
@@ -215,6 +224,7 @@ const elementsReducer = (state, action) => {
             return {
                 ...state,
                 elements: newElements,
+                groupedElements: newGroupedElements,
                 currentlyReplacedElements: {
                     currentReplacements,
                     ...(!!(completed) && { completed })

@@ -23,12 +23,12 @@ const useTrimCommand = () => {
 
     const { getLastReferenceClick, selectDelta, addToolProp, tool } = useToolsContext()
 
-    const getElementTrimPoints = useCallback((elementToTrim) => {
+    const getElementTrimPoints = useCallback((elementToTrim, includeEndPoints = false) => {
         return selectedElements.reduce((acc, cse) => {
             let intersections = ElementIntersector.getIntersections(elementToTrim, cse)
             if (intersections) {
                 const elementStartPoint = elementToTrim.startPoint
-                if (elementStartPoint) {
+                if (elementStartPoint && !includeEndPoints) {
                     intersections = intersections.filter(int => 
                         !pointsMatch(int, elementStartPoint) && !pointsMatch(int, elementToTrim.endPoint))
                 }
@@ -66,7 +66,7 @@ const useTrimCommand = () => {
         const commandResult = {}
         const polylines = {}
         for (const elementToTrim of elementsToTrim) {
-            const pointsOfTrim = getElementTrimPoints(elementToTrim)
+            const pointsOfTrim = getElementTrimPoints(elementToTrim, elementToTrim.groupId)
 
             if (pointsOfTrim.length === 0) continue
 
@@ -105,7 +105,7 @@ const useTrimCommand = () => {
             for (const subElement of elementToTrim.elements) {
                 if (trimPoints[subElement.id]) continue
 
-                const newTrimPoints = getElementTrimPoints(subElement)
+                const newTrimPoints = getElementTrimPoints(subElement, true)
                 trimPoints[subElement.id] = newTrimPoints
             }
             
