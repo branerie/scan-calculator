@@ -97,6 +97,14 @@ const useTrimUtils = () => {
 
             const resultElements = ElementTrimmer.trimElement(elementToTrim, trimPoints, pointsOfSelection)
             if (resultElements) {
+                for (let replacingIndex = 0; replacingIndex < resultElements.remaining.length; replacingIndex++) {
+                    const replacingPolyline = resultElements.remaining[replacingIndex]
+                    if (replacingPolyline.elements.length === 1) {
+                        resultElements.remaining[replacingIndex] = replacingPolyline.elements[0]
+                        resultElements.remaining[replacingIndex].groupId = null
+                    } 
+                }
+
                 commandResult[elementToTrim.id] = {
                     replacingElements: resultElements.remaining,
                     removedSections: resultElements.removed
