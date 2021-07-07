@@ -482,7 +482,7 @@ const useElements = () => {
                 continue
             }
 
-            hashGrid.current.removeElementsById(replacedIds)
+            hashGrid.current.removeElementById(replacedId)
         }
     }
 

@@ -88,7 +88,11 @@ class ElementIntersector {
     static getCircleCircleIntersections(circleA, circleB) {
         const centerDistance = getPointDistance(circleA.centerPoint, circleB.centerPoint)
         const radiusSum  = circleA.radius + circleB.radius
-        if (centerDistance > radiusSum || centerDistance < MAX_NUM_ERROR) {
+        const [smallerRadius, largerRadius] = 
+            [circleA.radius, circleB.radius].sort((rA, rB) => rA > rB ? 1 : -1)
+        if (centerDistance > radiusSum || 
+            centerDistance < MAX_NUM_ERROR ||
+            largerRadius - (centerDistance + smallerRadius) > MAX_NUM_ERROR) {
             return null
         }
 

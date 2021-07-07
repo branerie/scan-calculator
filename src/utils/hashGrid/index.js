@@ -57,14 +57,23 @@ class HashGrid {
                 continue
             }
 
-            this.__removeElementById(removedElement.id)
+            this.removeElementById(removedElement.id)
         }
     }
 
     removeElementsById(elementIds) {
         for (const elementId of elementIds) {
-            this.__removeElementById(elementId)
+            this.removeElementById(elementId)
         }
+    }
+
+    removeElementById(elementId) {
+        const elementDivs = this.#divsById[elementId]
+        for (const elementDiv of elementDivs) {
+            this.#idsByDiv[elementDiv].delete(elementId)
+        }
+
+        delete this.#divsById[elementId]
     }
 
     changeElements(changedElements) {
@@ -177,15 +186,6 @@ class HashGrid {
         const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this.startPosY, this.divSizeY)
 
         return [leftDiv, topDiv, rightDiv, bottomDiv]
-    }
-
-    __removeElementById(elementId) {
-        const elementDivs = this.#divsById[elementId]
-        for (const elementDiv of elementDivs) {
-            this.#idsByDiv[elementDiv].delete(elementId)
-        }
-
-        delete this.#divsById[elementId]
     }
 }
 

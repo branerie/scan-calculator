@@ -4,7 +4,7 @@ import { pointsMatch } from '../utils/point'
 
 class Polyline extends Element {
     #isFullyDefined
-    #isJoined
+    // #isJoined
     #boundingBox
     #elements
     #startPoint
@@ -17,7 +17,7 @@ class Polyline extends Element {
             delete this.groupId
         }
         
-        this.#isJoined = false
+        // this.#isJoined = false
 
         if (elements) {
             // do not use this.#elements directly; must go through setter logic
@@ -25,7 +25,7 @@ class Polyline extends Element {
             return
         }
 
-        this.#elements = [createLine(initialPoint.x, initialPoint.y, null, null, { groupId: this.id })]
+        this.#elements = [createLine(initialPoint.x, initialPoint.y, null, null, { groupId: this.id, assignId: true })]
         this.#isFullyDefined = false
     }
 
@@ -49,7 +49,8 @@ class Polyline extends Element {
         return true
     }
 
-    get isJoined() { return this.#isJoined }
+    // get isJoined() { return this.#isJoined }
+    get isJoined() { return this.isClosed }
 
     set elements(newElements) {
         this.#elements = newElements
@@ -63,6 +64,7 @@ class Polyline extends Element {
         this.#isFullyDefined = isFullyDefined
         if (isFullyDefined) {
             this._updateBoundingBox()
+            // this.joinEnds()
         }
     }
 
@@ -101,7 +103,7 @@ class Polyline extends Element {
         const elementToDefine = this.#elements[this.#elements.length - 1]
         elementToDefine.defineNextAttribute(definingPoint)
 
-        const line = createLine(definingPoint.x, definingPoint.y, null, null, { groupId: this.id })
+        const line = createLine(definingPoint.x, definingPoint.y, null, null, { groupId: this.id, assignId: true })
         this.#elements.push(line)
         this.#endPoint = null
     }
@@ -125,6 +127,7 @@ class Polyline extends Element {
         
         if (this.#isFullyDefined) {
             this._updateBoundingBox()
+            // this.joinEnds()
         }
     }
 
@@ -164,11 +167,11 @@ class Polyline extends Element {
 
     getBoundingBox() { return { ...this.#boundingBox } }
 
-    joinEnds() {
-        if (!this.isClosed) return
+    // joinEnds() {
+    //     if (!this.isClosed) return
 
-        this.#isJoined = true
-    }
+    //     this.#isJoined = true
+    // }
 
     stretchByMidPoint(dX, dY, midPointId) {
         const movedLineIndex = this.#elements.findIndex(e => e.getPointById(midPointId))
