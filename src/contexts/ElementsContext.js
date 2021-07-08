@@ -177,34 +177,33 @@ export default function ElementsContextProvider({ children }) {
 
         const { completed } = currentlyReplacedElements
 
-        const removedElements = []
-        const addedElements = []
         let removedSelectionPoints = []
         let newSelectionPoints = []
-        for (const replacedId of Object.keys(completed)) {
-            const replacedElement = getElementById(replacedId)
-            replacedElement.isShown = true
-            removedElements.push(replacedElement)
+        for (const removedElement of completed.removedElements) {
+            removedElement.isShown = true
     
-            removedSelectionPoints = removedSelectionPoints.concat(replacedElement.getSelectionPoints())
-
-            const { replacingElements } = completed[replacedId]
-            for (const replacingElement of replacingElements) {
-                addedElements.push(replacingElement)
-                newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
-            }
+            removedSelectionPoints = removedSelectionPoints.concat(removedElement.getSelectionPoints())
+        }
+        
+        const replacingElements = Object.values(completed.replacingElements)
+        for (const replacingElement of replacingElements) {
+            newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
         }
 
         removeSelectionPoints(removedSelectionPoints)
         addSelectionPoints(newSelectionPoints)
 
-        updateHistoryEvents({ action: 'replace', removedElements, addedElements })
+        updateHistoryEvents({ 
+            action: 'replace', 
+            removedElements: completed.removedElements, 
+            addedElements: replacingElements 
+        })
+
         completeReplacingElements()
     }, [
         addSelectionPoints,
         completeReplacingElements,
         currentlyReplacedElements,
-        getElementById,
         removeSelectionPoints,
         updateHistoryEvents,
         clearReplacingElements

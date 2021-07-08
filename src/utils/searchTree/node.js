@@ -1,7 +1,14 @@
+import { MAX_NUM_ERROR } from "../constants"
+
 const filterData = (data, dataFilters, shouldFulfillFilters = true) => {
     return data.filter(dataEntry => {
         for (const key of Object.keys(dataFilters)) {
-            if (dataEntry[key] !== dataFilters[key]) {
+            const isNumber = !isNaN(dataFilters[key])
+
+            if (
+                (isNumber && Math.abs(dataFilters[key] - dataEntry[key]) > MAX_NUM_ERROR) ||
+                (!isNumber && dataEntry[key] !== dataFilters[key])
+            ) {
                 return !shouldFulfillFilters
             }
         }
@@ -23,7 +30,7 @@ class Node {
     }
 
     insert(value, data) {
-        if (value <= this.nodeValue) {
+        if (value < this.nodeValue || Math.abs(value - this.nodeValue) < MAX_NUM_ERROR) {
             if (this.left) {
                 return this.left.insert(value, data)
             }
@@ -41,14 +48,14 @@ class Node {
 
     find(minValue, maxValue, dataFilters) {
         let leftSideResults = []
-        if (minValue <= this.nodeValue) {
+        if (minValue < this.nodeValue || Math.abs(minValue - this.nodeValue) < MAX_NUM_ERROR) {
             leftSideResults = this.left
                 ? this.left.find(minValue, maxValue, dataFilters)
                 : this.#leftData.filter(data => data.leafValue >= minValue && data.leafValue <= maxValue)
         }
 
         let rightSideResults = []
-        if (maxValue >= this.nodeValue) {
+        if (maxValue > this.nodeValue || Math.abs(maxValue - this.nodeValue) < MAX_NUM_ERROR) {
             rightSideResults = this.right
                 ? this.right.find(minValue, maxValue)
                 : this.#rightData.filter(data => data.leafValue >= minValue && data.leafValue <= maxValue)
@@ -63,7 +70,7 @@ class Node {
     }
 
     remove(nodeValue, dataFilters) {
-        if (nodeValue <= this.nodeValue) {
+        if (nodeValue < this.nodeValue || Math.abs(nodeValue - this.nodeValue) < MAX_NUM_ERROR) {
             if (this.left) {
                 return this.left.remove(nodeValue, dataFilters)
             }

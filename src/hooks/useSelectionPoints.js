@@ -24,25 +24,25 @@ const usePointsTree = () => {
     }, [])
 
     const removeSelectionPoints = useCallback((elementPoints) => {
-            elementPoints.forEach(elementPoint => {
-                pointsTree.current.remove(
-                    elementPoint.x,
-                    { y: elementPoint.y, pointId: elementPoint.pointId },
-                    elementPoint.pointType
-                )
-            })
+        elementPoints.forEach(elementPoint => {
+            pointsTree.current.remove(
+                elementPoint.x,
+                { y: elementPoint.y, pointId: elementPoint.pointId },
+                elementPoint.pointType
+            )
+        })
     }, [])
 
     const replaceSelectionPoints = useCallback((pointsAfterReplace, pointsBeforeReplace) => {
         pointsAfterReplace.forEach(par => {
-                const pointBeforeEdit = pointsBeforeReplace.find(pbr => pbr.pointId === par.pointId)
-                pointsTree.current.replace(
-                    pointBeforeEdit.x,
-                    { pointId: par.pointId },
-                    par.x,
-                    buildPointsTreeDataObject(par, par.pointType)
-                )
-            })
+            const pointBeforeEdit = pointsBeforeReplace.find(pbr => pbr.pointId === par.pointId)
+            pointsTree.current.replace(
+                pointBeforeEdit.x,
+                { pointId: par.pointId },
+                par.x,
+                buildPointsTreeDataObject(par, par.pointType)
+            )
+        })
     }, [])
 
     const findNearbyPoints = useCallback((mouseX, mouseY, delta) => {

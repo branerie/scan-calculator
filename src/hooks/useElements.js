@@ -252,22 +252,38 @@ const elementsReducer = (state, action) => {
                 currentlyReplacedElements: completed ? { completed } : null 
             }
         }
+        case 'continueReplacingElements': {
+            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) return state
+
+            const { currentlyReplacedElements: { currentReplacements, completed } } = state
+
+            const newCompleted = completed ? { 
+                removedElements: [ ...completed.removedElements ], 
+                replacingElements: { ...completed.replacingElements } 
+            } : { 
+                removedElements: [], 
+                replacingElements: {} 
+            }
+
+            for (const [replacedId, { replacingElements }] of Object.entries(currentReplacements)) {
+                if (newCompleted.replacingElements[replacedId]) {
+                    // we are trimming an element which was formed by trimming another element in the current command
+                    delete newCompleted.replacingElements[replacedId]
+
+                } else {
+                    const removedElement = state.elements[replacedId]
+                    newCompleted.removedElements.push(removedElement)
+                }
+                
+                replacingElements.forEach(re => {
+                    newCompleted.replacingElements[re.id] = re
+                })
+            }
+
+            return { ...state, currentlyReplacedElements: { completed: newCompleted } }            
+        }
         case 'completeReplacingElements': {
             if (!state.currentlyReplacedElements) return state
-
-            // const { currentlyReplacedElements: { completed } } = state
-            // if (!completed) {
-            //     return { ...state, currentlyReplacedElements: null }
-            // }
-
-            // const newElements = { ...state.elements }
-            // for (const replacedId of completed.replacedIds) {
-            //     delete newElements[replacedId]
-            // }
-
-            // for (const replacingElement of completed.replacingElements) {
-            //     newElements[replacingElement.id] = replacingElement
-            // }
 
             const { completed, currentReplacements } = state.currentlyReplacedElements
             let newElements = null
@@ -286,27 +302,21 @@ const elementsReducer = (state, action) => {
                 newElements = { ...state.elements }
             }
 
-            for (const replacedId of Object.keys(completed)) {
-                delete newElements[replacedId]
+            const newGroupedElements = { ...state.groupedElements }
+            for (const removedElement of completed.removedElements) {
+                delete newElements[removedElement.id]
+
+                if (removedElement.baseType === 'polyline') {
+                    removedElement.elements.forEach(e => delete newGroupedElements[e.id])
+                }
             }   
             
             return {
                 ...state,
                 elements: newElements,
+                groupedElements: newGroupedElements,
                 currentlyReplacedElements: null
             }
-        }
-        case 'continueReplacingElements': {
-            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) return state
-
-            const { currentlyReplacedElements: { currentReplacements, completed } } = state
-
-            const newCompleted = completed ? { ...completed } : {}
-            for (const replacedId of Object.keys(currentReplacements)) {
-                newCompleted[replacedId] = currentReplacements[replacedId]
-            }
-
-            return { ...state, currentlyReplacedElements: { completed: newCompleted } }            
         }
         case 'setSnappedPoint': {
             return { ...state, snappedPoint: action.value }

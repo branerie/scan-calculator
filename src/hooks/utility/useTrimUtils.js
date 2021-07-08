@@ -82,14 +82,14 @@ const useTrimUtils = () => {
             trimPoints[firstSubElement.id] = firstElementTrimPoints.filter(tp =>
                 !pointsMatch(tp, polylineStartPoint) && !pointsMatch(tp, polylineEndPoint))
 
-            hasAnyTrimPoints = hasAnyTrimPoints || firstElementTrimPoints.length > 0
+            hasAnyTrimPoints = hasAnyTrimPoints || trimPoints[firstSubElement.id].length > 0
             
             const lastSubElement = subElements[subElements.length - 1]
             const lastElementTrimPoints = getElementTrimPoints(lastSubElement)
             trimPoints[lastSubElement.id] = lastElementTrimPoints.filter(tp =>
                 !pointsMatch(tp, polylineStartPoint) && !pointsMatch(tp, polylineEndPoint))
 
-            hasAnyTrimPoints = hasAnyTrimPoints || lastElementTrimPoints.length > 0
+            hasAnyTrimPoints = hasAnyTrimPoints || trimPoints[lastSubElement.id].length > 0
 
             if (!hasAnyTrimPoints) {
                 return commandResult

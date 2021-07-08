@@ -38,7 +38,7 @@ const useSnapCommand = () => {
                 snappingPoints = currentlyCreatedElement.getSelectionPoints()
             }
             const newNearbyPoints = snappingPoints.filter(sp => 
-                getPointDistance(sp, { x: mouseX, y: mouseY }) < SNAP_DELTA / currentScale)
+                getPointDistance(sp, { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) }) < SNAP_DELTA / currentScale)
             nearbyPoints = nearbyPoints.concat(newNearbyPoints)
         }
         

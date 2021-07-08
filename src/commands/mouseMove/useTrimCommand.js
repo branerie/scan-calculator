@@ -29,7 +29,7 @@ const useTrimCommand = () => {
             addToolProp('mousePosition', { mouseX, mouseY })
         }
         
-        const mousePoint = { x: mouseX, y: mouseY }
+        const mousePoint = { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) }
         
         let elementsToTrim = lastClick
                                 ? getElementsInContainer(lastClick, mousePoint, false, false)

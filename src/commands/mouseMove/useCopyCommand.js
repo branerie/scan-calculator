@@ -21,7 +21,7 @@ const useCopyCommand = () => {
             const dY = mouseY - basePoint.y
 
             moveCopyingElements(dX, dY)
-            setTool(currTool => ({ ...currTool, currentPos: { x: mouseX, y: mouseY } }))
+            setTool(currTool => ({ ...currTool, currentPos: { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) } }))
             return
         }
     }, [moveCopyingElements, tool, setTool])

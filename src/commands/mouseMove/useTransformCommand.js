@@ -93,7 +93,7 @@ const useTransformCommand = () => {
         if (tool.name === 'scale') {
             const initialClick = tool.clicks[0]
 
-            const distanceFromInitial = getPointDistance(initialClick, { x: mouseX, y: mouseY })
+            const distanceFromInitial = getPointDistance(initialClick, { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) })
             const scalingFactor = Math.max(distanceFromInitial * SCALE_SMOOTHING_FACTOR * currentScale, 0.001)
 
             const newCurrentlyEditedElements = [...currentlyEditedElements]
