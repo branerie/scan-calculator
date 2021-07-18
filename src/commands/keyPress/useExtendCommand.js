@@ -3,7 +3,7 @@ import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 import { ENTER_KEY_CODE, ESCAPE_KEY_CODE, SPACE_KEY_CODE } from '../../utils/constants'
 
-const useTrimCommand = () => {
+const useExtendCommand = () => {
     const {
         selection: {
             selectedElements
@@ -15,12 +15,11 @@ const useTrimCommand = () => {
 
     const { tool, addToolProp, resetTool } = useToolsContext()
     
-    const handleTrimCmd = useCallback((event) => {
+    const handleExtendCmd = useCallback((event) => {
         const isEscape = event.keyCode === ESCAPE_KEY_CODE
         if (!selectedElements && isEscape) {
             resetTool()
             return
-
         }
 
         const isEnterOrSpace = event.keyCode === ENTER_KEY_CODE || event.keyCode === SPACE_KEY_CODE
@@ -36,7 +35,7 @@ const useTrimCommand = () => {
         }
     }, [addToolProp, resetTool, replaceElements, selectedElements, tool.isStarted])
 
-    return handleTrimCmd
+    return handleExtendCmd
 }
 
-export default useTrimCommand
+export default useExtendCommand

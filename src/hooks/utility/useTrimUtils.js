@@ -7,19 +7,37 @@ import { pointsMatch } from "../../utils/point"
 const useTrimUtils = () => {
     const {
         elements: {
-            getElementById
+            getElementById,
+            getElementsInContainer
         },
         selection: {
-            selectedElements
+            selectedElements,
+            hasSelectedElement
         }
     } = useElementsContext()
 
     const getElementTrimPoints = useCallback((elementToTrim, includeEndPoints = false) => {
-        return selectedElements.reduce((acc, cse) => {
-            let intersections = ElementIntersector.getIntersections(elementToTrim, cse)
+        const elementBoundingBox = elementToTrim.getBoundingBox()
+        const elementsInContainer = getElementsInContainer(
+            { x: elementBoundingBox.left, y: elementBoundingBox.top  },
+            { x: elementBoundingBox.right, y: elementBoundingBox.bottom  },
+            false,
+            false
+        )
+
+        const elementsToTrimBy = elementsInContainer.filter(
+            eic => eic.id !== elementToTrim.id && 
+            ((selectedElements && hasSelectedElement(eic)) || !selectedElements)
+        )
+
+        const trimPoints = elementsToTrimBy.reduce((acc, etb) => {
+            let intersections = ElementIntersector.getIntersections(elementToTrim, etb)
             if (intersections) {
                 const elementStartPoint = elementToTrim.startPoint
-                if (elementStartPoint && !includeEndPoints) {
+                const isInSamePolyline = elementToTrim.groupId && elementToTrim.groupId === etb.groupId
+                // should never include shared points between polyline elements as trim points
+                // even if includeEndPoints is true
+                if (elementStartPoint && (!includeEndPoints || isInSamePolyline)) {
                     intersections = intersections.filter(int =>
                         !pointsMatch(int, elementStartPoint) && !pointsMatch(int, elementToTrim.endPoint))
                 }
@@ -29,7 +47,9 @@ const useTrimUtils = () => {
 
             return acc
         }, [])
-    }, [selectedElements])
+
+        return trimPoints
+    }, [getElementsInContainer, hasSelectedElement, selectedElements])
 
     const getSingleElementTrimResults = useCallback((elementsToTrim, pointsOfSelection) => {
         const commandResult = {}

@@ -61,7 +61,7 @@ const useTrimCommand = () => {
         getLastReferenceClick, 
         selectDelta, 
         startReplacingElements, 
-        hasSelectedElement, 
+        hasSelectedElement,
         isReplacingElement, 
         tool, 
         getSingleElementTrimResults, 

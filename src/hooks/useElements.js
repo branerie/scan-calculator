@@ -402,6 +402,7 @@ const useElements = () => {
             if (isLeftInContainer && isTopInContainer && isRightInContainer && isBottomInContainer) {
                 const elementToAdd = (element.groupId && returnGroup) ? getElementById(element.groupId) : element
                 elementsInContainer.push(elementToAdd)
+                continue
             }
 
             if (shouldSkipPartial) continue

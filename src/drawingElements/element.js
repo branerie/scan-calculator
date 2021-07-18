@@ -59,7 +59,7 @@ class Element {
         return true
     }
 
-    getSelectionPoints() {
+    getSelectionPoints(pointType) {
         throw new Error('Method getSelectionPoints is not implemented')
     }
 
