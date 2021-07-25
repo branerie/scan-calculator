@@ -5,8 +5,8 @@ import { ENTER_KEY_CODE, ESCAPE_KEY_CODE, SPACE_KEY_CODE } from '../../utils/con
 
 const useTrimCommand = () => {
     const {
-        selection: {
-            selectedElements
+        elements: {
+            currentlyReplacedElements
         },
         history: {
             replaceElements
@@ -17,7 +17,7 @@ const useTrimCommand = () => {
     
     const handleTrimCmd = useCallback((event) => {
         const isEscape = event.keyCode === ESCAPE_KEY_CODE
-        if (!selectedElements && isEscape) {
+        if ((!currentlyReplacedElements || !currentlyReplacedElements.completed) && isEscape) {
             resetTool()
             return
 
@@ -34,7 +34,7 @@ const useTrimCommand = () => {
             resetTool()
             return
         }
-    }, [addToolProp, resetTool, replaceElements, selectedElements, tool.isStarted])
+    }, [addToolProp, resetTool, replaceElements, currentlyReplacedElements, tool.isStarted])
 
     return handleTrimCmd
 }
