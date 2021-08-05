@@ -427,6 +427,13 @@ const useElements = () => {
     const changeEditingElements = (newEditingElements) =>
             elementsDispatch({ type: 'changeEditingElements', newEditingElements })
     const stopEditingElements = () => elementsDispatch({ type: 'stopEditingElements' })
+    const isEditingElement = (element) => {
+        const { currentlyEditedElements } = elementsState
+
+        if (!currentlyEditedElements) return false
+
+        return element.id in currentlyEditedElements
+    }
     const startCopyingElements = (elementsToCopy) => elementsDispatch({ type: 'startCopyingElements', elementsToCopy })
     const moveCopyingElements = (dX, dY) => {
         const newCurrentElements = [...elementsState.currentlyCopiedElements.current]
@@ -533,6 +540,7 @@ const useElements = () => {
         changeEditingElements,
         stopEditingElements,
         completeEditingElements,
+        isEditingElement,
         startCopyingElements,
         moveCopyingElements,
         continueCopyingElements,

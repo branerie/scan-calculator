@@ -40,6 +40,9 @@ const useTrimCommand = () => {
         }
         
         elementsToTrim = elementsToTrim.filter(ett => !hasSelectedElement(ett) && !isReplacingElement(ett))
+        if (elementsToTrim.length === 0) {
+            return clearReplacingElements()
+        }
         
         const pointsOfSelection = lastClick ? [lastClick, mousePoint] : [mousePoint]
 
