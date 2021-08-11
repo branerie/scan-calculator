@@ -79,12 +79,16 @@ const elementsReducer = (state, action) => {
             return { ...state, currentlyCreatedElement: null, snappedPoint: null }
         }
         case 'startEditingElements': {
+            const { editedElements, shouldHideOriginal, shouldCopyElements } = action
+
             const newCurrentlyEditedElements = {}
             const newElements = { ...state.elements }
-            for (const editedElement of action.editedElements) {
-                const editedElementCopy = ElementManipulator.copyElement(editedElement, true)
+            for (const editedElement of editedElements) {
+                const editedElementCopy = shouldCopyElements 
+                                            ? ElementManipulator.copyElement(editedElement, true)
+                                            : editedElement
 
-                if (action.shouldHideOriginal) {
+                if (shouldHideOriginal) {
                     newElements[editedElement.id].isShown = false
                 }
 
@@ -422,8 +426,8 @@ const useElements = () => {
     const addCurrentlyCreatedElement = (createdElement) =>
             elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
     const removeCurrentlyCreatedElement = () =>     elementsDispatch({ type: 'removeCurrentlyCreated' })
-    const startEditingElements = (editedElements, shouldHideOriginal = true) =>
-            elementsDispatch({ type: 'startEditingElements', editedElements, shouldHideOriginal })
+    const startEditingElements = (editedElements, shouldHideOriginal = true, shouldCopyElements = true) =>
+            elementsDispatch({ type: 'startEditingElements', editedElements, shouldHideOriginal, shouldCopyElements })
     const changeEditingElements = (newEditingElements) =>
             elementsDispatch({ type: 'changeEditingElements', newEditingElements })
     const stopEditingElements = () => elementsDispatch({ type: 'stopEditingElements' })

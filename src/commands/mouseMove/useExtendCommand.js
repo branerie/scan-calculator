@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
+import useExtendUtils from '../../hooks/utility/useExtendUtils'
 import { checkIsElementStartCloserThanEnd } from '../../utils/element'
 import { createElement } from '../../utils/elementFactory'
 import ElementIntersector from '../../utils/elementIntersector'
@@ -20,6 +21,7 @@ const useTrimCommand = () => {
     } = useElementsContext()
 
     const { tool, addToolProp, getLastReferenceClick, selectDelta } = useToolsContext()
+    const { tryExtendElementEnd } = useExtendUtils()
 
     const handleExtendCmd = useCallback(({ mouseX, mouseY }) => {
         if (!tool.isStarted) return
@@ -58,12 +60,11 @@ const useTrimCommand = () => {
             filteredElementsToExtend.push(elementToExtend)
         }
 
-        if (elementsToExtend.length === 0) {
+        if (filteredElementsToExtend.length === 0) {
             return stopEditingElements()
         }
 
         // TODO: For trim/extend and possibly other commands: what if first and second click are the same point?
-        const endsToExtend = []
         for (const elementToExtend of elementsToExtend) {
             const element = elementToExtend.groupId 
                                 ? polylines[elementToExtend.groupId]
@@ -81,14 +82,27 @@ const useTrimCommand = () => {
 
             if (!extendPoints) continue
 
+            let shouldExtendStart = false
+            let shouldExtendEnd = false
             for (const extendPoint of extendPoints) {
-                const nearestEndPoint = checkIsElementStartCloserThanEnd(
+                const nearestEndPoints = checkIsElementStartCloserThanEnd(
                     element, 
                     extendPoint, 
                     elementToExtend.groupId ? elementToExtend : null
                 )
 
+                for (const isCloserToStart of Object.values(nearestEndPoints)) {
+                    shouldExtendStart = shouldExtendStart || isCloserToStart
+                    shouldExtendEnd = shouldExtendEnd || !isCloserToStart
+                }
+            }
 
+            if (shouldExtendStart) {
+                tryExtendElementEnd(elementToExtend, true)
+            }
+
+            if (shouldExtendEnd) {
+                tryExtendElementEnd(elementToExtend, false)
             }
         }
 
@@ -101,6 +115,7 @@ const useTrimCommand = () => {
         hasSelectedElement, 
         selectDelta, 
         stopEditingElements, 
+        tryExtendElementEnd,
         tool.isStarted
     ])
 

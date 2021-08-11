@@ -1,5 +1,4 @@
-import { getAngleBetweenPoints } from './angle'
-import { getPointDistance } from './point'
+import { getPointDistance, getPointDistanceOnArc, pointsMatch } from './point'
 
 const checkIsElementStartCloserThanEnd = (element, pointsOnElement, polylineSubElement) => {
     if (element.type === 'circle') {
@@ -24,21 +23,42 @@ const checkIsElementStartCloserThanEnd = (element, pointsOnElement, polylineSubE
 
     const elementStartDistances = {}
     let totalDistance = 0
+    let lastSubElementEndPoint = element.startPoint
     const innerElements = element.elements
-    for (let elementIndex = 0; elementIndex < element.elements.length; elementIndex++) {
+    let isPointsSubElementInPolyDirection = true
+    for (let elementIndex = 0; elementIndex < innerElements.length; elementIndex++) {
         const innerElement = innerElements[elementIndex]
 
         elementStartDistances[innerElement.id] = totalDistance
         totalDistance += innerElement.length
+
+        const isInPolyDirection = pointsMatch(lastSubElementEndPoint, innerElement.startPoint)
+        if (innerElement.id === polylineSubElement.id) {
+            isPointsSubElementInPolyDirection = isInPolyDirection
+        }
+
+        lastSubElementEndPoint = isInPolyDirection ? innerElement.endPoint : innerElement.startPoint
     }
 
     const polylineMidPointDistance = totalDistance / 2
     for (const pointOnElement of pointsOnElement) {
-        // TODO: get innerElement on which point lies, use elementStartDistances
-        // and calculate if pointOnElement's distanceFromStart is less than polylineMidPointDistance
+        let pointDistanceOnElement = 0
+        if (polylineSubElement.type === 'line') {
+            pointDistanceOnElement = isPointsSubElementInPolyDirection
+                                        ? getPointDistance(polylineSubElement.startPoint, pointOnElement)
+                                        : getPointDistance(polylineSubElement.endPoint, pointOnElement)
+        } else {
+            pointDistanceOnElement = isPointsSubElementInPolyDirection
+                                        ? getPointDistanceOnArc(polylineSubElement.startPoint, pointOnElement, polylineSubElement.centerPoint)
+                                        : getPointDistanceOnArc(polylineSubElement.endPoint, pointOnElement, polylineSubElement.centerPoint)
+        }
+
+        const totalPointPolylineDistance = elementStartDistances[polylineSubElement.id] + pointDistanceOnElement
+
+        result[pointOnElement.pointId] = totalPointPolylineDistance < polylineMidPointDistance
     }
 
-
+    return result
     // if (element.type === 'line') {
     //     const startDistance = getPointDistance(element.startPoint, point)
     //     const endDistance = getPointDistance(element.endPoint, point)

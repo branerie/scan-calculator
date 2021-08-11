@@ -1,9 +1,20 @@
-import { degreesToRadians } from './angle'
+import { degreesToRadians, getAngleBetweenPoints } from './angle'
 import { MAX_NUM_ERROR } from './constants'
 import { createPoint } from './elementFactory'
 
 const getPointDistance = (a, b) => {
     return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
+}
+
+// TODO: not tested
+const getPointDistanceOnArc = (pointA, pointB, arcCenter) => {
+    const angleA = getAngleBetweenPoints(arcCenter, pointA)
+    const angleB = getAngleBetweenPoints(arcCenter, pointB)
+
+    const angleBetweenPoints = 360 - angleA.angle + angleB.angle
+    const arcRadius = getPointDistance(arcCenter, pointA)
+    
+    return 2 * Math.PI * arcRadius * angleBetweenPoints / 360
 }
 
 const getRotatedPointAroundPivot = (point, pivotPoint, angle) => {
@@ -49,6 +60,7 @@ const pointsMatch = (pointA, pointB, { checkX = true, checkY = true } = {}) => {
 
 export {
     getPointDistance,
+    getPointDistanceOnArc,
     getRotatedPointAroundPivot,
     getUniquePoints,
     pointsMatch
