@@ -1,5 +1,9 @@
+import { MAX_NUM_ERROR } from '../constants'
+import { createPoint } from '../elementFactory'
 import SetUtils from '../setUtils'
 import { getDimensionDivision1d } from './utils'
+import PriorityQueue from '../priorityQueue'
+import { getPointDistance } from '../point'
 
 class HashGrid {
     #divsById
@@ -126,6 +130,68 @@ class HashGrid {
         }
 
         return null
+    }
+
+    *getDivContentsInLineDirection(line, fromStart) {
+        const { slope, intercept} = line.equation
+
+        yield fromStart 
+                ? this.getDivisionContents(line.startPointX.x, line.startPointX.y)
+                : this.getDivisionContents(line.endPointX.x, line.endPointX.y)
+
+                
+        function* getNextXInterceptPoint(slope, intercept, currentXDiv) {
+            for (let xDivNum = currentXDiv; xDivNum >= 0; xDivNum--) {
+                const currentXDivXCoordinate = xDivNum * this.divSizeX
+                const yOfXDivIntercept = slope * currentXDivXCoordinate + intercept
+
+                yield createPoint(currentXDivXCoordinate, yOfXDivIntercept)
+            }   
+
+            yield null
+        }
+        
+        function* getNextYInterceptPoint(slope, intercept, currentYDiv) {
+            for (let yDivNum = currentYDiv; yDivNum >= 0; yDivNum--) {
+                const currentYDivYCoordinate = yDivNum * this.divSizeY
+                const xOfYDivIntercept = (currentYDivYCoordinate - intercept) / (slope || MAX_NUM_ERROR)
+
+                yield createPoint(xOfYDivIntercept, currentYDivYCoordinate)
+            }   
+
+            yield null
+        }
+
+        const pointOfExtend = fromStart ? line.startPoint : line.endPoint 
+        const xDiv = getDimensionDivision1d(pointOfExtend, this.startPosX, this.divSizeX)
+        const yDiv = getDimensionDivision1d(pointOfExtend, this.startPosY, this.divSizeY)
+
+        const xDivInterceptGen = getNextXInterceptPoint(slope, intercept, xDiv)
+        const yDivInterceptGen = getNextYInterceptPoint(slope, intercept, yDiv)
+
+        const queue = new PriorityQueue((a, b) => {
+            const distanceFromA = getPointDistance(pointOfExtend, a)
+            const distanceFromB = getPointDistance(pointOfExtend, b)
+
+            return distanceFromA < distanceFromB
+        })
+
+        queue.push(xDivInterceptGen.next().value)
+        queue.push(yDivInterceptGen.next().value)
+
+        while (queue.size > 0) {
+            // TODO
+
+            const nextXDivIntercept = xDivInterceptGen.next().value
+            if (nextXDivIntercept) {
+                queue.push(nextXDivIntercept)
+            }
+
+            const nextYDivIntercept = yDivInterceptGen.next().value
+            if (nextYDivIntercept) {
+                queue.push(nextYDivIntercept)
+            }
+        }
     }
 
     // __updateHashGridDivs(leftDiv, topDiv, rightDiv, bottomDiv) {

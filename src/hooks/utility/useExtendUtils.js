@@ -29,7 +29,14 @@ const useExtendUtils = () => {
             return elementCopy
         }
 
+        if (element.baseType === 'line') {
+            /*
+                1. Get grid boxes line passes through, in order by distance from end
+                2. Check for intersections, as if line passes through each of the grid boxes
+                   and return first one that you meet (if any)
+            */
 
+        }
     }
     
     return {
