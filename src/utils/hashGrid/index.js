@@ -139,25 +139,56 @@ class HashGrid {
                 ? this.getDivisionContents(line.startPointX.x, line.startPointX.y)
                 : this.getDivisionContents(line.endPointX.x, line.endPointX.y)
 
+        const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.__getDivRanges()
                 
         function* getNextXInterceptPoint(slope, intercept, currentXDiv) {
-            for (let xDivNum = currentXDiv; xDivNum >= 0; xDivNum--) {
-                const currentXDivXCoordinate = xDivNum * this.divSizeX
-                const yOfXDivIntercept = slope * currentXDivXCoordinate + intercept
+            const linePointsXDiff = line.pointA.x - line.pointB.x
+            if (linePointsXDiff === 0) return null
 
-                yield createPoint(currentXDivXCoordinate, yOfXDivIntercept)
-            }   
+            const xDivsGoingDown = (fromStart && linePointsXDiff < 0 ) || 
+                                   (!fromStart && linePointsXDiff > 0)
+
+            if (xDivsGoingDown) {
+                for (let xDivNum = currentXDiv; xDivNum >= minXDiv; xDivNum--) {
+                    const currentXDivXCoordinate = xDivNum * this.divSizeX
+                    const yOfXDivIntercept = slope * currentXDivXCoordinate + intercept
+    
+                    yield createPoint(currentXDivXCoordinate, yOfXDivIntercept)
+                }   
+            } else {
+                for (let xDivNum = currentXDiv; xDivNum <= maxXDiv; xDivNum++) {
+                    const currentXDivXCoordinate = xDivNum * this.divSizeX
+                    const yOfXDivIntercept = slope * currentXDivXCoordinate + intercept
+    
+                    yield createPoint(currentXDivXCoordinate, yOfXDivIntercept)
+                }
+            }
 
             yield null
         }
         
         function* getNextYInterceptPoint(slope, intercept, currentYDiv) {
-            for (let yDivNum = currentYDiv; yDivNum >= 0; yDivNum--) {
-                const currentYDivYCoordinate = yDivNum * this.divSizeY
-                const xOfYDivIntercept = (currentYDivYCoordinate - intercept) / (slope || MAX_NUM_ERROR)
+            const linePointsYDiff = line.pointA.y - line.pointB.y
+            if (linePointsYDiff === 0) return null
 
-                yield createPoint(xOfYDivIntercept, currentYDivYCoordinate)
-            }   
+            const yDivsGoingDown = (fromStart && linePointsYDiff < 0 ) || 
+                                   (!fromStart && linePointsYDiff > 0)
+
+            if (yDivsGoingDown) {
+                for (let yDivNum = currentYDiv; yDivNum >= minYDiv; yDivNum--) {
+                    const currentYDivYCoordinate = yDivNum * this.divSizeY
+                    const xOfYDivIntercept = (currentYDivYCoordinate - intercept) / (slope || MAX_NUM_ERROR)
+    
+                    yield createPoint(xOfYDivIntercept, currentYDivYCoordinate)
+                }   
+            } else {
+                for (let yDivNum = currentYDiv; yDivNum <= maxYDiv; yDivNum++) {
+                    const currentYDivYCoordinate = yDivNum * this.divSizeY
+                    const xOfYDivIntercept = (currentYDivYCoordinate - intercept) / (slope || MAX_NUM_ERROR)
+    
+                    yield createPoint(xOfYDivIntercept, currentYDivYCoordinate)
+                }   
+            }
 
             yield null
         }
@@ -180,7 +211,10 @@ class HashGrid {
         queue.push(yDivInterceptGen.next().value)
 
         while (queue.size > 0) {
-            // TODO
+            // TODO: Maybe directly get divs (`${xDiv},${yDiv}`) in order, instead of intercept points
+            const intercept = queue.pop()
+            const { fromDiv, toDiv } = this.__getDivTransitionFromPoint(intercept)
+
 
             const nextXDivIntercept = xDivInterceptGen.next().value
             if (nextXDivIntercept) {
@@ -252,6 +286,33 @@ class HashGrid {
         const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this.startPosY, this.divSizeY)
 
         return [leftDiv, topDiv, rightDiv, bottomDiv]
+    }
+
+    __getDivRanges() {
+        let minX = Number.MAX_VALUE
+        let maxX = Number.MIN_VALUE
+        let minY = Number.MAX_VALUE
+        let maxY = Number.MIN_VALUE
+        for (const divKey of Object.keys(this.#idsByDiv)) {
+            const [xKey, yKey] = divKey.split(',')
+
+            const numXKey = Number(xKey)
+            const numYKey = Number(yKey)
+
+            if (numXKey < minX) {
+                minX = numXKey
+            } else if (numXKey > maxX) {
+                maxX = numXKey
+            }
+
+            if (numYKey < minY) {
+                minY = numYKey
+            } else if (numYKey > maxY) {
+                maxY = numYKey
+            }
+        }
+
+        return { minXDiv: minX, maxXDiv: maxX, minYDiv: minY, maxYDiv: maxY }
     }
 }
 
