@@ -211,7 +211,7 @@ class HashGrid {
         queue.push(yDivInterceptGen.next().value)
 
         while (queue.size > 0) {
-            // TODO: Maybe directly get divs (`${xDiv},${yDiv}`) in order, instead of intercept points
+            // TODO: Maybe directly get divs (`${xDiv},${yDiv}`) in order, instead of intercept points?
             const intercept = queue.pop()
             const { fromDiv, toDiv } = this.__getDivTransitionFromPoint(intercept)
 
