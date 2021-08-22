@@ -102,15 +102,29 @@ const useDrawing = () => {
     }, [currentScale, drawElement])
 
     const drawReplacedElements = useCallback((options = {}) => {
-        if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return
+        // if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return
+        if (!currentlyReplacedElements) return
 
-        const replacements = Object.values(currentlyReplacedElements.currentReplacements)
-        for (const replacement of replacements) {
-            for (const element of replacement.removedSections) {
-                drawElement(element, { ...options, color: REPLACED_COLOR })
+        if (currentlyReplacedElements.currentReplacements) {
+            const replacements = Object.values(currentlyReplacedElements.currentReplacements)
+            for (const replacement of replacements) {
+                for (const element of replacement.removedSections) {
+                    // drawElement(element, { ...options, color: REPLACED_COLOR })
+                    tool.name === 'extend' 
+                        ? drawElement(element, { ...options, color: REPLACED_COLOR })
+                        : drawElement(element)
+                }
             }
         }
-    }, [currentlyReplacedElements, drawElement])
+
+        if (currentlyReplacedElements.replacingElements) {
+            for (const replacingElement of currentlyReplacedElements.replacingElements) {
+                tool.name === 'extend' 
+                    ? drawElement(replacingElement, { ...options, color: REPLACED_COLOR })
+                    : drawElement(replacingElement)
+            }
+        }
+    }, [currentlyReplacedElements, drawElement, tool.name])
 
     const drawSelectionPoints = useCallback((selectionPoints) => {
         for (const selectionPoint of selectionPoints) {

@@ -6,6 +6,7 @@ import useDrawCommand from './useDrawCommand'
 import useEscapeCommand from './useEscapeCommand'
 import useTrimCommand from './useTrimCommand'
 import useUndoRedoCommand from './useUndoRedoCommand'
+import useExtendCommand from './useExtendCommand'
 import { ENTER_KEY_CODE, ESCAPE_KEY_CODE, DELETE_KEY_CODE, SPACE_KEY_CODE } from '../../utils/constants'
 
 
@@ -17,6 +18,7 @@ const useKeyPressCommands = () => {
         escape: useEscapeCommand(),
         copy: useCopyCommand(),
         trim: useTrimCommand(),
+        extend: useExtendCommand()
     }
 
     const { tool } = useToolsContext()
@@ -28,7 +30,12 @@ const useKeyPressCommands = () => {
         }
 
         if (tool.type === 'trim') {
-            commands.trim(event)
+            if (tool.name === 'trim') {
+                commands.trim(event)
+            } else {
+                commands.extend(event)
+            }
+
             return
         }
 
@@ -57,7 +64,7 @@ const useKeyPressCommands = () => {
         }
     
         return null
-    }, [commands, tool.type])
+    }, [commands, tool.type, tool.name])
 
     return executeKeyPressCommand
 }

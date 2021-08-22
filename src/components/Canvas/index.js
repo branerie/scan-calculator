@@ -22,7 +22,7 @@ const Canvas = () => {
             snappedPoint,
             removeCurrentlyCreatedElement,
             stopEditingElements,
-            isReplacingElement
+            isReplacingElement,
         },
         selection: {
             selectedElements,
@@ -62,7 +62,7 @@ const Canvas = () => {
         resetCanvas()
 
         elements.forEach(e => {
-            if (e.isShown && !hasSelectedElement(e)) {
+            if (e.isShown && !hasSelectedElement(e) && !isReplacingElement(e)) {
                 drawElement(e)
             }
             
@@ -125,6 +125,7 @@ const Canvas = () => {
         currentTranslate, 
         currentScale, 
         hasSelectedElement, 
+        isReplacingElement,
         snappedPoint, 
         drawElement, 
         drawReplacedElements, 
@@ -134,7 +135,6 @@ const Canvas = () => {
         drawToolComponents, 
         resetCanvas, 
         tool.type, 
-        isReplacingElement
     ])
 
     const handleKeyPress = useCallback((event) => {

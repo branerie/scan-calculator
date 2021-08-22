@@ -138,6 +138,15 @@ const Navbar = ({ changeTool }) => {
                         onChange={() => changeTool({ type: 'trim', name: 'trim' })}
                     />
                 </label>
+                <label>
+                    Extend
+                    <input
+                        type='radio'
+                        name='trim'
+                        checked={tool.name === 'extend'}
+                        onChange={() => changeTool({ type: 'trim', name: 'extend' })}
+                    />
+                </label>
             </div>
             {/* <div>
                 <button onClick={undo}>Undo</button>

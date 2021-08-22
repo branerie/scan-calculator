@@ -1,32 +1,47 @@
-import { MAX_NUM_ERROR } from '../constants'
-import { createPoint } from '../elementFactory'
 import SetUtils from '../setUtils'
 import { getDimensionDivision1d } from './utils'
-import PriorityQueue from '../priorityQueue'
-import { getPointDistance } from '../point'
-import { getLineX, getLineY } from '../line'
 
 class HashGrid {
     #divsById
     #idsByDiv
-    // #minDivIndexX
-    // #minDivIndexY
-    // #maxDivIndexX
-    // #maxDivIndexY
 
     constructor(initialNumDivsX, divSizeX, initialNumDivsY, divSizeY, startPosX = 0, startPosY = 0) {
         this.divSizeX = divSizeX
         this.divSizeY = divSizeY
         this.startPosX = startPosX
         this.startPosY = startPosY
-        // this.#minDivIndexX = 0
-        // this.#minDivIndexY = 0
-        // this.#maxDivIndexX = initialNumDivsX
-        // this.#maxDivIndexY = initialNumDivsY
+
         this.initialNumDivsX = initialNumDivsX
         this.initialNumDivsY = initialNumDivsY
 
         this.__initializeGrid()
+    }
+
+    get range() {
+        let minX = Number.MAX_VALUE
+        let maxX = Number.MIN_VALUE
+        let minY = Number.MAX_VALUE
+        let maxY = Number.MIN_VALUE
+        for (const divKey of Object.keys(this.#idsByDiv)) {
+            const [xKey, yKey] = divKey.split(',')
+
+            const numXKey = Number(xKey)
+            const numYKey = Number(yKey)
+
+            if (numXKey < minX) {
+                minX = numXKey
+            } else if (numXKey > maxX) {
+                maxX = numXKey
+            }
+
+            if (numYKey < minY) {
+                minY = numYKey
+            } else if (numYKey > maxY) {
+                maxY = numYKey
+            }
+        }
+
+        return { minXDiv: minX, maxXDiv: maxX, minYDiv: minY, maxYDiv: maxY }
     }
 
     addElements(newElements) {
@@ -93,11 +108,20 @@ class HashGrid {
         this.addElements(newElements)
     }
 
+    getDivisionContents(xDiv, yDiv) {
+        const divisionContents = this.#idsByDiv[`${xDiv},${yDiv}`]
+        if (divisionContents && divisionContents.size > 0) {
+            return Array.from(divisionContents)
+        }
+
+        return null
+    }
+
     getDivisionContentsFromCoordinates(pointX, pointY) {
         const xDiv = getDimensionDivision1d(pointX, this.startPosX, this.divSizeX)
         const yDiv = getDimensionDivision1d(pointY, this.startPosY, this.divSizeY)
 
-        return this.__getDivisionContents(xDiv, yDiv)
+        return this.getDivisionContents(xDiv, yDiv)
     }
 
     getContainerContents(firstContainerPoint, secondContainerPoint) {
@@ -123,125 +147,6 @@ class HashGrid {
 
         if (elementIds.size > 0) {
             return elementIds
-        }
-
-        return null
-    }
-
-    *getDivContentsInLineDirection(line, fromStart) {
-        const { slope, intercept } = line.equation
-
-        const pointOfExtend = fromStart ? line.startPoint : line.endPoint
-        yield this.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y)
-
-        const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.__getDivRanges()
-
-        const linePointsXDiff = line.startPoint.x - line.endPoint.x
-        const xDivsGoingDown = (fromStart && linePointsXDiff < 0) ||
-            (!fromStart && linePointsXDiff > 0)
-
-        const linePointsYDiff = line.startPoint.y - line.endPoint.y
-        const yDivsGoingDown = (fromStart && linePointsYDiff < 0) ||
-            (!fromStart && linePointsYDiff > 0)
-
-        function* getNextInterceptPoint(
-            slope, 
-            intercept, 
-            currentDiv,
-            linePointsDiff, 
-            minDiv, 
-            maxDiv, 
-            divSize, 
-            getSecondaryDimensionIntercept, 
-            isDivsGoingDown, 
-            isHorizontal
-        ) {
-            if (linePointsDiff === 0) return null
-
-            if (isDivsGoingDown) {
-                for (let divNum = currentDiv; divNum > minDiv; divNum--) {
-                    const currentDivCoordinate = divNum * divSize
-                    const secondaryDimCoordinate = getSecondaryDimensionIntercept(slope, intercept, currentDivCoordinate)
-
-                    yield isHorizontal 
-                            ? createPoint(currentDivCoordinate, secondaryDimCoordinate) 
-                            : createPoint(secondaryDimCoordinate, currentDivCoordinate)
-                }
-            } else {
-                for (let divNum = currentDiv; divNum < maxDiv; divNum++) {
-                    const currentDivCoordinate = divNum * divSize
-                    const secondaryDimCoordinate = getSecondaryDimensionIntercept(slope, intercept, currentDivCoordinate)
-
-                    yield isHorizontal 
-                            ? createPoint(currentDivCoordinate, secondaryDimCoordinate) 
-                            : createPoint(secondaryDimCoordinate, currentDivCoordinate)
-                }
-            }
-
-            return null
-        }
-
-        const xDiv = getDimensionDivision1d(pointOfExtend, this.startPosX, this.divSizeX)
-        const yDiv = getDimensionDivision1d(pointOfExtend, this.startPosY, this.divSizeY)
-
-        const xDivInterceptGen = getNextInterceptPoint(
-            slope, 
-            intercept, 
-            xDiv,
-            linePointsXDiff,
-            minXDiv,
-            maxXDiv,
-            this.divSizeX,
-            getLineY,
-            xDivsGoingDown,
-            true
-        )
-        const yDivInterceptGen = getNextInterceptPoint(
-            slope, 
-            intercept, 
-            yDiv,
-            linePointsYDiff,
-            minYDiv,
-            maxYDiv,
-            this.divSizeY,
-            getLineX,
-            yDivsGoingDown,
-            false
-        )
-
-        const queue = new PriorityQueue((a, b) => {
-            const distanceFromA = getPointDistance(pointOfExtend, a)
-            const distanceFromB = getPointDistance(pointOfExtend, b)
-
-            return distanceFromA < distanceFromB
-        })
-
-        queue.push(xDivInterceptGen.next().value)
-        queue.push(yDivInterceptGen.next().value)
-
-        let lastDivision = { xDiv, yDiv }
-        while (queue.size > 0) {
-            const interceptPoint = queue.pop()
-            const nextDivision = this.__getDivTransitionFromPoint(interceptPoint, lastDivision, xDivsGoingDown, yDivsGoingDown)
-            if (!nextDivision) {
-                throw new Error(`Invalid line intercept point. The point ${interceptPoint.x}, ${interceptPoint.y} does not
-                intercept with the hash grid`)
-            }
-
-            yield this.__getDivisionContents(nextDivision.xDiv, nextDivision.yDiv)
-
-            // prepare for next round(s) of loop
-            const nextXDivIntercept = xDivInterceptGen.next().value
-            if (nextXDivIntercept) {
-                queue.push(nextXDivIntercept)
-            }
-
-            const nextYDivIntercept = yDivInterceptGen.next().value
-            if (nextYDivIntercept) {
-                queue.push(nextYDivIntercept)
-            }
-
-            lastDivision = nextDivision
         }
 
         return null
@@ -305,61 +210,6 @@ class HashGrid {
         const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this.startPosY, this.divSizeY)
 
         return [leftDiv, topDiv, rightDiv, bottomDiv]
-    }
-
-    __getDivRanges() {
-        let minX = Number.MAX_VALUE
-        let maxX = Number.MIN_VALUE
-        let minY = Number.MAX_VALUE
-        let maxY = Number.MIN_VALUE
-        for (const divKey of Object.keys(this.#idsByDiv)) {
-            const [xKey, yKey] = divKey.split(',')
-
-            const numXKey = Number(xKey)
-            const numYKey = Number(yKey)
-
-            if (numXKey < minX) {
-                minX = numXKey
-            } else if (numXKey > maxX) {
-                maxX = numXKey
-            }
-
-            if (numYKey < minY) {
-                minY = numYKey
-            } else if (numYKey > maxY) {
-                maxY = numYKey
-            }
-        }
-
-        return { minXDiv: minX, maxXDiv: maxX, minYDiv: minY, maxYDiv: maxY }
-    }
-
-    __getDivisionContents(xDiv, yDiv) {
-        const divisionContents = this.#idsByDiv[`${xDiv},${yDiv}`]
-        if (divisionContents && divisionContents.size > 0) {
-            return Array.from(divisionContents)
-        }
-
-        return null
-    }
-
-    __getDivTransitionFromPoint(point, lastDivision, xDivsGoingDown, yDivsGoingDown) {
-        const interceptsHorizontalBorder = Math.abs(this.divSizeX - (point.x % this.divSizeX)) < MAX_NUM_ERROR
-        const interceptsVerticalBorder = Math.abs(this.divSizeY - (point.y % this.divSizeY)) < MAX_NUM_ERROR
-
-        if (!interceptsHorizontalBorder && !interceptsVerticalBorder) return null
-
-        // TODO: need to check for min/max divisions? 
-        const potentialNewXDiv = xDivsGoingDown ? lastDivision.xDiv - 1 : lastDivision.xDiv + 1
-        const potentialNewYDiv = yDivsGoingDown ? lastDivision.yDiv - 1 : lastDivision.yDiv + 1
-        if (interceptsHorizontalBorder && !interceptsVerticalBorder) {
-            return { xDiv: potentialNewXDiv, yDiv: lastDivision.yDiv }
-        } else if (!interceptsHorizontalBorder && interceptsVerticalBorder) {
-            return { xDiv: lastDivision.xDiv, yDiv: potentialNewYDiv }
-        }
-
-        // intercepts both x and y division borders at the same time
-        return { xDiv: potentialNewXDiv, yDiv: potentialNewYDiv }
     }
 }
 

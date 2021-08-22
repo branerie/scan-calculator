@@ -5,15 +5,17 @@ import useExtendUtils from '../../hooks/utility/useExtendUtils'
 import { checkIsElementStartCloserThanEnd } from '../../utils/element'
 import { createElement } from '../../utils/elementFactory'
 import ElementIntersector from '../../utils/elementIntersector'
+import ElementManipulator from '../../utils/elementManipulator'
 
-const useTrimCommand = () => {
+const useExtendCommand = () => {
     const {
         elements: {
             getElementsContainingPoint,
             getElementsInContainer,
             getElementById,
             isEditingElement,
-            stopEditingElements,
+            clearReplacingElements,
+            startReplacingElements,
         },
         selection: {
             hasSelectedElement
@@ -38,7 +40,7 @@ const useTrimCommand = () => {
                                 : getElementsContainingPoint(mouseX, mouseY, selectDelta, false) // return group or not?
         
         if (!elementsToExtend) {
-            return stopEditingElements()
+            return clearReplacingElements()
         }
 
         const filteredElementsToExtend = []
@@ -61,10 +63,11 @@ const useTrimCommand = () => {
         }
 
         if (filteredElementsToExtend.length === 0) {
-            return stopEditingElements()
+            return clearReplacingElements()
         }
 
         // TODO: For trim/extend and possibly other commands: what if first and second click are the same point?
+        const commandResult = { replacingElements: new Set(), removedSections: new Set() }
         for (const elementToExtend of elementsToExtend) {
             const element = elementToExtend.groupId 
                                 ? polylines[elementToExtend.groupId]
@@ -82,30 +85,47 @@ const useTrimCommand = () => {
 
             if (!extendPoints) continue
 
-            let shouldExtendStart = false
-            let shouldExtendEnd = false
-            for (const extendPoint of extendPoints) {
-                const nearestEndPoints = checkIsElementStartCloserThanEnd(
-                    element, 
-                    extendPoint, 
-                    elementToExtend.groupId ? elementToExtend : null
-                )
+            const nearestEndPoints = checkIsElementStartCloserThanEnd(
+                element, 
+                extendPoints, 
+                elementToExtend.groupId ? elementToExtend : null
+            )
+                
+            const shouldExtendStart = nearestEndPoints.some(nep => nep)
+            const shouldExtendEnd = nearestEndPoints.some(nep => !nep)
 
-                for (const isCloserToStart of Object.values(nearestEndPoints)) {
-                    shouldExtendStart = shouldExtendStart || isCloserToStart
-                    shouldExtendEnd = shouldExtendEnd || !isCloserToStart
-                }
-            }
-
+            let newStartPos = null
+            let newEndPos = null
             if (shouldExtendStart) {
-                tryExtendElementEnd(elementToExtend, true)
+                newStartPos = tryExtendElementEnd(elementToExtend, true)
             }
 
             if (shouldExtendEnd) {
-                tryExtendElementEnd(elementToExtend, false)
+                newEndPos = tryExtendElementEnd(elementToExtend, false)
+            }
+
+            if (newStartPos || newEndPos) {
+                const editedElement = ElementManipulator.copyElement(elementToExtend, true)
+                
+                if (newStartPos) {
+                    editedElement.startPoint = newStartPos
+                }
+
+                if (newEndPos) {
+                    editedElement.endPoint = newEndPos
+                }
+
+                commandResult.replacingElements.add(editedElement)
+                commandResult.removedSections.add(elementToExtend)
             }
         }
 
+        if (commandResult.replacingElements.size) {
+            startReplacingElements({ 
+                replacingElements: Array.from(commandResult.replacingElements), 
+                removedSections: Array.from(commandResult.removedSections) 
+            })
+        }
     }, [
         addToolProp, 
         getElementsContainingPoint, 
@@ -113,8 +133,9 @@ const useTrimCommand = () => {
         getLastReferenceClick,
         getElementById,
         hasSelectedElement, 
-        selectDelta, 
-        stopEditingElements, 
+        selectDelta,
+        clearReplacingElements,
+        startReplacingElements, 
         tryExtendElementEnd,
         tool.isStarted
     ])
@@ -122,4 +143,4 @@ const useTrimCommand = () => {
     return handleExtendCmd
 }
 
-export default useTrimCommand
+export default useExtendCommand

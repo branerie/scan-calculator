@@ -1,7 +1,10 @@
+/* eslint-disable no-loop-func */
+import ElementIntersector from '../../utils/elementIntersector'
 import ElementManipulator from '../../utils/elementManipulator'
-import { pointsMatch } from '../../utils/point'
+import { getDivContentsInLineDirection } from '../../utils/hashGrid/utils'
+import { getPointDistance, pointsMatch } from '../../utils/point'
 
-const useExtendUtils = () => {
+const useExtendUtils = (hashGrid) => {
     const tryExtendElementEnd = (element, tryFromStart) => {
         if (element.baseType === 'polyline') {
             if (element.isJoined) return null
@@ -35,9 +38,48 @@ const useExtendUtils = () => {
                 2. Check for intersections, as if line passes through each of the grid boxes
                    and return first one that you meet (if any)..
             */
+            const extendedPoint = tryFromStart ? element.startPoint : element.endPoint
+            const boxElementsGen = getDivContentsInLineDirection(hashGrid, element, tryFromStart)
+            const checkedElements = new Set()
+            let minPointDistance = Number.MAX_VALUE
+            let minPoint = null
+            let nextElements = boxElementsGen.next()
+            while (!nextElements.done) {
+                const { value: elements } = nextElements
+
+                if (!elements) {
+                    nextElements = boxElementsGen.next()
+                    continue    
+                }
+
+                elements.forEach(elementToExtendTo => {
+                    if (checkedElements.has(elementToExtendTo.id)) return
+
+                    const intersections = ElementIntersector.getIntersections(element, elementToExtendTo, true)
+
+                    if (!intersections) {
+                        checkedElements.add(elementToExtendTo.id)
+                        return
+                    }
+
+                    intersections.forEach(intersection => {
+                        const distanceFromExtendPoint = getPointDistance(extendedPoint, intersection)
+                        if (distanceFromExtendPoint < minPointDistance) {
+                            minPoint = intersection
+                            minPointDistance = distanceFromExtendPoint
+                        }
+                    })
+                })
+
+                if (minPoint) break
+
+                nextElements = boxElementsGen.next()
+            }
+
+            return minPoint
         }
     }
-    
+
     return {
         tryExtendElementEnd
     }

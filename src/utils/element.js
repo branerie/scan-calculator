@@ -9,13 +9,13 @@ const checkIsElementStartCloserThanEnd = (element, pointsOnElement, polylineSubE
         throw new Error('Closed polylines do not have a start or end')
     }
 
-    const result = {}
+    const result = []
     if (element.baseType !== 'polyline') {
         for (const pointOnElement of pointsOnElement) {
             const startDistance = getPointDistance(element.startPoint, pointOnElement)
             const endDistance = getPointDistance(element.endPoint, pointOnElement)
 
-            result[pointOnElement.pointId] = startDistance < endDistance
+            result.push(startDistance < endDistance)
         }
 
         return result
@@ -55,7 +55,7 @@ const checkIsElementStartCloserThanEnd = (element, pointsOnElement, polylineSubE
 
         const totalPointPolylineDistance = elementStartDistances[polylineSubElement.id] + pointDistanceOnElement
 
-        result[pointOnElement.pointId] = totalPointPolylineDistance < polylineMidPointDistance
+        result.push(totalPointPolylineDistance < polylineMidPointDistance)
     }
 
     return result
