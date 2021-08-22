@@ -1,3 +1,4 @@
+import { MAX_NUM_ERROR } from './constants'
 import { createLine, createPoint } from './elementFactory'
 
 const getPerpendicularPointToLine = (initialPoint, line) => {
@@ -26,7 +27,12 @@ const getPerpendicularToLine = (initialPoint, line) => {
     return createLine(initialPoint.x, initialPoint.y, perpendicularPoint.x, perpendicularPoint.y)
 }
 
+const getLineX = (slope, intercept, lineY) => (lineY - intercept) / (slope || MAX_NUM_ERROR)
+const getLineY = (slope, intercept, lineX) => slope * lineX + intercept
+
 export {
     getPerpendicularPointToLine,
-    getPerpendicularToLine
+    getPerpendicularToLine,
+    getLineX,
+    getLineY
 }

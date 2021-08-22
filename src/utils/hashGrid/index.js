@@ -4,6 +4,7 @@ import SetUtils from '../setUtils'
 import { getDimensionDivision1d } from './utils'
 import PriorityQueue from '../priorityQueue'
 import { getPointDistance } from '../point'
+import { getLineX, getLineY } from '../line'
 
 class HashGrid {
     #divsById
@@ -30,27 +31,27 @@ class HashGrid {
 
     addElements(newElements) {
         for (const newElement of newElements) {
-           if (newElement.baseType === 'polyline') {
-               this.addElements(newElement.elements)
-               continue
-           }
+            if (newElement.baseType === 'polyline') {
+                this.addElements(newElement.elements)
+                continue
+            }
 
-           const [leftDiv, topDiv, rightDiv, bottomDiv] = this.__getElementDivRanges(newElement)
+            const [leftDiv, topDiv, rightDiv, bottomDiv] = this.__getElementDivRanges(newElement)
 
-           this.#divsById[newElement.id] = new Set()
-           for (let xDivIndex = leftDiv; xDivIndex <= rightDiv; xDivIndex++) {
-               for (let yDivIndex = topDiv; yDivIndex <= bottomDiv; yDivIndex++) {
-                   const divKey = `${xDivIndex},${yDivIndex}`
+            this.#divsById[newElement.id] = new Set()
+            for (let xDivIndex = leftDiv; xDivIndex <= rightDiv; xDivIndex++) {
+                for (let yDivIndex = topDiv; yDivIndex <= bottomDiv; yDivIndex++) {
+                    const divKey = `${xDivIndex},${yDivIndex}`
 
-                   this.#divsById[newElement.id].add(divKey)
+                    this.#divsById[newElement.id].add(divKey)
 
-                   if (!this.#idsByDiv[divKey]) {
-                       this.#idsByDiv[divKey] = new Set()
-                   }
+                    if (!this.#idsByDiv[divKey]) {
+                        this.#idsByDiv[divKey] = new Set()
+                    }
 
-                   this.#idsByDiv[divKey].add(newElement.id)
-               }
-           }
+                    this.#idsByDiv[divKey].add(newElement.id)
+                }
+            }
         }
     }
 
@@ -92,16 +93,11 @@ class HashGrid {
         this.addElements(newElements)
     }
 
-    getDivisionContents(pointX, pointY) {
+    getDivisionContentsFromCoordinates(pointX, pointY) {
         const xDiv = getDimensionDivision1d(pointX, this.startPosX, this.divSizeX)
         const yDiv = getDimensionDivision1d(pointY, this.startPosY, this.divSizeY)
 
-        const divisionContents = this.#idsByDiv[`${xDiv},${yDiv}`]
-        if (divisionContents && divisionContents.size > 0) {
-            return Array.from(divisionContents)
-        }
-
-        return null
+        return this.__getDivisionContents(xDiv, yDiv)
     }
 
     getContainerContents(firstContainerPoint, secondContainerPoint) {
@@ -133,72 +129,85 @@ class HashGrid {
     }
 
     *getDivContentsInLineDirection(line, fromStart) {
-        const { slope, intercept} = line.equation
+        const { slope, intercept } = line.equation
 
-        yield fromStart 
-                ? this.getDivisionContents(line.startPointX.x, line.startPointX.y)
-                : this.getDivisionContents(line.endPointX.x, line.endPointX.y)
+        const pointOfExtend = fromStart ? line.startPoint : line.endPoint
+        yield this.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y)
 
         const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.__getDivRanges()
-                
-        function* getNextXInterceptPoint(slope, intercept, currentXDiv) {
-            const linePointsXDiff = line.pointA.x - line.pointB.x
-            if (linePointsXDiff === 0) return null
 
-            const xDivsGoingDown = (fromStart && linePointsXDiff < 0 ) || 
-                                   (!fromStart && linePointsXDiff > 0)
+        const linePointsXDiff = line.startPoint.x - line.endPoint.x
+        const xDivsGoingDown = (fromStart && linePointsXDiff < 0) ||
+            (!fromStart && linePointsXDiff > 0)
 
-            if (xDivsGoingDown) {
-                for (let xDivNum = currentXDiv; xDivNum >= minXDiv; xDivNum--) {
-                    const currentXDivXCoordinate = xDivNum * this.divSizeX
-                    const yOfXDivIntercept = slope * currentXDivXCoordinate + intercept
-    
-                    yield createPoint(currentXDivXCoordinate, yOfXDivIntercept)
-                }   
+        const linePointsYDiff = line.startPoint.y - line.endPoint.y
+        const yDivsGoingDown = (fromStart && linePointsYDiff < 0) ||
+            (!fromStart && linePointsYDiff > 0)
+
+        function* getNextInterceptPoint(
+            slope, 
+            intercept, 
+            currentDiv,
+            linePointsDiff, 
+            minDiv, 
+            maxDiv, 
+            divSize, 
+            getSecondaryDimensionIntercept, 
+            isDivsGoingDown, 
+            isHorizontal
+        ) {
+            if (linePointsDiff === 0) return null
+
+            if (isDivsGoingDown) {
+                for (let divNum = currentDiv; divNum > minDiv; divNum--) {
+                    const currentDivCoordinate = divNum * divSize
+                    const secondaryDimCoordinate = getSecondaryDimensionIntercept(slope, intercept, currentDivCoordinate)
+
+                    yield isHorizontal 
+                            ? createPoint(currentDivCoordinate, secondaryDimCoordinate) 
+                            : createPoint(secondaryDimCoordinate, currentDivCoordinate)
+                }
             } else {
-                for (let xDivNum = currentXDiv; xDivNum <= maxXDiv; xDivNum++) {
-                    const currentXDivXCoordinate = xDivNum * this.divSizeX
-                    const yOfXDivIntercept = slope * currentXDivXCoordinate + intercept
-    
-                    yield createPoint(currentXDivXCoordinate, yOfXDivIntercept)
+                for (let divNum = currentDiv; divNum < maxDiv; divNum++) {
+                    const currentDivCoordinate = divNum * divSize
+                    const secondaryDimCoordinate = getSecondaryDimensionIntercept(slope, intercept, currentDivCoordinate)
+
+                    yield isHorizontal 
+                            ? createPoint(currentDivCoordinate, secondaryDimCoordinate) 
+                            : createPoint(secondaryDimCoordinate, currentDivCoordinate)
                 }
             }
 
-            yield null
-        }
-        
-        function* getNextYInterceptPoint(slope, intercept, currentYDiv) {
-            const linePointsYDiff = line.pointA.y - line.pointB.y
-            if (linePointsYDiff === 0) return null
-
-            const yDivsGoingDown = (fromStart && linePointsYDiff < 0 ) || 
-                                   (!fromStart && linePointsYDiff > 0)
-
-            if (yDivsGoingDown) {
-                for (let yDivNum = currentYDiv; yDivNum >= minYDiv; yDivNum--) {
-                    const currentYDivYCoordinate = yDivNum * this.divSizeY
-                    const xOfYDivIntercept = (currentYDivYCoordinate - intercept) / (slope || MAX_NUM_ERROR)
-    
-                    yield createPoint(xOfYDivIntercept, currentYDivYCoordinate)
-                }   
-            } else {
-                for (let yDivNum = currentYDiv; yDivNum <= maxYDiv; yDivNum++) {
-                    const currentYDivYCoordinate = yDivNum * this.divSizeY
-                    const xOfYDivIntercept = (currentYDivYCoordinate - intercept) / (slope || MAX_NUM_ERROR)
-    
-                    yield createPoint(xOfYDivIntercept, currentYDivYCoordinate)
-                }   
-            }
-
-            yield null
+            return null
         }
 
-        const pointOfExtend = fromStart ? line.startPoint : line.endPoint 
         const xDiv = getDimensionDivision1d(pointOfExtend, this.startPosX, this.divSizeX)
         const yDiv = getDimensionDivision1d(pointOfExtend, this.startPosY, this.divSizeY)
 
-        const xDivInterceptGen = getNextXInterceptPoint(slope, intercept, xDiv)
-        const yDivInterceptGen = getNextYInterceptPoint(slope, intercept, yDiv)
+        const xDivInterceptGen = getNextInterceptPoint(
+            slope, 
+            intercept, 
+            xDiv,
+            linePointsXDiff,
+            minXDiv,
+            maxXDiv,
+            this.divSizeX,
+            getLineY,
+            xDivsGoingDown,
+            true
+        )
+        const yDivInterceptGen = getNextInterceptPoint(
+            slope, 
+            intercept, 
+            yDiv,
+            linePointsYDiff,
+            minYDiv,
+            maxYDiv,
+            this.divSizeY,
+            getLineX,
+            yDivsGoingDown,
+            false
+        )
 
         const queue = new PriorityQueue((a, b) => {
             const distanceFromA = getPointDistance(pointOfExtend, a)
@@ -210,12 +219,18 @@ class HashGrid {
         queue.push(xDivInterceptGen.next().value)
         queue.push(yDivInterceptGen.next().value)
 
+        let lastDivision = { xDiv, yDiv }
         while (queue.size > 0) {
-            // TODO: Maybe directly get divs (`${xDiv},${yDiv}`) in order, instead of intercept points?
-            const intercept = queue.pop()
-            const { fromDiv, toDiv } = this.__getDivTransitionFromPoint(intercept)
+            const interceptPoint = queue.pop()
+            const nextDivision = this.__getDivTransitionFromPoint(interceptPoint, lastDivision, xDivsGoingDown, yDivsGoingDown)
+            if (!nextDivision) {
+                throw new Error(`Invalid line intercept point. The point ${interceptPoint.x}, ${interceptPoint.y} does not
+                intercept with the hash grid`)
+            }
 
+            yield this.__getDivisionContents(nextDivision.xDiv, nextDivision.yDiv)
 
+            // prepare for next round(s) of loop
             const nextXDivIntercept = xDivInterceptGen.next().value
             if (nextXDivIntercept) {
                 queue.push(nextXDivIntercept)
@@ -225,7 +240,11 @@ class HashGrid {
             if (nextYDivIntercept) {
                 queue.push(nextYDivIntercept)
             }
+
+            lastDivision = nextDivision
         }
+
+        return null
     }
 
     // __updateHashGridDivs(leftDiv, topDiv, rightDiv, bottomDiv) {
@@ -313,6 +332,34 @@ class HashGrid {
         }
 
         return { minXDiv: minX, maxXDiv: maxX, minYDiv: minY, maxYDiv: maxY }
+    }
+
+    __getDivisionContents(xDiv, yDiv) {
+        const divisionContents = this.#idsByDiv[`${xDiv},${yDiv}`]
+        if (divisionContents && divisionContents.size > 0) {
+            return Array.from(divisionContents)
+        }
+
+        return null
+    }
+
+    __getDivTransitionFromPoint(point, lastDivision, xDivsGoingDown, yDivsGoingDown) {
+        const interceptsHorizontalBorder = Math.abs(this.divSizeX - (point.x % this.divSizeX)) < MAX_NUM_ERROR
+        const interceptsVerticalBorder = Math.abs(this.divSizeY - (point.y % this.divSizeY)) < MAX_NUM_ERROR
+
+        if (!interceptsHorizontalBorder && !interceptsVerticalBorder) return null
+
+        // TODO: need to check for min/max divisions? 
+        const potentialNewXDiv = xDivsGoingDown ? lastDivision.xDiv - 1 : lastDivision.xDiv + 1
+        const potentialNewYDiv = yDivsGoingDown ? lastDivision.yDiv - 1 : lastDivision.yDiv + 1
+        if (interceptsHorizontalBorder && !interceptsVerticalBorder) {
+            return { xDiv: potentialNewXDiv, yDiv: lastDivision.yDiv }
+        } else if (!interceptsHorizontalBorder && interceptsVerticalBorder) {
+            return { xDiv: lastDivision.xDiv, yDiv: potentialNewYDiv }
+        }
+
+        // intercepts both x and y division borders at the same time
+        return { xDiv: potentialNewXDiv, yDiv: potentialNewYDiv }
     }
 }
 

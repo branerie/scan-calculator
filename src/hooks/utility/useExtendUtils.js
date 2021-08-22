@@ -35,7 +35,6 @@ const useExtendUtils = () => {
                 2. Check for intersections, as if line passes through each of the grid boxes
                    and return first one that you meet (if any)
             */
-
         }
     }
     

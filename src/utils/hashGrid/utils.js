@@ -1,4 +1,4 @@
-const getDimensionDivision1d = (dim, dimStart, divisionSize) => {
+const F = (dim, dimStart, divisionSize) => {
     return Math.floor((dim - dimStart) / divisionSize)
 }
 

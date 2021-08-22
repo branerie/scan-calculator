@@ -369,7 +369,7 @@ const useElements = () => {
     const getElementById = useCallback((elementId) => elementsState.elements[elementId], [elementsState.elements])
 
     const getElementsContainingPoint = useCallback((pointX, pointY, maxPointDiff, returnGroup = true) => {
-        const elementIdsInDivision = hashGrid.current.getDivisionContents(pointX, pointY)
+        const elementIdsInDivision = hashGrid.current.getDivisionContentsFromCoordinates(pointX, pointY)
         if (!elementIdsInDivision) return null
 
         const point = createPoint(pointX, pointY)
