@@ -1,12 +1,8 @@
-import { useCallback, useReducer, useRef } from 'react'
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/constants'
+import { useCallback, useReducer } from 'react'
 import { createElement, createPoint } from '../utils/elementFactory'
 import ElementIntersector from '../utils/elementIntersector'
 import ElementManipulator from '../utils/elementManipulator'
-import HashGrid from '../utils/hashGrid'
-
-const HASH_GRID_DIV_SIZE_X = 50
-const HASH_GRID_DIV_SIZE_Y = 25
+import { findClosestIntersectPoint } from '../utils/intersections'
 
 const elementsReducer = (state, action) => {
     switch (action.type) {
@@ -333,7 +329,7 @@ const elementsReducer = (state, action) => {
     }
 }
 
-const useElements = () => {
+const useElements = (elementsContainer) => {
     const [elementsState, elementsDispatch] = useReducer(elementsReducer, {
         elements: {},
         groupedElements: {},
@@ -344,32 +340,25 @@ const useElements = () => {
         snappedPoint: null,
     })
 
-    const hashGrid = useRef(new HashGrid(
-        Math.ceil(CANVAS_WIDTH / HASH_GRID_DIV_SIZE_X),
-        HASH_GRID_DIV_SIZE_X,
-        Math.ceil(CANVAS_HEIGHT / HASH_GRID_DIV_SIZE_Y),
-        HASH_GRID_DIV_SIZE_Y
-    ))
-
     const addElements = useCallback((newElements) => {
         elementsDispatch({ type: 'addElements', newElements })
-        hashGrid.current.addElements(newElements)
-    }, [])
+        elementsContainer.addElements(newElements)
+    }, [elementsContainer])
 
     const removeElements = useCallback((removedElements) => {
         elementsDispatch({ type: 'removeElements', removedElements })
-        hashGrid.current.removeElements(removedElements)
-    }, [])
+        elementsContainer.removeElements(removedElements)
+    }, [elementsContainer])
 
     const changeElements = useCallback((elementsAfterChange) => {
         elementsDispatch({ type: 'changeElements', elementsAfterChange })
-        hashGrid.current.changeElements(elementsAfterChange)
-    }, [])
+        elementsContainer.changeElements(elementsAfterChange)
+    }, [elementsContainer])
 
     const getElementById = useCallback((elementId) => elementsState.elements[elementId], [elementsState.elements])
 
     const getElementsContainingPoint = useCallback((pointX, pointY, maxPointDiff, returnGroup = true) => {
-        const elementIdsInDivision = hashGrid.current.getDivisionContentsFromCoordinates(pointX, pointY)
+        const elementIdsInDivision = elementsContainer.getElementsNearPoint(pointX, pointY)
         if (!elementIdsInDivision) return null
 
         const point = createPoint(pointX, pointY)
@@ -384,13 +373,13 @@ const useElements = () => {
         }
 
         return elementsWithPoint.length > 0 ? elementsWithPoint : null
-    }, [elementsState.elements, elementsState.groupedElements, getElementById])
+    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementById])
 
     const getElementsInContainer = useCallback((boxStartPoint, boxEndPoint, shouldSkipPartial = true, returnGroup = true) => {
         const startPoint = { x: Math.min(boxStartPoint.x, boxEndPoint.x), y: Math.min(boxStartPoint.y, boxEndPoint.y) }
         const endPoint = { x: Math.max(boxStartPoint.x, boxEndPoint.x), y: Math.max(boxStartPoint.y, boxEndPoint.y) }
 
-        const elementIds = hashGrid.current.getContainerContents(startPoint, endPoint)
+        const elementIds = elementsContainer.getElementsInContainer(startPoint, endPoint)
         if (!elementIds) return null
 
         const elementsInContainer = []
@@ -421,7 +410,7 @@ const useElements = () => {
         }
 
         return elementsInContainer.length > 0 ? elementsInContainer : null
-    }, [elementsState.elements, elementsState.groupedElements, getElementById])
+    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementById])
 
     const addCurrentlyCreatedElement = (createdElement) =>
             elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
@@ -462,7 +451,7 @@ const useElements = () => {
         const editedElements = Object.values(elementsState.currentlyEditedElements)
 
         elementsDispatch({ type: 'completeEditingElements' })
-        hashGrid.current.changeElements(editedElements)
+        elementsContainer.changeElements(editedElements)
 
         return editedElements
     }
@@ -495,16 +484,16 @@ const useElements = () => {
         const replacedIds = Object.keys(currentReplacements)
 
         elementsDispatch({ type: 'continueReplacingElements' })
-        hashGrid.current.addElements(replacingElements)
+        elementsContainer.addElements(replacingElements)
 
         for (const replacedId of replacedIds) {
             const element = elementsState.elements[replacedId] 
             if (element.baseType === 'polyline') {
-                hashGrid.current.removeElements(element.elements)
+                elementsContainer.removeElements(element.elements)
                 continue
             }
 
-            hashGrid.current.removeElementById(replacedId)
+            elementsContainer.removeElementById(replacedId)
         }
     }
 
@@ -520,6 +509,24 @@ const useElements = () => {
 
     const setSnappedPoint = (snappedPoint) => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
     const clearSnappedPoint = () => elementsDispatch({ type: 'clearSnappedPoint' })
+
+    const getNextLineIntersection = (line, shouldExtendFromStart) => {
+        const nextElementsGen = elementsContainer.getNextElementsInLineDirection(line, shouldExtendFromStart)
+
+        let divContentsResult = nextElementsGen.next()
+        while (!divContentsResult.done) {
+            const elementIds = divContentsResult.value
+            if (elementIds) {
+                const elements = elementIds.map(eid => getElementById(eid))
+                const nextIntersectPoint = findClosestIntersectPoint(line, elements, shouldExtendFromStart)
+                return nextIntersectPoint
+            }
+
+            divContentsResult = nextElementsGen.next()
+        }
+
+        return null
+    }
 
     return {
         elements: Object.values(elementsState.elements),
@@ -557,7 +564,8 @@ const useElements = () => {
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,
-        getElementsInContainer
+        getElementsInContainer,
+        getNextLineIntersection
     }
 }
 

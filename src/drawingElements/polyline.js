@@ -2,6 +2,8 @@ import Element from './element'
 import { createLine } from '../utils/elementFactory'
 import { pointsMatch } from '../utils/point'
 
+const END_POINT_ERROR = 'Cannot set a polyline start point which is not an end point for the first element.'
+
 class Polyline extends Element {
     #isFullyDefined
     // #isJoined
@@ -79,18 +81,43 @@ class Polyline extends Element {
     }
 
     set startPoint(value) {
-        if (!pointsMatch(value, this.elements[0].startPoint) && pointsMatch(value, this.elements[0].endPoint)) {
-            throw new Error('Cannot set a polyline start point which is not an end point for the first element.')
+        const startElement = this.#elements[0]
+        const isStartInPolyDirection = pointsMatch(startElement.startPoint, this.#startPoint)
+        if (isStartInPolyDirection) {
+            // if (!pointsMatch(value, this.#startPoint)) {
+            //     throw new Error(END_POINT_ERROR)
+            // }
+            
+            startElement.startPoint = value
+        } else {
+            startElement.endPoint = value
         }
+
+
+        // if (!pointsMatch(value, this.#endPoint)) {
+        //     throw new Error(END_POINT_ERROR)
+        // }
 
         this.#startPoint = value
     }
 
     set endPoint(value) {
-        const lastElement = this.elements[this.elements.length - 1]
-        if (!pointsMatch(value, lastElement.startPoint) && pointsMatch(value, lastElement.endPoint)) {
-            throw new Error('Cannot set a polyline end point which is not an end point for the last element.')
+        const endElement = this.#elements[this.#elements.length - 1]
+        const isEndInPolyDirection = pointsMatch(endElement.endPoint, this.#endPoint)
+        if (isEndInPolyDirection) {
+            // if (!pointsMatch(value, this.#startPoint)) {
+            //     throw new Error(END_POINT_ERROR)
+            // }
+            
+            endElement.endPoint = value
+        } else {
+            endElement.startPoint = value
         }
+
+
+        // if (!pointsMatch(value, this.#endPoint)) {
+        //     throw new Error(END_POINT_ERROR)
+        // }
 
         this.#endPoint = value
     }

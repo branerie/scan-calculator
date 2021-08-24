@@ -4,6 +4,22 @@ import { v4 as uuidv4 } from 'uuid'
 import useElements from '../hooks/useElements'
 import useSelectionPoints from '../hooks/useSelectionPoints'
 import useSelection from '../hooks/useSelection'
+import HashGrid from '../utils/hashGrid'
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/constants'
+import HashGridElementContainer from '../utils/elementContainers/hashGrid'
+
+const HASH_GRID_DIV_SIZE_X = 50
+const HASH_GRID_DIV_SIZE_Y = 25
+
+
+const hashGrid = new HashGrid(
+    Math.ceil(CANVAS_WIDTH / HASH_GRID_DIV_SIZE_X),
+    HASH_GRID_DIV_SIZE_X,
+    Math.ceil(CANVAS_HEIGHT / HASH_GRID_DIV_SIZE_Y),
+    HASH_GRID_DIV_SIZE_Y
+)
+
+const elementsContainer = new HashGridElementContainer(hashGrid)
 
 const Context = createContext()
 
@@ -46,7 +62,8 @@ export default function ElementsContextProvider({ children }) {
         clearSnappedPoint,
         getElementsContainingPoint,
         getElementsInContainer,
-    } = useElements()
+        getNextLineIntersection
+    } = useElements(elementsContainer)
 
     const {
         selectedElements,
@@ -355,6 +372,7 @@ export default function ElementsContextProvider({ children }) {
                 findNearbyPoints,
                 getElementsContainingPoint,
                 getElementsInContainer,
+                getNextLineIntersection
             },
             selection: {
                 selectedElements,
