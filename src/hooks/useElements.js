@@ -510,24 +510,6 @@ const useElements = (elementsContainer) => {
     const setSnappedPoint = (snappedPoint) => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
     const clearSnappedPoint = () => elementsDispatch({ type: 'clearSnappedPoint' })
 
-    const getNextLineIntersection = (line, shouldExtendFromStart) => {
-        const nextElementsGen = elementsContainer.getNextElementsInLineDirection(line, shouldExtendFromStart)
-
-        let divContentsResult = nextElementsGen.next()
-        while (!divContentsResult.done) {
-            const elementIds = divContentsResult.value
-            if (elementIds) {
-                const elements = elementIds.map(eid => getElementById(eid))
-                const nextIntersectPoint = findClosestIntersectPoint(line, elements, shouldExtendFromStart)
-                return nextIntersectPoint
-            }
-
-            divContentsResult = nextElementsGen.next()
-        }
-
-        return null
-    }
-
     return {
         elements: Object.values(elementsState.elements),
         currentlyCreatedElement: elementsState.currentlyCreatedElement,
@@ -564,8 +546,7 @@ const useElements = (elementsContainer) => {
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,
-        getElementsInContainer,
-        getNextLineIntersection
+        getElementsInContainer
     }
 }
 

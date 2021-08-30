@@ -72,7 +72,9 @@ const Navbar = ({ changeTool }) => {
                         type='checkbox'
                         name='snapping'
                         checked={options.snap}
-                        onChange={() => setOptions((options) => ({ ...options, snap: !options.snap }))}
+                        onChange={() =>
+                            setOptions(options => ({ ...options, snap: !options.snap }))
+                        }
                     />
                 </label>
                 <label>
@@ -81,7 +83,9 @@ const Navbar = ({ changeTool }) => {
                         type='checkbox'
                         name='ortho'
                         checked={options.ortho}
-                        onChange={() => setOptions((options) => ({ ...options, ortho: !options.ortho }))}
+                        onChange={() =>
+                            setOptions(options => ({ ...options, ortho: !options.ortho }))
+                        }
                     />
                 </label>
                 <label>

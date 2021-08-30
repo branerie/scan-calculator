@@ -7,6 +7,7 @@ import useSelection from '../hooks/useSelection'
 import HashGrid from '../utils/hashGrid'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/constants'
 import HashGridElementContainer from '../utils/elementContainers/hashGrid'
+import { findClosestIntersectPoint } from '../utils/intersections'
 
 const HASH_GRID_DIV_SIZE_X = 50
 const HASH_GRID_DIV_SIZE_Y = 25
@@ -61,8 +62,7 @@ export default function ElementsContextProvider({ children }) {
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,
-        getElementsInContainer,
-        getNextLineIntersection
+        getElementsInContainer
     } = useElements(elementsContainer)
 
     const {
@@ -339,6 +339,35 @@ export default function ElementsContextProvider({ children }) {
             return pointer + 1
         })
     }, [actionHistory.length, historyPointer, updateElementsFromHistory])
+
+    const getNextLineIntersection = useCallback((line, shouldExtendFromStart) => {
+        const nextElementsGen = elementsContainer.getNextElementsInLineDirection(line, shouldExtendFromStart)
+
+        let divContentsResult = nextElementsGen.next()
+        while (!divContentsResult.done) {
+            const elementIds = divContentsResult.value
+            divContentsResult = nextElementsGen.next()
+
+            if (!elementIds || elementIds.length === 0) continue
+
+            const elements = []
+            for (const elementId of elementIds) {
+                const element = getElementById(elementId)
+                if (selectedElements && !hasSelectedElement(element)) {
+                    continue
+                }
+
+                elements.push(element)
+            }
+
+            const nextIntersectPoint = findClosestIntersectPoint(line, elements, shouldExtendFromStart, true)
+            if (nextIntersectPoint) {
+                return nextIntersectPoint
+            }
+        }
+
+        return null
+    }, [getElementById, hasSelectedElement, selectedElements])
 
     return (
         <Context.Provider value={{

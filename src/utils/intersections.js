@@ -1,8 +1,14 @@
 /* eslint-disable no-loop-func */
+import { MAX_NUM_ERROR } from './constants'
 import ElementIntersector from './elementIntersector'
 import { getPointDistance } from './point'
 
-const findClosestIntersectPoint = (element, elementsToIntersect, fromStart) => {
+const findClosestIntersectPoint = (
+    element,
+    elementsToIntersect,
+    fromStart,
+    excludeExistingIntersections = false
+) => {
     const extendedPoint = fromStart ? element.startPoint : element.endPoint
 
     let minPoint = null
@@ -17,6 +23,12 @@ const findClosestIntersectPoint = (element, elementsToIntersect, fromStart) => {
         }
 
         intersections.forEach(intersection => {
+            if (excludeExistingIntersections && element.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+                return
+            }
+
+            // TODO: Check if intersection isn't in the opposite direction
+
             const distanceFromExtendPoint = getPointDistance(extendedPoint, intersection)
             if (distanceFromExtendPoint < minPointDistance) {
                 minPoint = intersection
@@ -28,6 +40,4 @@ const findClosestIntersectPoint = (element, elementsToIntersect, fromStart) => {
     return minPoint
 }
 
-export {
-    findClosestIntersectPoint
-}
+export { findClosestIntersectPoint }

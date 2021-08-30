@@ -4,7 +4,6 @@ import { getDimensionDivision1d } from '../hashGrid/utils'
 import { getLineX, getLineY } from '../line'
 import { getPointDistance } from '../point'
 import PriorityQueue from '../../utils/priorityQueue'
-import { findClosestIntersectPoint } from '../intersections'
 
 class HashGridElementContainer {
     #hashGrid
@@ -23,32 +22,11 @@ class HashGridElementContainer {
         return this.#hashGrid.getContainerContents(firstContainerPoint, secondContainerPoint)
     }    
 
-    __getDivTransitionFromPoint(point, lastDivision, xDivsGoingDown, yDivsGoingDown) {
-        const interceptsHorizontalBorder = 
-                Math.abs(this.#hashGrid.divSizeX - (point.x % this.#hashGrid.divSizeX)) < MAX_NUM_ERROR
-        const interceptsVerticalBorder = 
-                Math.abs(this.#hashGrid.divSizeY - (point.y % this.#hashGrid.divSizeY)) < MAX_NUM_ERROR
-    
-        if (!interceptsHorizontalBorder && !interceptsVerticalBorder) return null
-    
-        // TODO: need to check for min/max divisions? 
-        const potentialNewXDiv = xDivsGoingDown ? lastDivision.xDiv - 1 : lastDivision.xDiv + 1
-        const potentialNewYDiv = yDivsGoingDown ? lastDivision.yDiv - 1 : lastDivision.yDiv + 1
-        if (interceptsHorizontalBorder && !interceptsVerticalBorder) {
-            return { xDiv: potentialNewXDiv, yDiv: lastDivision.yDiv }
-        } else if (!interceptsHorizontalBorder && interceptsVerticalBorder) {
-            return { xDiv: lastDivision.xDiv, yDiv: potentialNewYDiv }
-        }
-    
-        // intercepts both x and y division borders at the same time
-        return { xDiv: potentialNewXDiv, yDiv: potentialNewYDiv }
-    }
-
     *getNextElementsInLineDirection(line, fromStart) {
         const { slope, intercept } = line.equation
     
         const pointOfExtend = fromStart ? line.startPoint : line.endPoint
-        yield this.#hashGrid.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y)
+        yield this.#hashGrid.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y).filter(eid => eid !== line.id)
     
         const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.#hashGrid.range
     
@@ -97,8 +75,8 @@ class HashGridElementContainer {
             return null
         }
     
-        const xDiv = getDimensionDivision1d(pointOfExtend, this.#hashGrid.startPosX, this.#hashGrid.divSizeX)
-        const yDiv = getDimensionDivision1d(pointOfExtend, this.#hashGrid.startPosY, this.#hashGrid.divSizeY)
+        const xDiv = getDimensionDivision1d(pointOfExtend.x, this.#hashGrid.startPosX, this.#hashGrid.divSizeX)
+        const yDiv = getDimensionDivision1d(pointOfExtend.y, this.#hashGrid.startPosY, this.#hashGrid.divSizeY)
     
         const xDivInterceptGen = getNextInterceptPoint(
             slope, 
@@ -131,14 +109,21 @@ class HashGridElementContainer {
     
             return distanceFromA < distanceFromB
         })
-    
-        queue.push(xDivInterceptGen.next().value)
-        queue.push(yDivInterceptGen.next().value)
+        
+        const nextXDivIntercept = xDivInterceptGen.next().value
+        if (nextXDivIntercept) {
+            queue.push(nextXDivIntercept)
+        }
+
+        const nextYDivIntercept = yDivInterceptGen.next().value
+        if (nextYDivIntercept) {
+            queue.push(nextYDivIntercept)
+        }
     
         let lastDivision = { xDiv, yDiv }
         while (queue.size > 0) {
             const interceptPoint = queue.pop()
-            const nextDivision = this.__getDivTransitionFromPoint(this.#hashGrid, interceptPoint, lastDivision, xDivsGoingDown, yDivsGoingDown)
+            const nextDivision = this.__getDivTransitionFromPoint(interceptPoint, lastDivision, xDivsGoingDown, yDivsGoingDown)
             if (!nextDivision) {
                 throw new Error(`Invalid line intercept point. The point ${interceptPoint.x}, ${interceptPoint.y} does not
                 intercept with the hash grid`)
@@ -161,6 +146,27 @@ class HashGridElementContainer {
         }
     
         return null
+    }
+
+    __getDivTransitionFromPoint(point, lastDivision, xDivsGoingDown, yDivsGoingDown) {
+        const interceptsHorizontalBorder = 
+                Math.abs(point.x % this.#hashGrid.divSizeX) < MAX_NUM_ERROR
+        const interceptsVerticalBorder = 
+                Math.abs(point.y % this.#hashGrid.divSizeY) < MAX_NUM_ERROR
+    
+        if (!interceptsHorizontalBorder && !interceptsVerticalBorder) return null
+    
+        // TODO: need to check for min/max divisions? 
+        const potentialNewXDiv = xDivsGoingDown ? lastDivision.xDiv - 1 : lastDivision.xDiv + 1
+        const potentialNewYDiv = yDivsGoingDown ? lastDivision.yDiv - 1 : lastDivision.yDiv + 1
+        if (interceptsHorizontalBorder && !interceptsVerticalBorder) {
+            return { xDiv: potentialNewXDiv, yDiv: lastDivision.yDiv }
+        } else if (!interceptsHorizontalBorder && interceptsVerticalBorder) {
+            return { xDiv: lastDivision.xDiv, yDiv: potentialNewYDiv }
+        }
+    
+        // intercepts both x and y division borders at the same time
+        return { xDiv: potentialNewXDiv, yDiv: potentialNewYDiv }
     }
 }
 

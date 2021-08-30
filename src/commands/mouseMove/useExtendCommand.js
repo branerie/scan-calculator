@@ -68,7 +68,7 @@ const useExtendCommand = () => {
 
         // TODO: For trim/extend and possibly other commands: what if first and second click are the same point?
         const commandResult = {}
-        for (const elementToExtend of elementsToExtend) {
+        for (const elementToExtend of filteredElementsToExtend) {
             const element = elementToExtend.groupId 
                                 ? polylines[elementToExtend.groupId]
                                 : elementToExtend
@@ -105,7 +105,7 @@ const useExtendCommand = () => {
             }
 
             if (newStartPos || newEndPos) {
-                const editedElement = ElementManipulator.copyElement(elementToExtend, true)
+                const editedElement = ElementManipulator.copyElement(elementToExtend, false)
                 
                 if (newStartPos) {
                     editedElement.startPoint = newStartPos
