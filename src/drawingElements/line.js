@@ -74,9 +74,9 @@ class Line extends Element {
         // m = (y2 - y1) / (x2 - x1)
         const xDiff = this.#pointB.x - this.#pointA.x
 
-        const slope = xDiff !== 0 ? (this.#pointB.y - this.#pointA.y) / xDiff : Number.NaN
+        const slope = xDiff !== 0 ? ((this.#pointB.y - this.#pointA.y) / xDiff) : Number.NaN
         // b = y - m * x
-        const intercept = isNaN(slope) ? Number.NaN : this.#pointA.y - this.#pointA.x * slope
+        const intercept = isNaN(slope) ? Number.NaN : (this.#pointA.y - this.#pointA.x * slope)
 
         return { slope, intercept }
     }
