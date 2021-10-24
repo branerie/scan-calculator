@@ -27,8 +27,8 @@ function getElementDivKeys(element) {
         let divKeys = new Set()
         for (const subElement of element.elements) {
             const subElementDivKeys = subElement.type === 'line'
-                    ? getLineDivs(subElement)
-                    : getArcDivs(subElement)
+                    ? getLineDivs.call(this, subElement)
+                    : getArcDivs.call(this, subElement)
             divKeys = SetUtils.union(divKeys, subElementDivKeys)
         }
 
@@ -36,12 +36,12 @@ function getElementDivKeys(element) {
     }
     
     if (element.baseType === 'line') {
-        return getLineDivs(element)
+        return getLineDivs.call(this, element)
     }
 
     // TODO: Is circle case needed or arc and circle can use the same?
     if (element.baseType === 'arc') {
-        return getArcDivs(element)
+        return getArcDivs.call(this, element)
     }
 }
 
