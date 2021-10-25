@@ -22,14 +22,10 @@ class HashGridElementContainer {
         return this.#hashGrid.getContainerContents(firstContainerPoint, secondContainerPoint)
     }    
 
-    *getNextElementsInLineDirection(line, fromStart) {
-        const { slope, intercept } = line.equation
-    
+    *getNextElementsInLineDirection(line, fromStart) {   
         const pointOfExtend = fromStart ? line.startPoint : line.endPoint
         yield this.#hashGrid.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y).filter(eid => eid !== line.id)
-    
-        const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.#hashGrid.range
-    
+        
         const linePointsXDiff = line.startPoint.x - line.endPoint.x
         const xDivsGoingDown = (fromStart && linePointsXDiff < 0) ||
             (!fromStart && linePointsXDiff > 0)
@@ -37,8 +33,49 @@ class HashGridElementContainer {
         const linePointsYDiff = line.startPoint.y - line.endPoint.y
         const yDivsGoingDown = (fromStart && linePointsYDiff < 0) ||
             (!fromStart && linePointsYDiff > 0)
+
+        // function* getNextInterceptPoint({
+        //     line
+
+        // }) {
+        //     const { slope, intercept } = line.equation
+        //     const xDiv = getDimensionDivision1d(pointOfExtend.x, this.#hashGrid.startPosX, this.#hashGrid.divSizeX)
+        //     const yDiv = getDimensionDivision1d(pointOfExtend.y, this.#hashGrid.startPosY, this.#hashGrid.divSizeY)
+        //     const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.#hashGrid.range
+        //     if (slope === 0) {
+        //         // line is horizontal
+        //         const xDivStep = xDivsGoingDown ? -1 : 1
+        //         let currentXDiv = xDivsGoingDown ? xDiv : xDiv + xDivStep
+        //         while (currentXDiv >= minXDiv && currentXDiv <= maxXDiv) {
+        //             const currentXCoordinate = currentXDiv * this.#hashGrid.divSizeX
+        //             const yInterceptCoordinate = getLineY(slope, intercept, currentXCoordinate)
+        //             yield createPoint(currentXCoordinate, yInterceptCoordinate)
+
+        //             currentXDiv += xDivStep
+        //         }
+
+        //         return null
+        //     }
+
+        //     if (Number.isNaN(slope)) {
+        //         // line is vertical
+        //         const yDivStep = yDivsGoingDown ? -1 : 1
+        //         let currentYDiv = yDivsGoingDown ? yDiv : yDiv + yDivStep
+        //         while (currentYDiv >= minYDiv && currentYDiv <= maxYDiv) {
+        //             const currentYCoordinate = currentYDiv * this.#hashGrid.divSizeY
+        //             const xInterceptCoordinate = getLineX(slope, intercept, currentYCoordinate)
+        //             yield createPoint(xInterceptCoordinate, currentYCoordinate)
+
+        //             currentYDiv += yDivStep
+        //         }
+
+        //         return null
+        //     }
+
+        //     // TODO: finish function for non-vertical an non-horizontal line
+        // }
     
-        function* getNextInterceptPoint(
+        function* getNextInterceptPoint({
             slope, 
             intercept, 
             currentDiv,
@@ -49,7 +86,7 @@ class HashGridElementContainer {
             getSecondaryDimensionIntercept, 
             isDivsGoingDown, 
             isHorizontal
-        ) {
+        }) {
             if (linePointsDiff === 0) return null
     
             if (isDivsGoingDown) {
@@ -78,30 +115,32 @@ class HashGridElementContainer {
         const xDiv = getDimensionDivision1d(pointOfExtend.x, this.#hashGrid.startPosX, this.#hashGrid.divSizeX)
         const yDiv = getDimensionDivision1d(pointOfExtend.y, this.#hashGrid.startPosY, this.#hashGrid.divSizeY)
     
-        const xDivInterceptGen = getNextInterceptPoint(
+        const { slope, intercept } = line.equation
+        const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.#hashGrid.range
+        const xDivInterceptGen = getNextInterceptPoint({
             slope, 
             intercept, 
-            xDiv,
-            linePointsXDiff,
-            minXDiv,
-            maxXDiv,
-            this.#hashGrid.divSizeX,
-            getLineY,
-            xDivsGoingDown,
-            true
-        )
-        const yDivInterceptGen = getNextInterceptPoint(
+            currentDiv: xDiv,
+            linePointsDiff: linePointsXDiff,
+            minDiv: minXDiv,
+            maxDiv: maxXDiv,
+            divSize: this.#hashGrid.divSizeX,
+            getSecondaryDimensionIntercept: getLineY,
+            isDivsGoingDown: xDivsGoingDown,
+            isHorizontal: true
+        })
+        const yDivInterceptGen = getNextInterceptPoint({
             slope, 
             intercept, 
-            yDiv,
-            linePointsYDiff,
-            minYDiv,
-            maxYDiv,
-            this.#hashGrid.divSizeY,
-            getLineX,
-            yDivsGoingDown,
-            false
-        )
+            currentDiv: yDiv,
+            linePointsDiff: linePointsYDiff,
+            minDiv: minYDiv,
+            maxDiv: maxYDiv,
+            divSize: this.#hashGrid.divSizeY,
+            getSecondaryDimensionIntercept: getLineX,
+            isDivsGoingDown: yDivsGoingDown,
+            isHorizontal: false
+        })
     
         const queue = new PriorityQueue((a, b) => {
             const distanceFromA = getPointDistance(pointOfExtend, a)

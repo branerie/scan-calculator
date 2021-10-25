@@ -1,5 +1,6 @@
 import SetUtils from '../setUtils'
-import { getDimensionDivision1d } from './utils'
+import { getDimensionDivision1d, getDivKey, parseDivKey } from './utils'
+import { getDivIndicesFromCoordinates, getElementDivKeys } from './extensions'
 
 class HashGrid {
     #divsById
@@ -23,21 +24,18 @@ class HashGrid {
         let minY = Number.MAX_VALUE
         let maxY = Number.MIN_VALUE
         for (const divKey of Object.keys(this.#idsByDiv)) {
-            const [xKey, yKey] = divKey.split(',')
+            const [xKey, yKey] = parseDivKey(divKey)
 
-            const numXKey = Number(xKey)
-            const numYKey = Number(yKey)
-
-            if (numXKey < minX) {
-                minX = numXKey
-            } else if (numXKey > maxX) {
-                maxX = numXKey
+            if (xKey < minX) {
+                minX = xKey
+            } else if (xKey > maxX) {
+                maxX = xKey
             }
 
-            if (numYKey < minY) {
-                minY = numYKey
-            } else if (numYKey > maxY) {
-                maxY = numYKey
+            if (yKey < minY) {
+                minY = yKey
+            } else if (yKey > maxY) {
+                maxY = yKey
             }
         }
 
@@ -51,12 +49,31 @@ class HashGrid {
                 continue
             }
 
-            const divKeys = this.__getElementDivRanges(newElement)
-
-            this.#divsById[newElement.id] = new Set()
+            const divKeys = this.__getElementDivKeys(newElement)
+            this.#divsById[newElement.id] = new Set(divKeys)
             for (const divKey of divKeys) {
-                
+                if (!this.#idsByDiv[divKey]) {
+                    this.#idsByDiv[divKey] = new Set()
+                }
+
+                this.#idsByDiv[divKey].add(newElement.id)
             }
+            // const [leftDiv, topDiv, rightDiv, bottomDiv] = this.__getElementDivRanges(newElement)
+
+            // this.#divsById[newElement.id] = new Set()
+            // for (let xDivIndex = leftDiv; xDivIndex <= rightDiv; xDivIndex++) {
+            //     for (let yDivIndex = topDiv; yDivIndex <= bottomDiv; yDivIndex++) {
+            //         const divKey = `${xDivIndex},${yDivIndex}`
+
+                    // this.#divsById[newElement.id].add(divKey)
+
+                    // if (!this.#idsByDiv[divKey]) {
+                    //     this.#idsByDiv[divKey] = new Set()
+                    // }
+
+                    // this.#idsByDiv[divKey].add(newElement.id)
+            //     }
+            // }
         }
     }
 
@@ -99,7 +116,7 @@ class HashGrid {
     }
 
     getDivisionContents(xDiv, yDiv) {
-        const divisionContents = this.#idsByDiv[`${xDiv},${yDiv}`]
+        const divisionContents = this.#idsByDiv[getDivKey(xDiv, yDiv)]
         if (divisionContents && divisionContents.size > 0) {
             return Array.from(divisionContents)
         }
@@ -128,7 +145,7 @@ class HashGrid {
         let elementIds = new Set()
         for (let xIndex = startDivX; xIndex <= endDivX; xIndex++) {
             for (let yIndex = startDivY; yIndex <= endDivY; yIndex++) {
-                const container = this.#idsByDiv[`${xIndex},${yIndex}`]
+                const container = this.#idsByDiv[getDivKey(xIndex, yIndex)]
                 if (!container || container.size === 0) continue
 
                 elementIds = SetUtils.union(elementIds, container)
@@ -186,21 +203,24 @@ class HashGrid {
         this.#idsByDiv = {}
         for (let xDivIndex = 0; xDivIndex < this.initialNumDivsX; xDivIndex++) {
             for (let yDivIndex = 0; yDivIndex < this.initialNumDivsY; yDivIndex++) {
-                this.#idsByDiv[`${xDivIndex},${yDivIndex}`] = new Set()
+                this.#idsByDiv[getDivKey(xDivIndex, yDivIndex)] = new Set()
             }
         }
     }
 
-    __getElementDivRanges(element) {
-        const boundingBox = element.getBoundingBox()
+    // __getElementDivRanges(element) {
+    //     const boundingBox = element.getBoundingBox()
 
-        const leftDiv = getDimensionDivision1d(boundingBox.left, this.startPosX, this.divSizeX)
-        const topDiv = getDimensionDivision1d(boundingBox.top, this.startPosY, this.divSizeY)
-        const rightDiv = getDimensionDivision1d(boundingBox.right, this.startPosX, this.divSizeX)
-        const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this.startPosY, this.divSizeY)
+    //     const leftDiv = getDimensionDivision1d(boundingBox.left, this.startPosX, this.divSizeX)
+    //     const topDiv = getDimensionDivision1d(boundingBox.top, this.startPosY, this.divSizeY)
+    //     const rightDiv = getDimensionDivision1d(boundingBox.right, this.startPosX, this.divSizeX)
+    //     const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this.startPosY, this.divSizeY)
 
-        return [leftDiv, topDiv, rightDiv, bottomDiv]
-    }
+    //     return [leftDiv, topDiv, rightDiv, bottomDiv]
+    // }
 }
+
+HashGrid.prototype.__getElementDivKeys = getElementDivKeys
+HashGrid.prototype.__getDivIndicesFromCoordinates = getDivIndicesFromCoordinates
 
 export default HashGrid
