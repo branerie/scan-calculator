@@ -427,6 +427,7 @@ const useElements = (elementsContainer) => {
 
         return element.id in currentlyEditedElements
     }
+    
     const startCopyingElements = (elementsToCopy) => elementsDispatch({ type: 'startCopyingElements', elementsToCopy })
     const moveCopyingElements = (dX, dY) => {
         const newCurrentElements = [...elementsState.currentlyCopiedElements.current]

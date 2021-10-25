@@ -143,9 +143,11 @@ const Canvas = () => {
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyPress)
-        return () => document.removeEventListener('keydown', handleKeyPress)
+        return () => {
+            document.removeEventListener('keydown', handleKeyPress)
+        }
     }, [handleKeyPress])
-
+    
     const handleMouseWheel = (event) => {
         const { deltaY } = event
         const { clientX, clientY } = event

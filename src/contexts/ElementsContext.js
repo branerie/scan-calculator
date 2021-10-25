@@ -32,52 +32,30 @@ export default function ElementsContextProvider({ children }) {
     const [historyPointer, setHistoryPointer] = useState(null)
     const [actionHistory, setActionHistory] = useState([])
 
+    const elementsUtils = useElements(elementsContainer)
     const {
-        elements,
-        currentlyCreatedElement,
         currentlyEditedElements,
-        currentlyCopiedElements,
         currentlyReplacedElements,
-        snappedPoint,
-        addCurrentlyCreatedElement,
-        removeCurrentlyCreatedElement,
-        startEditingElements,
-        changeEditingElements,
-        stopEditingElements,
-        isEditingElement,
-        addElements: addElementsToState,
-        completeEditingElements,
         getElementById,
+        addElements: addElementsToState,
         removeElements,
         changeElements,
-        startCopyingElements,
-        moveCopyingElements,
-        continueCopyingElements,
-        completeCopyingElements,
-        startReplacingElements,
+        completeEditingElements,
         clearReplacingElements,
         completeReplacingElements,
-        continueReplacingElements,
-        isReplacingElement,
-        setSnappedPoint,
-        clearSnappedPoint,
-        getElementsContainingPoint,
-        getElementsInContainer
-    } = useElements(elementsContainer)
+    } = elementsUtils
+
+    const selectUtils = useSelection()
+    const {
+        selectedPoints,
+        removeSelectedElements,
+        addSelectedElements,
+        clearSelectedPoints,
+        hasSelectedElement
+    } = selectUtils
 
     const {
         selectedElements,
-        selectedPoints,
-        addSelectedElements,
-        setSelectedElements,
-        hasSelectedElement,
-        removeSelectedElements,
-        clearSelection,
-        setSelectedPoints,
-        clearSelectedPoints
-    } = useSelection()
-
-    const {
         addSelectionPoints,
         removeSelectionPoints,
         replaceSelectionPoints,
@@ -374,46 +352,11 @@ export default function ElementsContextProvider({ children }) {
             // TODO: which of the methods of the two states below do we need further down?
             // some names clash, such as elementsState.addElements with addElements here
 
-            elements: {
-                elements,
-                currentlyCreatedElement,
-                currentlyEditedElements,
-                currentlyCopiedElements,
-                currentlyReplacedElements,
-                snappedPoint,
-                getElementById,
-                addCurrentlyCreatedElement,
-                removeCurrentlyCreatedElement,
-                startEditingElements,
-                changeEditingElements,
-                stopEditingElements,
-                isEditingElement,
-                startCopyingElements,
-                moveCopyingElements,
-                continueCopyingElements,
-                completeCopyingElements,
-                startReplacingElements,
-                clearReplacingElements,
-                continueReplacingElements,
-                isReplacingElement,
-                setSnappedPoint,
-                clearSnappedPoint,
+            elements: elementsUtils,
+            points: {
                 findNearbyPoints,
-                getElementsContainingPoint,
-                getElementsInContainer,
-                getNextLineIntersection
             },
-            selection: {
-                selectedElements,
-                addSelectedElements,
-                setSelectedElements,
-                removeSelectedElements,
-                hasSelectedElement,
-                selectedPoints,
-                setSelectedPoints,
-                clearSelectedPoints,
-                clearSelection,
-            },
+            selection: selectUtils,
             history: {
                 addElements,
                 editElements,

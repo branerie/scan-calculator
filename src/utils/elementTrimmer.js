@@ -1,20 +1,22 @@
 import { getAngleBetweenPoints } from './angle'
 import { pointsMatch } from './point'
 import { capitalize } from './text'
-import { 
-    assemblePointDistancesAndSubsections, 
+import {
+    assemblePointDistancesAndSubsections,
     createSubsection,
     fixJoinedSections,
     fixJoinedPointDistances,
-    getDistFunc, 
-    getTrimSections 
+    getDistFunc,
+    getTrimSections
 } from './trimUtils/trim'
 
 class ElementTrimmer {
     static trimElement(element, trimPoints, selectPoints) {
         // TODO: Improve below logic
         if (element.baseType !== 'polyline') {
-            trimPoints = trimPoints.filter(tp => element.getSelectionPoints('endPoint').every(ep => !pointsMatch(ep, tp)))
+            trimPoints = trimPoints.filter(tp =>
+                element.getSelectionPoints('endPoint').every(ep => !pointsMatch(ep, tp))
+            )
         }
 
         const capitalizedElementType = capitalize(element.baseType)
@@ -27,7 +29,14 @@ class ElementTrimmer {
         const startPoint = element.startPoint
         const distFunc = getDistFunc('line', { startPoint })
 
-        return getTrimSections(element, trimPoints, selectPoints, distFunc, element.startPoint, element.endPoint)
+        return getTrimSections(
+            element,
+            trimPoints,
+            selectPoints,
+            distFunc,
+            element.startPoint,
+            element.endPoint
+        )
     }
 
     static trimArc(element, trimPoints, selectPoints) {
@@ -35,7 +44,14 @@ class ElementTrimmer {
         const startAngle = element.startLine.angle
         const distFunc = getDistFunc('arc', { centerPoint, startAngle })
 
-        return getTrimSections(element, trimPoints, selectPoints, distFunc, element.startPoint, element.endPoint)
+        return getTrimSections(
+            element,
+            trimPoints,
+            selectPoints,
+            distFunc,
+            element.startPoint,
+            element.endPoint
+        )
     }
 
     static trimCircle(element, trimPoints, selectPoints) {
@@ -48,7 +64,14 @@ class ElementTrimmer {
         const startAngle = getAngleBetweenPoints(centerPoint, startPoint)
         const distFunc = getDistFunc('circle', { centerPoint, startAngle })
 
-        const trimSections = getTrimSections(element, newTrimPoints, selectPoints, distFunc, startPoint, startPoint)
+        const trimSections = getTrimSections(
+            element,
+            newTrimPoints,
+            selectPoints,
+            distFunc,
+            startPoint,
+            startPoint
+        )
 
         if (trimSections && trimSections.remaining.length > 1) {
             const firstRemaining = trimSections.remaining[0]
@@ -56,7 +79,11 @@ class ElementTrimmer {
 
             if (pointsMatch(firstRemaining.startPoint, lastRemaining.endPoint)) {
                 trimSections.remaining = trimSections.remaining.slice(1, trimSections.length - 1)
-                const joinedSection = createSubsection(element, lastRemaining.startPoint, firstRemaining.endPoint)
+                const joinedSection = createSubsection(
+                    element,
+                    lastRemaining.startPoint,
+                    firstRemaining.endPoint
+                )
                 trimSections.remaining.push(joinedSection)
             }
         }
@@ -65,9 +92,13 @@ class ElementTrimmer {
     }
 
     static trimPolyline(element, trimPointsByElement, selectPoints) {
-        const { pointDistances, subsections } = assemblePointDistancesAndSubsections(element, trimPointsByElement, selectPoints)
+        const { pointDistances, subsections } = assemblePointDistancesAndSubsections(
+            element,
+            trimPointsByElement,
+            selectPoints
+        )
 
-        const distFunc = (point) => {
+        const distFunc = point => {
             const pointDistance = pointDistances[point.pointId]
             if (pointDistance && pointDistance !== 0) {
                 return pointDistance
@@ -83,7 +114,7 @@ class ElementTrimmer {
 
         let startPoint = null
         let endPoint = null
-        
+
         const trimPoints = Object.values(trimPointsByElement).flat()
         if (element.isJoined) {
             fixJoinedSections(element, subsections)

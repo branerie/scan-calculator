@@ -6,7 +6,6 @@ const useSelectCommand = () => {
     const {
         elements: {
             startEditingElements,
-            findNearbyPoints,
             getElementsContainingPoint,
             getElementsInContainer,
         },
@@ -16,6 +15,9 @@ const useSelectCommand = () => {
             setSelectedElements,
             setSelectedPoints,
             removeSelectedElements,
+        },
+        points: {
+            findNearbyPoints
         }
     } = useElementsContext()
 

@@ -10,12 +10,14 @@ const useSnapCommand = () => {
         elements: {
             currentlyCreatedElement,
             currentlyEditedElements,
-            findNearbyPoints,
             snappedPoint,
             setSnappedPoint,
         },
         selection: {
             selectedPoints
+        },
+        points: {
+            findNearbyPoints
         }
     } = useElementsContext()
 

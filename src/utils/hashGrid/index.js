@@ -51,21 +51,11 @@ class HashGrid {
                 continue
             }
 
-            const [leftDiv, topDiv, rightDiv, bottomDiv] = this.__getElementDivRanges(newElement)
+            const divKeys = this.__getElementDivRanges(newElement)
 
             this.#divsById[newElement.id] = new Set()
-            for (let xDivIndex = leftDiv; xDivIndex <= rightDiv; xDivIndex++) {
-                for (let yDivIndex = topDiv; yDivIndex <= bottomDiv; yDivIndex++) {
-                    const divKey = `${xDivIndex},${yDivIndex}`
-
-                    this.#divsById[newElement.id].add(divKey)
-
-                    if (!this.#idsByDiv[divKey]) {
-                        this.#idsByDiv[divKey] = new Set()
-                    }
-
-                    this.#idsByDiv[divKey].add(newElement.id)
-                }
+            for (const divKey of divKeys) {
+                
             }
         }
     }
