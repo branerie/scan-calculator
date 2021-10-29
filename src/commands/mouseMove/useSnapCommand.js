@@ -27,8 +27,8 @@ const useSnapCommand = () => {
         const { mouseX, mouseY } = mousePosition
         let nearbyPoints = findNearbyPoints(mouseX, mouseY, SNAP_DELTA / currentScale)
 
-        if (currentlyCreatedElement && 
-            (currentlyCreatedElement.type === 'polyline' || currentlyCreatedElement === 'arc')) {
+        if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined &&
+            (currentlyCreatedElement.type === 'polyline' || currentlyCreatedElement.type === 'arc')) {
             let snappingPoints
             if (currentlyCreatedElement.type === 'polyline') {
                 snappingPoints = []
@@ -39,6 +39,7 @@ const useSnapCommand = () => {
             } else {
                 snappingPoints = currentlyCreatedElement.getSelectionPoints()
             }
+            
             const newNearbyPoints = snappingPoints.filter(sp => 
                 getPointDistance(sp, { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) }) < SNAP_DELTA / currentScale)
             nearbyPoints = nearbyPoints.concat(newNearbyPoints)

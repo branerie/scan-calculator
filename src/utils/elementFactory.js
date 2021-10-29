@@ -6,7 +6,12 @@ import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
 import Rectangle from '../drawingElements/rectangle'
 
-const createElement = (type, initialX, initialY, { groupId = null, assignId = false } = {}) => {
+const createElement = (
+    type, 
+    initialX, 
+    initialY, 
+    { groupId = null, assignId = false, pointsElementId = null } = {}
+) => {
     if ((!initialX && initialX !== 0) || (!initialY && initialY !== 0)) {
         throw new Error('Cannot create element with undefined initial point coordinates.')
     }
@@ -14,12 +19,21 @@ const createElement = (type, initialX, initialY, { groupId = null, assignId = fa
     const initialPoint = new Point(initialX, initialY)
     initialPoint.pointId = uuidv4()
 
-    const createdElement = createElementFromInitialPoint(type, initialPoint, groupId)
     if (assignId) {
-        createdElement.id = uuidv4()
-    }
+        const newElementId = uuidv4()
 
-    return createdElement
+        initialPoint.elementId = pointsElementId || newElementId
+        const createdElement = createElementFromInitialPoint(type, initialPoint, groupId)
+        createdElement.id = newElementId
+
+        return createdElement
+    }
+    
+    if (pointsElementId) {
+        initialPoint.elementId = pointsElementId
+    }
+    
+    return createElementFromInitialPoint(type, initialPoint, groupId)
 }
 
 const createEditedElement = (element, payload) => {
@@ -46,9 +60,28 @@ const createEditedElement = (element, payload) => {
     return newElement
 }
 
-const createPoint = (pointX, pointY) => createElement('point', pointX, pointY)
-const createLine = (initialPointX, initialPointY, lastPointX, lastPointY, { groupId = null, assignId = false } = {}) => {
-    const line = createElement('line', initialPointX, initialPointY, { groupId, assignId })
+const createPoint = (pointX, pointY, { elementId = null, assignId = true } = {}) => {
+    const point = new Point(pointX, pointY, elementId)
+    if (assignId) {
+        point.pointId = uuidv4()
+    }
+
+    return point
+}
+
+const createLine = (
+    initialPointX, 
+    initialPointY, 
+    lastPointX, 
+    lastPointY, 
+    { groupId = null, assignId = false, pointsElementId = null } = {}
+) => {
+    const line = createElement(
+        'line', 
+        initialPointX, 
+        initialPointY, 
+        { groupId, assignId, pointsElementId }
+    )
 
     if ((lastPointX || lastPointX === 0) && (lastPointY || lastPointY === 0)) {
         line.setPointB(lastPointX, lastPointY)

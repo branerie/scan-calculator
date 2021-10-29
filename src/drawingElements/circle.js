@@ -1,64 +1,69 @@
 import { MAX_NUM_ERROR } from '../utils/constants'
 import { createPoint } from '../utils/elementFactory'
+import ElementManipulator from '../utils/elementManipulator'
 import { getPointDistance } from '../utils/point'
-import Element from './element'
-import Point from './point'
+import BaseArc from './baseArc'
 
 const RADIUS_MIN_DIFF = 1e-3
+const FULL_CIRCLE_ANGLE = 360
 
-class Circle extends Element {
-    #radius
-    #centerPoint
+class Circle extends BaseArc {
     #endPoints
     #boundingBox
 
     constructor(centerPoint, { radius = null, endPoints = null, id = null } = {}) {
-        super(id)
-        
-        this.#centerPoint = centerPoint
-        this.#radius = radius
+        super(centerPoint, { radius, id })
+
         this.#endPoints = endPoints
 
         this.__verifyConsistency()
 
-        if (this.#radius) {
+        if (this.radius) {
             this.__setDetails()
         }
     }
 
-    get basePoint() { return this.#centerPoint }
-    get centerPoint() { return this.#centerPoint }
-    get startPoint() { return createPoint(this.#centerPoint.x + this.#radius, this.#centerPoint.y) }
-    get endPoint() { return createPoint(this.#centerPoint.x + this.#radius, this.#centerPoint.y) }
-    get radius() { return this.#radius }
+    get basePoint() { return this.centerPoint }
+    get startPoint() { return this.#endPoints[0] }
+    get endPoint() { return this.#endPoints[0] }
+
     get endPoints() { return this.#endPoints }
 
+    get radius() { return super.radius }
     set radius(newRadius) {
-        this.#radius = newRadius
+        this.__setRadius(newRadius)
         this.__setDetails()
     }
 
     get isFullyDefined() {
-        return (
-            !!(this.#centerPoint) &&
-            this.#radius > 0
-        )
+        return !!this.centerPoint && this.radius > 0
     }
 
-    get isAlmostDefined() { return !!(this.#centerPoint) }
+    get isAlmostDefined() {
+        return !!this.centerPoint
+    }
+
+    get angle() { return FULL_CIRCLE_ANGLE }
+    get length() { return 2 * Math.PI * this.radius }
 
     getSelectionPoints(pointType) {
-        return [ 
-            ...(!pointType || pointType === 'center' ) ? [{ ...this.#centerPoint, pointType: 'center' }] : [],
-            ...(!pointType || pointType === 'endPoint' ) 
+        return [
+            ...(
+                !pointType || pointType === 'center' 
+                    ? [{ ...this.centerPoint, pointType: 'center' }] 
+                    : []
+            ),
+            ...(
+                !pointType || pointType === 'endPoint'
                     ? this.#endPoints.map(ep => ({ ...ep, pointType: 'endPoint' }))
                     : []
+            )
         ]
     }
 
     checkIfPointOnElement(point, maxDiff) {
-        const distanceFromCenter = getPointDistance(this.#centerPoint, point)
-        if (Math.abs(this.#radius - distanceFromCenter) > maxDiff) {
+        const distanceFromCenter = getPointDistance(this.centerPoint, point)
+        if (Math.abs(this.radius - distanceFromCenter) > maxDiff) {
             return false
         }
 
@@ -70,7 +75,13 @@ class Circle extends Element {
     }
 
     setLastAttribute(pointX, pointY) {
-        this.#radius = getPointDistance(this.#centerPoint, new Point(pointX, pointY))
+        this.__setRadius(
+            getPointDistance(
+                this.centerPoint, 
+                createPoint(pointX, pointY, { assignId: false })
+            )
+        )
+
         this.__setDetails()
     }
 
@@ -81,10 +92,10 @@ class Circle extends Element {
     }
 
     getPointById(pointId) {
-        if (this.#centerPoint.pointId === pointId) {
-            return this.#centerPoint
+        if (this.centerPoint.pointId === pointId) {
+            return this.centerPoint
         }
-        
+
         const endPoint = this.#endPoints.find(ep => ep.pointId === pointId)
         return endPoint ? endPoint : null
     }
@@ -95,7 +106,7 @@ class Circle extends Element {
             return false
         }
 
-        if (point === this.#centerPoint) {
+        if (pointId === this.centerPoint.pointId) {
             this.move(newPointX - point.x, newPointY - point.y)
             return true
         }
@@ -106,8 +117,11 @@ class Circle extends Element {
     }
 
     move(dX, dY) {
-        this.#centerPoint.x += dX
-        this.#centerPoint.y += dY
+        const centerCopy = ElementManipulator.copyPoint(this.centerPoint, true)
+        centerCopy.x += dX
+        centerCopy.y += dY
+
+        this.__setCenterPoint(centerCopy)
 
         this.#endPoints.forEach(ep => {
             ep.x += dX
@@ -120,7 +134,23 @@ class Circle extends Element {
         this.#boundingBox.bottom += dY
     }
 
-    getBoundingBox() { return { ...this.#boundingBox } }
+    getBoundingBox() { return this.#boundingBox }
+
+    containsAngle(angle) { return true }
+
+    _setPointsElementId() {
+        const elementId = this.id
+
+        const newCenterPoint = ElementManipulator.copyPoint(this.centerPoint, true)
+        newCenterPoint.elementId = elementId
+        this.__setCenterPoint(newCenterPoint)
+
+        if (this.#endPoints) {
+            for (const endPoint of this.#endPoints) {
+                endPoint.elementId = elementId
+            }
+        }
+    }
 
     __setDetails() {
         this.__setEndPoints()
@@ -140,51 +170,77 @@ class Circle extends Element {
     }
 
     __setEndPoints() {
+        const centerPoint = this.centerPoint
+        const radius = this.radius
+
         if (!this.#endPoints) {
             this.#endPoints = [
-                createPoint(this.#centerPoint.x - this.#radius, this.#centerPoint.y),
-                createPoint(this.#centerPoint.x + this.#radius, this.#centerPoint.y),
-                createPoint(this.#centerPoint.x, this.#centerPoint.y - this.#radius),
-                createPoint(this.#centerPoint.x, this.#centerPoint.y + this.#radius)
+                createPoint(
+                    centerPoint.x + radius, 
+                    centerPoint.y,
+                    { elementId: centerPoint.elementId, assignId: true }   
+                ),
+                createPoint(
+                    centerPoint.x - radius, 
+                    centerPoint.y, 
+                    { elementId: centerPoint.elementId, assignId: true }
+                ),
+                createPoint(
+                    centerPoint.x, 
+                    centerPoint.y + radius,
+                    { elementId: centerPoint.elementId, assignId: true }
+                ),
+                createPoint(
+                    centerPoint.x, 
+                    centerPoint.y - radius,
+                    { elementId: centerPoint.elementId, assignId: true } 
+                ),
             ]
 
             return
         }
 
-        this.#endPoints[0].x = this.#centerPoint.x + this.#radius
-        this.#endPoints[1].x = this.#centerPoint.x - this.#radius
-        this.#endPoints[2].y = this.#centerPoint.y + this.#radius
-        this.#endPoints[3].y = this.#centerPoint.y - this.#radius
+        this.#endPoints[0].x = centerPoint.x + radius
+        this.#endPoints[1].x = centerPoint.x - radius
+        this.#endPoints[2].y = centerPoint.y + radius
+        this.#endPoints[3].y = centerPoint.y - radius
     }
 
     __verifyConsistency() {
-        if (!this.#centerPoint) {
+        const centerPoint = this.centerPoint
+        const radius = this.radius
+
+        if (!centerPoint) {
             throw new Error('Cannot have a circle element without a center point')
         }
 
         // radius is not set yet, we will not check further for points consistency
-        if (!this.#radius) {
+        if (!radius) {
             if (!this.#endPoints) return
 
             if (this.#endPoints.length !== 4) {
                 throw new Error('Circle must contain exactly four(4) end points')
             }
 
-            const firstPointDistance = getPointDistance(this.#endPoints[0], this.#centerPoint)
-            const secondPointDistance = getPointDistance(this.#endPoints[1], this.#centerPoint)
-            const thirdPointDistance = getPointDistance(this.#endPoints[2], this.#centerPoint)
-            const fourthPointDistance = getPointDistance(this.#endPoints[3], this.#centerPoint)
+            const firstPointDistance = getPointDistance(this.#endPoints[0], centerPoint)
+            const secondPointDistance = getPointDistance(this.#endPoints[1], centerPoint)
+            const thirdPointDistance = getPointDistance(this.#endPoints[2], centerPoint)
+            const fourthPointDistance = getPointDistance(this.#endPoints[3], centerPoint)
 
-            if (Math.abs(firstPointDistance - secondPointDistance) > MAX_NUM_ERROR ||
+            if (
+                Math.abs(firstPointDistance - secondPointDistance) > MAX_NUM_ERROR ||
                 Math.abs(firstPointDistance - thirdPointDistance) > MAX_NUM_ERROR ||
-                Math.abs(firstPointDistance - fourthPointDistance) > MAX_NUM_ERROR) {
-                throw new Error('Circle end points must be an equal distance from the circle center (its radius)')
+                Math.abs(firstPointDistance - fourthPointDistance) > MAX_NUM_ERROR
+            ) {
+                throw new Error(
+                    'Circle end points must be an equal distance from the circle center (its radius)'
+                )
             }
 
-            this.#radius = firstPointDistance
+            this.__setRadius(firstPointDistance)
         }
 
-        if (isNaN(Number(this.#radius) || this.#radius <= 0)) {
+        if (isNaN(Number(radius) || radius <= 0)) {
             throw new Error('Circle radius must be a positive number')
         }
 
@@ -192,9 +248,10 @@ class Circle extends Element {
             return this.__setDetails()
         }
 
-        const isEndPointsInconsistent = this.#endPoints.some(ep => 
-            Math.abs(getPointDistance(ep, this.#centerPoint) - this.#radius) > RADIUS_MIN_DIFF)
-            
+        const isEndPointsInconsistent = this.#endPoints.some(
+            ep => Math.abs(getPointDistance(ep, centerPoint) - radius) > RADIUS_MIN_DIFF
+        )
+
         if (isEndPointsInconsistent) {
             throw new Error('Inconsisent circle element. End points not lying on the circle')
         }

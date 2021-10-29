@@ -1,14 +1,13 @@
 import { MAX_NUM_ERROR } from '../utils/constants'
 import { createLine } from '../utils/elementFactory'
+import ElementManipulator from '../utils/elementManipulator'
 import { getPointDistance, getRotatedPointAroundPivot } from '../utils/point'
-import Element from './element'
+import BaseArc from './baseArc'
 import Line from './line'
 
 const INCONSISTENT_ARC_ERROR = 'Inconsistent arc - the end of startLine and the end of endLine must lie the same distance from the arc center (its radius)'
 
-class Arc extends Element {
-    #centerPoint
-    #radius
+class Arc extends BaseArc {
     #startLine
     #endLine
     #midLine
@@ -22,38 +21,36 @@ class Arc extends Element {
         midLine = null, 
         id = null 
     } = {}) {
-        super(id, groupId)
+        super(centerPoint, { id, groupId, radius })
 
-        this.#centerPoint = centerPoint
-        this.#radius = radius
         this.#startLine = startLine
         this.#endLine = endLine
         this.#midLine = midLine
 
         if (startLine) {
-            if (getPointDistance(centerPoint, startLine.pointA) > 0) {
-                this.#startLine.setPointA(this.#centerPoint)
-            }
-
-            if (!this.#radius) {
-                this.#radius = getPointDistance(centerPoint, startLine.pointB)
-            }
-
-            if (Math.abs(getPointDistance(centerPoint, startLine.pointB) - this.#radius) > MAX_NUM_ERROR) {
+            if (Math.abs(getPointDistance(centerPoint, startLine.pointB) - this.radius) > MAX_NUM_ERROR) {
                 throw new Error(INCONSISTENT_ARC_ERROR)
+            }
+
+            if (getPointDistance(centerPoint, startLine.pointA) > 0) {
+                this.#startLine.setPointA(centerPoint)
+            }
+
+            if (!this.radius) {
+                this.__setRadius(getPointDistance(centerPoint, startLine.pointB))
             }
         }
 
         if (endLine) {
             if (getPointDistance(centerPoint, endLine.pointA) > 0) {
-                this.#endLine.setPointA(this.#centerPoint)
+                this.#endLine.setPointA(this.centerPoint)
             }
 
-            if (!this.#radius) {
-                this.#radius = getPointDistance(centerPoint, endLine.pointB)
+            if (!this.radius) {
+                this.__setRadius(getPointDistance(centerPoint, endLine.pointB))
             }
 
-            if (Math.abs(getPointDistance(centerPoint, endLine.pointB) - this.#radius) > MAX_NUM_ERROR) {
+            if (Math.abs(getPointDistance(centerPoint, endLine.pointB) - this.radius) > MAX_NUM_ERROR) {
                 throw new Error(INCONSISTENT_ARC_ERROR)
             }
         }
@@ -63,11 +60,9 @@ class Arc extends Element {
         }
     }
 
-    get basePoint() { return this.#centerPoint }
-    get centerPoint() { return { ...this.#centerPoint } }
-    get radius() { return this.#radius }
-    get startPoint() { return { ...this.#startLine.pointB } }
-    get endPoint() { return { ...this.#endLine.pointB } }
+    get basePoint() { return this.centerPoint }
+    get startPoint() { return this.#startLine.pointB }
+    get endPoint() { return this.#endLine.pointB }
 
     set startPoint(value) { this.#startLine.setPointB(value.x, value.y) }
     set endPoint(value) { this.#endLine.setPointB(value.x, value.y) }
@@ -76,8 +71,9 @@ class Arc extends Element {
     get endLine() { return this.#endLine }
     get midLine() { return this.#midLine }
 
+    get radius() { return super.radius }
     set radius(value) {
-        this.#radius = value
+        this.__setRadius(value)
         this.#startLine.setLength(value, false)
         this.#endLine.setLength(value, false)
         this.#midLine.setLength(value, false)
@@ -87,8 +83,8 @@ class Arc extends Element {
 
     get isFullyDefined() {
         return (
-            !!(this.#centerPoint) &&
-            this.#radius > 0 &&
+            !!(this.centerPoint) &&
+            this.radius > 0 &&
             !!(this.#startLine) &&
             !!(this.#endLine)
         )
@@ -96,8 +92,8 @@ class Arc extends Element {
 
     get isAlmostDefined() {
         return (
-            this.#centerPoint &&
-            this.#radius > 0 &&
+            this.centerPoint &&
+            this.radius > 0 &&
             (!!(this.#startLine) && this.#startLine.angle >= 0 && this.#startLine.angle <= 360)
         )
     }
@@ -113,12 +109,12 @@ class Arc extends Element {
     get length() {
         const arcAngle = this.angle
 
-        return 2 * Math.PI * this.#radius * (arcAngle) / 360 
+        return 2 * Math.PI * this.radius * (arcAngle) / 360 
     }
 
     getSelectionPoints(pointType) {
         return [
-            ...(!pointType || pointType === 'center') ? [{ ...this.#centerPoint, pointType: 'center' }] : [],
+            ...(!pointType || pointType === 'center') ? [{ ...this.centerPoint, pointType: 'center' }] : [],
             ...(!pointType || pointType === 'endPoint') ? [
                 { ...this.#startLine.pointB, pointType: 'endPoint' },
                 { ...this.#endLine.pointB, pointType: 'endPoint' }
@@ -127,13 +123,13 @@ class Arc extends Element {
         ]
     }
 
-    checkIfPointOnElement(point, maxDiff) {
-        const distanceFromCenter = getPointDistance(this.#centerPoint, point)
-        if (Math.abs(this.#radius - distanceFromCenter) > maxDiff) {
+    checkIfPointOnElement(point, maxDiff = MAX_NUM_ERROR) {
+        const distanceFromCenter = getPointDistance(this.centerPoint, point)
+        if (Math.abs(this.radius - distanceFromCenter) > maxDiff) {
             return false
         }
 
-        const lineFromCenter = new Line(this.#centerPoint, { pointB: point })
+        const lineFromCenter = new Line(this.centerPoint, { pointB: point })
         const lineAngle = lineFromCenter.angle
         const startAngle = this.#startLine.angle
         const endAngle = this.#endLine.angle
@@ -153,33 +149,46 @@ class Arc extends Element {
     }
 
     setLastAttribute(pointX, pointY) {
-        this.#endLine = createLine(this.#centerPoint.x, this.#centerPoint.y, pointX, pointY, { groupId: this.groupId })
-        this.#endLine.setLength(this.#radius, false)
+        this.#endLine = createLine(
+            this.centerPoint.x, 
+            this.centerPoint.y, 
+            pointX, 
+            pointY, 
+            { groupId: this.groupId, pointsElementId: this.id }
+        )
+        
+        this.#endLine.setLength(this.radius, false)
         this.__updateDetails()
     }
 
     defineNextAttribute(definingPoint) {
         if (this.isFullyDefined) return
 
-        if (!this.#centerPoint) {
-            this.#centerPoint = definingPoint
+        const centerPoint = this.centerPoint
+        if (!centerPoint) {
+            this.__setCenterPoint(definingPoint)
             
             return
         }
 
-        if (!this.#radius) {
-            this.#radius = getPointDistance(this.#centerPoint, definingPoint)
+        if (!this.radius) {
+            this.__setRadius(getPointDistance(centerPoint, definingPoint))
 
-            const line = new Line(this.#centerPoint, { pointB: definingPoint })
-            this.#startLine = line
+            this.#startLine = createLine(
+                centerPoint.x,
+                centerPoint.y,
+                definingPoint.x,
+                definingPoint.y,
+                { groupId: this.groupId, pointsElementId: this.id }
+            )
 
             return
         }
     }
 
     getPointById(pointId) {
-        if (this.#centerPoint.pointId === pointId) {
-            return this.#centerPoint
+        if (this.centerPoint.pointId === pointId) {
+            return this.centerPoint
         }
 
         if (this.#startLine.pointB.pointId === pointId) {
@@ -198,9 +207,12 @@ class Arc extends Element {
     }
 
     setPointById(pointId, newPointX, newPointY) {
-        if (pointId === this.#centerPoint.pointId) {
-            this.#centerPoint.x = newPointX
-            this.#centerPoint.y = newPointY
+        if (pointId === this.centerPoint.pointId) {
+            const pointCopy = ElementManipulator.copyPoint(this.centerPoint, true)
+            pointCopy.x = newPointX
+            pointCopy.y = newPointY
+
+            this.__setCenterPoint(pointCopy)
 
             this.#startLine.setPointA(newPointX, newPointY)
             this.#endLine.setPointA(newPointX, newPointY)
@@ -219,7 +231,7 @@ class Arc extends Element {
         if (!lineToChange) return false
 
         lineToChange.setPointB(newPointX, newPointY)
-        lineToChange.setLength(this.#radius, false)
+        lineToChange.setLength(this.radius, false)
 
         if (this.isFullyDefined) {
             this.__updateDetails()
@@ -231,8 +243,11 @@ class Arc extends Element {
     getBoundingBox() { return { ...this.#boundingBox } }
 
     move(dX, dY) {
-        this.#centerPoint.x += dX
-        this.#centerPoint.y += dY
+        const centerCopy = ElementManipulator.copyPoint(this.centerPoint, true)
+        centerCopy.x += dX
+        centerCopy.y += dY
+
+        this.__setCenterPoint(centerCopy)
 
         this.#startLine.move(dX, dY)
         this.#endLine.move(dX, dY)
@@ -255,37 +270,80 @@ class Arc extends Element {
         return angle <= startAngle || angle >= endAngle
     }
 
+    _setPointsElementId() {
+        const elementId = this.id
+
+        const newCenterPoint = ElementManipulator.copyPoint(this.centerPoint)
+        newCenterPoint.elementId = elementId
+        this.__setCenterPoint(newCenterPoint)   
+
+        this.#startLine = this.#startLine ? createLine(
+            this.#startLine.pointA.x,
+            this.#startLine.pointA.y,
+            this.#startLine.pointB.x,
+            this.#startLine.pointB.y,
+            { groupId: this.groupId, pointsElementId: elementId }
+        ) : null
+
+        this.#endLine = this.#endLine ? createLine(
+            this.#endLine.pointA.x,
+            this.#endLine.pointA.y,
+            this.#endLine.pointB.x,
+            this.#endLine.pointB.y,
+            { groupId: this.groupId, pointsElementId: elementId }
+        ) : null
+
+        this.#midLine = this.#midLine ? createLine(
+            this.#midLine.pointA.x,
+            this.#midLine.pointA.y,
+            this.#midLine.pointB.x,
+            this.#midLine.pointB.y,
+            { groupId: this.groupId, pointsElementId: elementId }
+        ) : null
+    }
+
     __updateDetails() {
         this.__updateMidLine()
         this.__updateBoundingBox()
     }
 
     __updateBoundingBox() {
+        const centerPoint = this.centerPoint
+        const radius = this.radius
+
         const left = this.containsAngle(180) 
-                        ? this.#centerPoint.x - this.#radius 
+                        ? centerPoint.x - radius 
                         : Math.min(this.#startLine.pointB.x, this.#endLine.pointB.x)
         const right = this.containsAngle(0) 
-                        ? this.#centerPoint.x + this.#radius  
+                        ? centerPoint.x + radius  
                         : Math.max(this.#startLine.pointB.x, this.#endLine.pointB.x)
         const top = this.containsAngle(270) 
-                        ? this.#centerPoint.y - this.#radius 
+                        ? centerPoint.y - radius 
                         : Math.min(this.#startLine.pointB.y, this.#endLine.pointB.y)
         const bottom = this.containsAngle(90) 
-                        ? this.centerPoint.y + this.#radius 
+                        ? centerPoint.y + radius 
                         : Math.max(this.#startLine.pointB.y, this.#endLine.pointB.y)
     
         this.#boundingBox = { left, right, top, bottom }
     }
 
     __updateMidLine() {
+        const centerPoint = this.centerPoint
+
         if (!this.#midLine) {
-            this.#midLine = createLine(this.#centerPoint.x, this.#centerPoint.y, null, null, { groupId: this.groupId })
+            this.#midLine = createLine(
+                centerPoint.x, 
+                centerPoint.y, 
+                null, 
+                null, 
+                { groupId: this.groupId, pointsElementId: this.id }
+            )
         }
 
         const angleStartToEnd = Math.abs(this.#startLine.angle - this.#endLine.angle)
 
         if (Math.abs(angleStartToEnd - 180) <= MAX_NUM_ERROR) {
-            const midLineEndPoint = getRotatedPointAroundPivot(this.#startLine.pointB, this.#centerPoint, 90)
+            const midLineEndPoint = getRotatedPointAroundPivot(this.#startLine.pointB, centerPoint, 90)
             this.#midLine.setPointB(midLineEndPoint.x, midLineEndPoint.y)
             return
         }
@@ -298,8 +356,8 @@ class Arc extends Element {
         const isLessThan180 = angleStartToEnd < 180
 
         const newLength = isStartLessThanEnd !== isLessThan180
-            ? this.#radius
-            : -this.#radius
+            ? this.radius
+            : -this.radius
 
         this.#midLine.setLength(newLength, false)
     }

@@ -7,6 +7,7 @@ const buildPointsTreeDataObject = (point, pointType) => {
         leafValue: point.x,
         y: point.y,
         pointId: point.pointId,
+        elementId: point.elementId,
         pointType
     }
 }

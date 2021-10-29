@@ -31,7 +31,6 @@ class Polyline extends Element {
         this.#isFullyDefined = false
     }
 
-    get id() { return super.id }
     get basePoint() { return this.#elements.length > 0 ? this.#elements[0].basePoint : null }
     get startPoint() { return this.#startPoint ? this.#startPoint : this.#elements[0].startPoint }
     get endPoint() { return this.#endPoint ? this.#endPoint : this.#elements[this.#elements.length - 1].endPoint }
@@ -70,16 +69,6 @@ class Polyline extends Element {
         }
     }
 
-    set id(value) {
-        super.id = value
-    
-        if (this.#elements) {
-            for (const element of this.#elements) {
-                element.groupId = value
-            }
-        }
-    }
-
     set startPoint(value) {
         const startElement = this.#elements[0]
         const isStartInPolyDirection = pointsMatch(startElement.startPoint, this.#startPoint)
@@ -98,7 +87,7 @@ class Polyline extends Element {
         //     throw new Error(END_POINT_ERROR)
         // }
 
-        this.#startPoint = value
+        this.#startPoint = { ...value, elementId: this.centerPoint.elementId }
     }
 
     set endPoint(value) {
@@ -119,7 +108,7 @@ class Polyline extends Element {
         //     throw new Error(END_POINT_ERROR)
         // }
 
-        this.#endPoint = value
+        this.#endPoint = { ...value, elementId: this.centerPoint.elementId }
     }
 
     checkIfPointOnElement(point, maxDiff) {
@@ -175,9 +164,7 @@ class Polyline extends Element {
         for (const element of this.#elements) {
             point = element.getPointById(pointId)
 
-            if (point) {
-                break
-            }
+            if (point) break
         }
 
         return point
@@ -238,6 +225,16 @@ class Polyline extends Element {
         this.#elements.forEach(e => e.groupId = this.id)
 
         this._updateBoundingBox()
+    }
+
+    _setPointsElementId() {
+        if (!this.#elements) return
+        
+        const elementId = this.id
+        for (const element of this.#elements) {
+            element.groupId = elementId
+            // element._setPointsElementId()
+        }
     }
 
     _updateBoundingBox() {

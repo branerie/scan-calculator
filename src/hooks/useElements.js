@@ -414,7 +414,7 @@ const useElements = (elementsContainer) => {
 
     const addCurrentlyCreatedElement = (createdElement) =>
             elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
-    const removeCurrentlyCreatedElement = () =>     elementsDispatch({ type: 'removeCurrentlyCreated' })
+    const removeCurrentlyCreatedElement = () => elementsDispatch({ type: 'removeCurrentlyCreated' })
     const startEditingElements = (editedElements, shouldHideOriginal = true, shouldCopyElements = true) =>
             elementsDispatch({ type: 'startEditingElements', editedElements, shouldHideOriginal, shouldCopyElements })
     const changeEditingElements = (newEditingElements) =>

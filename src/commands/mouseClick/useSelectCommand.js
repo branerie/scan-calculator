@@ -34,6 +34,9 @@ const useSelectCommand = () => {
                 if (editedElement) {
                     selectedPoints.push(point)
                     editedElements.push(editedElement)
+
+                    // TODO: 
+
                     // editedElement.isShown = false
                 }
             }

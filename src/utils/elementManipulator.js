@@ -9,6 +9,10 @@ import Rectangle from '../drawingElements/rectangle'
 
 class ElementManipulator {
     static copyElement(element, keepIds = false) {
+        if (element.type === 'point') {
+            return ElementManipulator.copyPoint(element, keepIds)
+        }
+
         const methodName = `copy${element.type.charAt(0).toUpperCase() + element.type.slice(1)}`
 
         const copyingMethod = ElementManipulator[methodName]
@@ -22,7 +26,7 @@ class ElementManipulator {
     
     static copyLine(line, keepIds = false) {
         if (keepIds) {
-            const newPointA = new Point(line.pointA.x, line.pointA.y)
+            const newPointA = new Point(line.pointA.x, line.pointA.y, line.pointA.elementId)
             newPointA.pointId = line.pointA.pointId
     
             const newPointB = line.pointB ? ElementManipulator.copyPoint(line.pointB, keepIds) : null
@@ -78,13 +82,7 @@ class ElementManipulator {
         const newEndLine = arc.endLine ? ElementManipulator.copyLine(arc.endLine, keepIds) : null
         const newMidLine = arc.midLine ? ElementManipulator.copyLine(arc.midLine, keepIds) : null
 
-        let newCenterPoint
-        if (keepIds) {
-            newCenterPoint = new Point(arc.centerPoint.x, arc.centerPoint.y)
-            newCenterPoint.pointId = arc.centerPoint.pointId
-        } else {
-            newCenterPoint = createElement('point', arc.centerPoint.x, arc.centerPoint.y)
-        }
+        const newCenterPoint = ElementManipulator.copyPoint(arc.centerPoint, keepIds)
     
         const newArc = new Arc(
             newCenterPoint, 
@@ -115,6 +113,7 @@ class ElementManipulator {
         const newPoint = new Point(point.x, point.y)
         if (keepIds) {
             newPoint.pointId = point.pointId
+            newPoint.elementId = point.elementId
         }
 
         return newPoint

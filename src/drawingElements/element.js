@@ -42,7 +42,10 @@ class Element {
         throw new Error('Property endPoint is not implemented')
     }
 
-    set id(value) { this.#id = value }
+    set id(value) { 
+        this.#id = value 
+        this._setPointsElementId()
+    }
 
     getPointById(pointId) {
         throw new Error('Method getPointById is not implemented')
@@ -90,6 +93,10 @@ class Element {
 
     move(dX, dY) {
         throw new Error('Method move is not implemented')
+    }
+
+    _setPointsElementId() {
+        throw new Error('Method _setPointsElementId is not implemented')
     }
 }
 

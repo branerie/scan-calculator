@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useElementsContext } from '../contexts/ElementsContext'
 import { useToolsContext } from '../contexts/ToolsContext'
+import Line from '../drawingElements/line'
 import { degreesToRadians } from '../utils/angle'
 
 const SELECT_POINT_SQUARE_HALF_SIDE = 4
@@ -23,9 +24,22 @@ const useDrawing = () => {
         selection: {
             selectedPoints,
 
-        }
+        },
+        hashGrid
     } = useElementsContext()
     const { canvasContext, currentScale, currentTranslate, tool } = useToolsContext()
+
+    const drawHashGrid = () => {
+        for (let xIdx = hashGrid.startPosX; xIdx <= hashGrid.initialNumDivsX; xIdx++) {
+            const currentX = xIdx * hashGrid.divSizeX
+            drawElement(new Line({ x: currentX, y: 0 }, { pointB: { x: currentX, y: 5000 }}), { color: 'green' })
+        }
+
+        for (let yIdx = hashGrid.startPosY; yIdx <= hashGrid.initialNumDivsY; yIdx++) {
+            const currentY = yIdx * hashGrid.divSizeY
+            drawElement(new Line({ x: 0, y: currentY }, { pointB: { x: 5000, y: currentY }}), { color: 'green' })
+        }
+    }
 
     const resetCanvas = useCallback(() => {
         if (!canvasContext) return
@@ -36,6 +50,8 @@ const useDrawing = () => {
 
         canvasContext.translate(currentTranslate[0], currentTranslate[1])
         canvasContext.scale(currentScale, currentScale)
+
+        drawHashGrid()
     }, [canvasContext, currentScale, currentTranslate])
 
     const drawElement = useCallback((element, options = {}) => {

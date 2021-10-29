@@ -50,7 +50,7 @@ class HashGrid {
             }
 
             const divKeys = this.__getElementDivKeys(newElement)
-            this.#divsById[newElement.id] = new Set(divKeys)
+            this.#divsById[newElement.id] = divKeys
             for (const divKey of divKeys) {
                 if (!this.#idsByDiv[divKey]) {
                     this.#idsByDiv[divKey] = new Set()

@@ -76,7 +76,7 @@ const useTransformCommand = () => {
                     editedElement.setPointById(selectionPoint.pointId, newPointX, newPointY)
                 }
 
-                if (editedElement.baseType === 'arc') {
+                if (editedElement.type === 'arc') {
                     // in case of mirrored arc start and end need to be switched, otherwise it breaks 
                     const startPoint = editedElement.startPoint
                     const endPoint = editedElement.endPoint

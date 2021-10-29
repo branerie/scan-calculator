@@ -2,7 +2,6 @@ import { getPointDistance } from '../utils/point'
 import { degreesToRadians, getQuadrant, getAngleBetweenPoints } from '../utils/angle'
 import Element from './element'
 import { createPoint } from '../utils/elementFactory'
-import Point from './point'
 
 class Line extends Element {
     #pointA
@@ -14,9 +13,9 @@ class Line extends Element {
         super(id, groupId)
         // TODO: check if both points are the same point
 
-        this.#pointA = pointA
+        this.#pointA = { ...pointA, elementId: pointA.elementId || this.id }
         if (pointB) {
-            this.#pointB = pointB
+            this.#pointB = { ...pointB, elementId: pointB.elementId || this.id }
             this.__updateDetails()
 
             if (midPointId) {
@@ -89,7 +88,7 @@ class Line extends Element {
 
     setPointB(x, y) {
         if (!this.#pointB) {
-            this.#pointB = createPoint(x, y)
+            this.#pointB = createPoint(x, y, { elementId: this.#pointA.elementId })
         } else {
             this.#pointB.x = x
             this.#pointB.y = y
@@ -111,7 +110,7 @@ class Line extends Element {
 
     setLastAttribute(pointX, pointY) {
         if (!this.#pointB) {
-            this.#pointB = createPoint(pointX, pointY)
+            this.#pointB = createPoint(pointX, pointY, { elementId: this.#pointA.elementId })
             this.__updateDetails()
             return
         }
@@ -170,11 +169,11 @@ class Line extends Element {
         }
 
         if (!this.#pointA) {
-            this.#pointA = definingPoint
+            this.#pointA = { ...definingPoint, elementId: definingPoint.elementId || this.id }
             return
         }
 
-        this.#pointB = definingPoint
+        this.#pointB = { ...definingPoint, elementId: definingPoint.elementId || this.id }
         this.__updateDetails()
     }
 
@@ -182,8 +181,8 @@ class Line extends Element {
         let nearestPoint = null
         if (this.isVertical || this.isHorizontal) {
             nearestPoint = this.isVertical
-                ? new Point(this.#pointA.x, point.y)
-                : new Point(point.x, this.#pointA.y)
+                ? createPoint(this.#pointA.x, point.y, { assignId: false })
+                : createPoint(point.x, this.#pointA.y, { assignId: false })
         } else {
             const { slope, intercept: lineIntercept } = this.equation
 
@@ -202,7 +201,7 @@ class Line extends Element {
             // // yi = m * x + b 
             // const intersectY = slope * intersectX + lineIntercept
 
-            nearestPoint = new Point(intersectX, intersectY)
+            nearestPoint = createPoint(intersectX, intersectY, { assignId: false })
         }
 
         if (!shouldUseLineExtension) {
@@ -214,11 +213,11 @@ class Line extends Element {
 
             // TODO: does not check if point lies on extension of line or is just really far away
             if (distanceFromStart > this.length) {
-                return { x: this.#pointB.x, y: this.#pointB.y }
+                return createPoint(this.#pointB.x, this.#pointB.y, { assignId: false })
             }
 
             if (distanceFromEnd > this.length) {
-                return { x: this.#pointA.x, y: this.#pointA.y }
+                return createPoint(this.#pointA.x, this.#pointA.y, { assignId: false })
             }
         }
 
@@ -315,6 +314,16 @@ class Line extends Element {
         this.#boundingBox.bottom += dY
     }
 
+    _setPointsElementId() {
+        const elementId = this.id
+
+        this.#pointA.elementId = elementId
+        if (this.#pointB) {
+            this.#pointB.elementId = elementId
+            this.#midPoint.elementId = elementId
+        }
+    }
+
     __updateDetails() {
         this.__updateMidPoint()
         this.__updateBoundingBox()
@@ -346,7 +355,11 @@ class Line extends Element {
         if (!this.#pointA || !this.#pointB) return
 
         if (!this.#midPoint) {
-            this.#midPoint = createPoint((this.#pointA.x + this.#pointB.x) / 2, (this.#pointA.y + this.#pointB.y) / 2)
+            this.#midPoint = createPoint(
+                (this.#pointA.x + this.#pointB.x) / 2, 
+                (this.#pointA.y + this.#pointB.y) / 2,
+                { assignId: true, elementId: this.#pointA.elementId }  
+            )
             return
         }
 

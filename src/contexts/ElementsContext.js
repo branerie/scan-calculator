@@ -9,8 +9,8 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/constants'
 import HashGridElementContainer from '../utils/elementContainers/hashGrid'
 import { findClosestIntersectPoint } from '../utils/intersections'
 
-const HASH_GRID_DIV_SIZE_X = 50
-const HASH_GRID_DIV_SIZE_Y = 25
+const HASH_GRID_DIV_SIZE_X = 80
+const HASH_GRID_DIV_SIZE_Y = 40
 
 
 const hashGrid = new HashGrid(
@@ -352,7 +352,7 @@ export default function ElementsContextProvider({ children }) {
             // TODO: which of the methods of the two states below do we need further down?
             // some names clash, such as elementsState.addElements with addElements here
 
-            elements: elementsUtils,
+            elements: { ...elementsUtils, getNextLineIntersection },
             points: {
                 findNearbyPoints,
             },
@@ -364,7 +364,8 @@ export default function ElementsContextProvider({ children }) {
                 replaceElements,
                 undo,
                 redo,
-            }
+            },
+            hashGrid
         }}>
             {children}
         </Context.Provider>

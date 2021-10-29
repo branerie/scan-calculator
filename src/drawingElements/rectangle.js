@@ -57,7 +57,13 @@ class Rectangle extends Polyline {
             firstLine,
             createLine(pointX, firstLine.pointA.y, pointX, pointY, { groupId: this.groupId, assignId: true }),
             createLine(pointX, pointY, firstLine.pointA.x, pointY, { groupId: this.groupId, assignId: true }),
-            createLine(firstLine.pointA.x, pointY, firstLine.pointA.x, firstLine.pointA.y, { groupId: this.groupId, assignId: true })
+            createLine(
+                firstLine.pointA.x, 
+                pointY, 
+                firstLine.pointA.x, 
+                firstLine.pointA.y, 
+                { groupId: this.groupId, assignId: true }
+            )
         ]
 
         this._updateBoundingBox()
