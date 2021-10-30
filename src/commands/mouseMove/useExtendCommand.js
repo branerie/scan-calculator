@@ -13,7 +13,6 @@ const useExtendCommand = () => {
             getElementsContainingPoint,
             getElementsInContainer,
             getElementById,
-            isEditingElement,
             clearReplacingElements,
             startReplacingElements,
         },
@@ -36,8 +35,8 @@ const useExtendCommand = () => {
         const mousePoint = { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) }
         
         let elementsToExtend = lastClick
-                                ? getElementsInContainer(lastClick, mousePoint, false, false) // return group or not?
-                                : getElementsContainingPoint(mouseX, mouseY, selectDelta, false) // return group or not?
+                                ? getElementsInContainer(lastClick, mousePoint, { shouldSkipPartial: false, returnGroup: 0 })
+                                : getElementsContainingPoint(mouseX, mouseY, { maxPointsDiff: selectDelta, returnGroup: 0 })
         
         if (!elementsToExtend) {
             return clearReplacingElements()

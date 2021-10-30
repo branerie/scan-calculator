@@ -35,8 +35,6 @@ const useSelectCommand = () => {
                     selectedPoints.push(point)
                     editedElements.push(editedElement)
 
-                    // TODO: 
-
                     // editedElement.isShown = false
                 }
             }
@@ -51,7 +49,12 @@ const useSelectCommand = () => {
             }
         }
 
-        const clickedElements = getElementsContainingPoint(clickedPoint.x, clickedPoint.y, selectDelta)
+        const clickedElements = getElementsContainingPoint(
+            clickedPoint.x, 
+            clickedPoint.y, 
+            { maxPointsDiff: selectDelta }
+        )
+
         if (!tool.clicks) {
             if (clickedElements) {
                 if (event.shiftKey) {
@@ -68,7 +71,12 @@ const useSelectCommand = () => {
         }
 
         const initialClick = tool.clicks[0]
-        const newlySelectedElements = getElementsInContainer(initialClick, clickedPoint, initialClick.x < clickedPoint.x)
+        const newlySelectedElements = getElementsInContainer(
+            initialClick, 
+            clickedPoint, 
+            { shouldSkipPartial: initialClick.x < clickedPoint.x }
+        )
+        
         if (newlySelectedElements) {
             if (event.shiftKey) {
                 removeSelectedElements(newlySelectedElements)

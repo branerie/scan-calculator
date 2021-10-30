@@ -2,11 +2,17 @@ import { useCallback, useReducer } from 'react'
 import { createElement, createPoint } from '../utils/elementFactory'
 import ElementIntersector from '../utils/elementIntersector'
 import ElementManipulator from '../utils/elementManipulator'
-import { findClosestIntersectPoint } from '../utils/intersections'
+
+const RETURN_GROUP_OPTS = {
+    INVIDIVUAL: 0,
+    MEMBERS: 1,
+    OWNER: 2
+}
 
 const elementsReducer = (state, action) => {
     switch (action.type) {
         case 'addElements': {
+            // should receive whole polylines
             const newStateElements = { ...state.elements }
             const newGroupedElements = {}
             action.newElements.forEach(newElement => {
@@ -25,14 +31,35 @@ const elementsReducer = (state, action) => {
             }
         }
         case 'changeElements': {
+            // should receive both individual polyline elements and whole polylines
             const newElements = { ...state.elements }
+            let newGroupedElements = null
             action.elementsAfterChange.forEach(eac => {
+                if (eac.groupId) {
+                    if (!newGroupedElements) {
+                        newGroupedElements = { ...state.groupedElements }
+                    }
+
+                    newGroupedElements[eac.id] = eac
+                } else if (eac.baseType === 'polyline') {
+                    if (!newGroupedElements) {
+                        newGroupedElements = { ...state.groupedElements }
+                    }
+
+                    eac.elements.forEach(e => newGroupedElements[e.id] = e)
+                }
+                
                 newElements[eac.id] = eac
             })
 
-            return { ...state, elements: newElements }
+            return { 
+                ...state, 
+                elements: newElements,
+                ...(newGroupedElements && { groupedElements: newGroupedElements }) 
+            }
         }
         case 'removeElements': {
+            // should receive whole polylines
             const { removedElements } = action
             const newElements = { ...state.elements }
             const { currentlyEditedElements } = state
@@ -79,16 +106,17 @@ const elementsReducer = (state, action) => {
 
             const newCurrentlyEditedElements = {}
             const newElements = { ...state.elements }
+
             for (const editedElement of editedElements) {
                 const editedElementCopy = shouldCopyElements 
                                             ? ElementManipulator.copyElement(editedElement, true)
                                             : editedElement
+    
+                newCurrentlyEditedElements[editedElement.id] = editedElementCopy
 
                 if (shouldHideOriginal) {
                     newElements[editedElement.id].isShown = false
                 }
-
-                newCurrentlyEditedElements[editedElement.id] = editedElementCopy
             }
 
             return { ...state, currentlyEditedElements: newCurrentlyEditedElements, elements: newElements }
@@ -121,11 +149,25 @@ const elementsReducer = (state, action) => {
             }
 
             const newElements = { ...state.elements }
+            const newGroupedElements = { ...state.groupedElements }
             for (const elementId of Object.keys(currentlyEditedElements)) {
-                newElements[elementId] = currentlyEditedElements[elementId]
+                const editedElement = currentlyEditedElements[elementId]
+                newElements[elementId] = editedElement
+
+                if (editedElement.baseType === 'polyline') {
+                    editedElement.elements.forEach(editedSubElement => {
+                        newGroupedElements[editedSubElement.id] = editedSubElement
+                    })
+                }
             }
 
-            return { ...state, elements: newElements, currentlyEditedElements: null, snappedPoint: null }
+            return { 
+                ...state, 
+                elements: newElements, 
+                groupedElements: newGroupedElements,
+                currentlyEditedElements: null, 
+                snappedPoint: null 
+            }
         }
         case 'startCopyingElements': {
             const { elementsToCopy } = action
@@ -355,36 +397,81 @@ const useElements = (elementsContainer) => {
         elementsContainer.changeElements(elementsAfterChange)
     }, [elementsContainer])
 
-    const getElementById = useCallback((elementId) => elementsState.elements[elementId], [elementsState.elements])
+    const getElementById = useCallback((elementId) => {
+        return elementsState.elements[elementId] || elementsState.groupedElements[elementId]
+    }, [elementsState.elements, elementsState.groupedElements])
 
-    const getElementsContainingPoint = useCallback((pointX, pointY, maxPointDiff, returnGroup = true) => {
+    const getElementsFromReturnGroupOptions = useCallback((originalElement, returnGroupOption) => {
+        if (!originalElement.groupId || returnGroupOption === RETURN_GROUP_OPTS.INVIDIVUAL) {
+            return [originalElement]
+        }
+
+        const groupOwner = getElementById(originalElement.groupId)
+        if (returnGroupOption === RETURN_GROUP_OPTS.OWNER) {
+            return [groupOwner]
+        }
+        
+        if (returnGroupOption === RETURN_GROUP_OPTS.MEMBERS) {
+            return groupOwner.elements
+        } else {
+            throw new Error('Invalid value for returnGroup parameter - ' + returnGroupOption)
+        }
+    }, [getElementById])
+
+    const getElementsContainingPoint = useCallback((
+            pointX, 
+            pointY, 
+            { maxPointDiff, returnGroup = RETURN_GROUP_OPTS.OWNER }
+        ) => {
+        /*
+        returnGroup:
+            0 - returns group members contained in point
+            1 - returns all group members 
+            2 - returns group owner (polyline)
+        */
         const elementIdsInDivision = elementsContainer.getElementsNearPoint(pointX, pointY)
         if (!elementIdsInDivision) return null
 
         const point = createPoint(pointX, pointY)
 
-        const elementsWithPoint = []
+        let elementsWithPoint = []
         for (const elementId of elementIdsInDivision) {
             const element = elementsState.elements[elementId] || elementsState.groupedElements[elementId]
-            if (element.checkIfPointOnElement(point, maxPointDiff)) {
-                const elementToAdd = (element.groupId && returnGroup) ? getElementById(element.groupId) : element
-                elementsWithPoint.push(elementToAdd)
-            }
+
+            if (!element.checkIfPointOnElement(point, maxPointDiff)) continue
+
+            const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
+            elementsWithPoint = elementsWithPoint.concat(elementsToAdd)
         }
 
         return elementsWithPoint.length > 0 ? elementsWithPoint : null
-    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementById])
+    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementsFromReturnGroupOptions])
 
-    const getElementsInContainer = useCallback((boxStartPoint, boxEndPoint, shouldSkipPartial = true, returnGroup = true) => {
+    const getElementsInContainer = useCallback((
+            boxStartPoint, 
+            boxEndPoint, 
+            { shouldSkipPartial = true, returnGroup = RETURN_GROUP_OPTS.OWNER }
+        ) => {
+        /*
+        returnGroup:
+            0 - returns group members contained in point
+            1 - returns all group members 
+            2 - returns group owner (polyline)
+        shouldSkipPartial: true if only elements completely contained within selection window should be returned
+        */
         const startPoint = { x: Math.min(boxStartPoint.x, boxEndPoint.x), y: Math.min(boxStartPoint.y, boxEndPoint.y) }
         const endPoint = { x: Math.max(boxStartPoint.x, boxEndPoint.x), y: Math.max(boxStartPoint.y, boxEndPoint.y) }
 
         const elementIds = elementsContainer.getElementsInContainer(startPoint, endPoint)
         if (!elementIds) return null
 
-        const elementsInContainer = []
+        let elementsInContainer = []
         for (const elementId of elementIds) {
-            const element = elementsState.elements[elementId] ||  elementsState.groupedElements[elementId]
+            let element = elementsState.elements[elementId] || elementsState.groupedElements[elementId]
+            if (element.groupId) {
+                element = elementsState.elements[element.groupId]
+            }
+
             const boundingBox = element.getBoundingBox()
 
             const isLeftInContainer = boundingBox.left >= startPoint.x
@@ -393,8 +480,8 @@ const useElements = (elementsContainer) => {
             const isBottomInContainer = boundingBox.bottom <= endPoint.y
 
             if (isLeftInContainer && isTopInContainer && isRightInContainer && isBottomInContainer) {
-                const elementToAdd = (element.groupId && returnGroup) ? getElementById(element.groupId) : element
-                elementsInContainer.push(elementToAdd)
+                const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
+                elementsInContainer = elementsInContainer.concat(elementsToAdd)
                 continue
             }
 
@@ -404,13 +491,13 @@ const useElements = (elementsContainer) => {
             container.setLastAttribute(endPoint.x, endPoint.y)
             const intersections = ElementIntersector.getIntersections(element, container)
             if (intersections) {
-                const elementToAdd = (element.groupId && returnGroup) ? getElementById(element.groupId) : element
-                elementsInContainer.push(elementToAdd)
+                const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
+                elementsInContainer = elementsInContainer.concat(elementsToAdd)
             }
         }
 
         return elementsInContainer.length > 0 ? elementsInContainer : null
-    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementById])
+    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementsFromReturnGroupOptions])
 
     const addCurrentlyCreatedElement = (createdElement) =>
             elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })

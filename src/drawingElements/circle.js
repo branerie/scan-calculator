@@ -145,11 +145,11 @@ class Circle extends BaseArc {
         newCenterPoint.elementId = elementId
         this.__setCenterPoint(newCenterPoint)
 
-        if (this.#endPoints) {
-            for (const endPoint of this.#endPoints) {
-                endPoint.elementId = elementId
-            }
-        }
+        if (!this.#endPoints) return
+        
+        for (const endPoint of this.#endPoints) {
+            endPoint.elementId = elementId
+        }        
     }
 
     __setDetails() {
