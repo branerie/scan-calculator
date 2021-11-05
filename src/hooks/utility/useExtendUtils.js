@@ -5,6 +5,7 @@ import { pointsMatch } from '../../utils/point'
 const useExtendUtils = () => {
     const {
         elements: {
+            getNextArcIntersection,
             getNextLineIntersection
         }
     } = useElementsContext()
@@ -39,7 +40,12 @@ const useExtendUtils = () => {
             return extendPoint
         }
 
-        // TODO: arc
+        if (element.type === 'arc') {
+            const extendPoint = getNextArcIntersection(element, {
+                shouldExtendFromStart: tryFromStart,
+                shouldCheckPointsLocality: false
+            })
+        }
     }
 
     return {

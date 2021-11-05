@@ -1,10 +1,11 @@
 import { MAX_NUM_ERROR } from '../constants'
-import { createPoint } from '../elementFactory'
+import { createElement, createPoint } from '../elementFactory'
 import { getDimensionDivision1d } from '../hashGrid/utils'
 import { getLineX, getLineY } from '../line'
 import { getPointDistance, pointsMatch } from '../point'
 import PriorityQueue from '../../utils/priorityQueue'
 import { getNextInterceptPoint } from './gridUtils'
+import getArcDivKeys from '../hashGrid/extensions/arc'
 
 class HashGridElementContainer {
     #hashGrid
@@ -64,47 +65,6 @@ class HashGridElementContainer {
         const linePointsYDiff = line.startPoint.y - line.endPoint.y
         const yDivsGoingDown = (fromStart && linePointsYDiff < 0) ||
             (!fromStart && linePointsYDiff > 0)
-
-        // function* getNextInterceptPoint({
-        //     line
-
-        // }) {
-        //     const { slope, intercept } = line.equation
-        //     const xDiv = getDimensionDivision1d(pointOfExtend.x, this.#hashGrid.startPosX, this.#hashGrid.divSizeX)
-        //     const yDiv = getDimensionDivision1d(pointOfExtend.y, this.#hashGrid.startPosY, this.#hashGrid.divSizeY)
-        //     const { minXDiv, maxXDiv, minYDiv, maxYDiv } = this.#hashGrid.range
-        //     if (slope === 0) {
-        //         // line is horizontal
-        //         const xDivStep = xDivsGoingDown ? -1 : 1
-        //         let currentXDiv = xDivsGoingDown ? xDiv : xDiv + xDivStep
-        //         while (currentXDiv >= minXDiv && currentXDiv <= maxXDiv) {
-        //             const currentXCoordinate = currentXDiv * this.#hashGrid.divSizeX
-        //             const yInterceptCoordinate = getLineY(slope, intercept, currentXCoordinate)
-        //             yield createPoint(currentXCoordinate, yInterceptCoordinate)
-
-        //             currentXDiv += xDivStep
-        //         }
-
-        //         return null
-        //     }
-
-        //     if (Number.isNaN(slope)) {
-        //         // line is vertical
-        //         const yDivStep = yDivsGoingDown ? -1 : 1
-        //         let currentYDiv = yDivsGoingDown ? yDiv : yDiv + yDivStep
-        //         while (currentYDiv >= minYDiv && currentYDiv <= maxYDiv) {
-        //             const currentYCoordinate = currentYDiv * this.#hashGrid.divSizeY
-        //             const xInterceptCoordinate = getLineX(slope, intercept, currentYCoordinate)
-        //             yield createPoint(xInterceptCoordinate, currentYCoordinate)
-
-        //             currentYDiv += yDivStep
-        //         }
-
-        //         return null
-        //     }
-
-        //     // TODO: finish function for non-vertical an non-horizontal line
-        // }
     
         const xDiv = getDimensionDivision1d(pointOfExtend.x, this.#hashGrid.startPosX, this.#hashGrid.divSizeX)
         const yDiv = getDimensionDivision1d(pointOfExtend.y, this.#hashGrid.startPosY, this.#hashGrid.divSizeY)
@@ -199,6 +159,25 @@ class HashGridElementContainer {
         }
     
         return null
+    }
+
+    *getNextElementsInArcDirection(arc, fromStart) {
+        const pointOfExtend = fromStart ? arc.startPoint : arc.endPoint
+
+        const contents = this.#hashGrid.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y)
+                                       .filter(eid => eid !== arc.id)
+        yield {
+            divContents: contents,
+            checkIfPointInSameDiv: (function(point) {
+                return this.checkIfPointInDivision(
+                    point, 
+                    this.#hashGrid.getPointDivision(pointOfExtend)
+                )
+            }).bind(this)
+        }
+        
+        const arcExtension = createElement('arc', )
+        const divKeys = getArcDivKeys(arc)
     }
 
     __getDivTransitionFromPoint(point, { lastDivision, xDivsGoingDown, yDivsGoingDown }) {

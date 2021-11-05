@@ -321,21 +321,20 @@ export default function ElementsContextProvider({ children }) {
         })
     }, [actionHistory.length, historyPointer, updateElementsFromHistory])
 
-    const getNextLineIntersection = useCallback((
-        line, 
+    const getNextElementIntersection = useCallback((
+        element,
+        nextElementsGen,
         { shouldExtendFromStart, shouldCheckPointsLocality }
     ) => {
-        const nextElementsGen = elementsContainer.getNextElementsInLineDirection(line, shouldExtendFromStart)
-
         for (const nextResults of nextElementsGen) {
             if (!nextResults || nextResults.divContents.length === 0) continue
 
-            const { divContents: elementIds, checkIfPointInSameDiv } = nextResults
+            const { divContents: nearbyElementIds, checkIfPointInSameDiv } = nextResults
     
             const elements = []
-            for (const elementId of elementIds) {
-                const element = getElementById(elementId)
-                if (selectUtils.selectedElements && !hasSelectedElement(element)) {
+            for (const nearbyElementId of nearbyElementIds) {
+                const nearbyElement = getElementById(nearbyElementId)
+                if (selectUtils.selectedElements && !hasSelectedElement(nearbyElement)) {
                     continue
                 }
     
@@ -343,7 +342,7 @@ export default function ElementsContextProvider({ children }) {
             }
     
             const nextIntersectPoint = findClosestIntersectPoint({
-                element: line, 
+                element, 
                 elementsToIntersect: elements,
                 fromStart: shouldExtendFromStart,
                 checkIntersectionLocality: shouldCheckPointsLocality 
@@ -362,12 +361,42 @@ export default function ElementsContextProvider({ children }) {
         return null
     }, [getElementById, hasSelectedElement, selectUtils.selectedElements])
 
+    const getNextLineIntersection = useCallback((
+        line, 
+        { shouldExtendFromStart, shouldCheckPointsLocality }
+    ) => {
+        const nextElementsGen = elementsContainer.getNextElementsInLineDirection(line, shouldExtendFromStart)
+
+        return getNextElementIntersection(
+            line, 
+            nextElementsGen, 
+            { shouldExtendFromStart, shouldCheckPointsLocality }
+        )
+    }, [getNextElementIntersection])
+
+    const getNextArcIntersection = useCallback((
+        arc,
+        { shouldExtendFromStart, shouldCheckPointsLocality }
+    ) => {
+        const nextElementsGen = elementsContainer.getNextElementsInArcDirection(arc, shouldExtendFromStart)
+
+        return getNextElementIntersection(
+            arc,
+            nextElementsGen, 
+            { shouldExtendFromStart, shouldCheckPointsLocality }
+        )
+    }, [getNextElementIntersection])
+
     return (
         <Context.Provider value={{
             // TODO: which of the methods of the two states below do we need further down?
             // some names clash, such as elementsState.addElements with addElements here
 
-            elements: { ...elementsUtils, getNextLineIntersection },
+            elements: { 
+                ...elementsUtils, 
+                getNextArcIntersection,
+                getNextLineIntersection 
+            },
             points: {
                 findNearbyPoints,
             },
