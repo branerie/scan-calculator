@@ -1,11 +1,12 @@
 import { MAX_NUM_ERROR } from '../constants'
 import { createElement, createPoint } from '../elementFactory'
-import { getDimensionDivision1d } from '../hashGrid/utils'
+import { getDimensionDivision1d, parseDivKey } from '../hashGrid/utils'
 import { getLineX, getLineY } from '../line'
 import { getPointDistance, pointsMatch } from '../point'
 import PriorityQueue from '../../utils/priorityQueue'
 import { getNextInterceptPoint } from './gridUtils'
 import getArcDivKeys from '../hashGrid/extensions/arc'
+import ElementManipulator from '../elementManipulator'
 
 class HashGridElementContainer {
     #hashGrid
@@ -176,8 +177,47 @@ class HashGridElementContainer {
             }).bind(this)
         }
         
-        const arcExtension = createElement('arc', )
-        const divKeys = getArcDivKeys(arc)
+        const arcExtension = ElementManipulator.copyArc(arc, false)
+        const newStartPoint = arcExtension.endPoint
+        const newEndPoint = arcExtension.startPoint
+
+        arcExtension.startPoint = newStartPoint
+        arcExtension.endPoint = newEndPoint        
+
+        const extensionDivKeys = getArcDivKeys(arcExtension)
+        const pointOfExtendDiv = this.#hashGrid.getPointDivision(pointOfExtend)
+        const divQueue = new PriorityQueue((divKeyA, divKeyB) => {
+            const [divAX, divAY] = parseDivKey(divKeyA)
+            const [divBX, divBY] = parseDivKey(divKeyB)
+
+            const keyAMinCoordinateDiff = Math.min(
+                Math.abs(pointOfExtendDiv[0] - divAX),
+                Math.abs(pointOfExtendDiv[1] - divAY)
+            )
+
+            const keyBMinCoordinateDiff = Math.min(
+                Math.abs(pointOfExtendDiv[0] - divBX),
+                Math.abs(pointOfExtendDiv[1] - divBY)
+            )
+
+            return keyAMinCoordinateDiff < keyBMinCoordinateDiff
+        })
+
+        for (const extensionDivKey of extensionDivKeys) {
+            divQueue.push(extensionDivKey)
+        }
+
+        while (divQueue.size > 0) {
+            const nextDiv = divQueue.pop()
+            const divContents = this.#hashGrid.getDivisionContents(nextDiv[0], nextDiv[1])
+
+            yield {
+                divContents: divContents || [],
+                checkIfPointInSameDiv: (function(point) {
+                    return this.checkIfPointInDivision(point, nextDiv)
+                }).bind(this)
+            }
+        }
     }
 
     __getDivTransitionFromPoint(point, { lastDivision, xDivsGoingDown, yDivsGoingDown }) {
