@@ -55,7 +55,6 @@ export default function ElementsContextProvider({ children }) {
     } = selectUtils
 
     const {
-        selectedElements,
         addSelectionPoints,
         removeSelectionPoints,
         replaceSelectionPoints,
@@ -65,7 +64,7 @@ export default function ElementsContextProvider({ children }) {
     const updateHistoryEvents = useCallback((newEvent) => {
         let newActionHistory = actionHistory
         if (historyPointer !== null) {
-            newActionHistory = actionHistory.slice(0, historyPointer + 1)
+            newActionHistory = actionHistory.slice(0, historyPointer)
             setHistoryPointer(null)
         }
 
@@ -207,6 +206,10 @@ export default function ElementsContextProvider({ children }) {
 
     const updateElementsFromHistory = useCallback((lastEventIndex, isUndo) => {
         const lastHistoryEvent = actionHistory[lastEventIndex]
+        if (!lastHistoryEvent) {
+            return
+        }
+
         let updateOperation = lastHistoryEvent.action
 
         // Undoing an added element means removing it, while undoing a delete command means adding an element.
@@ -318,34 +321,46 @@ export default function ElementsContextProvider({ children }) {
         })
     }, [actionHistory.length, historyPointer, updateElementsFromHistory])
 
-    const getNextLineIntersection = useCallback((line, shouldExtendFromStart) => {
+    const getNextLineIntersection = useCallback((
+        line, 
+        { shouldExtendFromStart, shouldCheckPointsLocality }
+    ) => {
         const nextElementsGen = elementsContainer.getNextElementsInLineDirection(line, shouldExtendFromStart)
 
-        let divContentsResult = nextElementsGen.next()
-        while (!divContentsResult.done) {
-            const elementIds = divContentsResult.value
-            divContentsResult = nextElementsGen.next()
+        for (const nextResults of nextElementsGen) {
+            if (!nextResults || nextResults.divContents.length === 0) continue
 
-            if (!elementIds || elementIds.length === 0) continue
-
+            const { divContents: elementIds, checkIfPointInSameDiv } = nextResults
+    
             const elements = []
             for (const elementId of elementIds) {
                 const element = getElementById(elementId)
-                if (selectedElements && !hasSelectedElement(element)) {
+                if (selectUtils.selectedElements && !hasSelectedElement(element)) {
                     continue
                 }
-
+    
                 elements.push(element)
             }
+    
+            const nextIntersectPoint = findClosestIntersectPoint({
+                element: line, 
+                elementsToIntersect: elements,
+                fromStart: shouldExtendFromStart,
+                checkIntersectionLocality: shouldCheckPointsLocality 
+                                            ? elementsContainer.checkPointsLocality.bind(elementsContainer)
+                                            : null,
+                excludeExistingIntersections: true
+            })
 
-            const nextIntersectPoint = findClosestIntersectPoint(line, elements, shouldExtendFromStart, true)
-            if (nextIntersectPoint) {
-                return nextIntersectPoint
+            if (!nextIntersectPoint || !checkIfPointInSameDiv(nextIntersectPoint)) {
+                continue
             }
+
+            return nextIntersectPoint
         }
 
         return null
-    }, [getElementById, hasSelectedElement, selectedElements])
+    }, [getElementById, hasSelectedElement, selectUtils.selectedElements])
 
     return (
         <Context.Provider value={{

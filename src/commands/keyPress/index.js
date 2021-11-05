@@ -24,7 +24,7 @@ const useKeyPressCommands = () => {
     const { tool } = useToolsContext()
 
     const executeKeyPressCommand = useCallback((event) => {
-        if ((event.metaKey || event.ctrlKey) && (event.key === 'z' || event.key === 'y') && tool.type === 'select') {
+        if ((event.metaKey || event.ctrlKey) && (event.key === 'z' || event.key === 'y')) {
             commands.undoRedo(event)
             return
         }

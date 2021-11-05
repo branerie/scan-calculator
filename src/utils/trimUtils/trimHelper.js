@@ -17,6 +17,7 @@ const updateTrimmedSections = (trimmedSections, newSection, isSectionTrimmed) =>
 
         if (pointsMatch(lastSection.end, newSection.end)) {
             sectionsOfType[sectionsOfType.length - 1].end = newSection.start
+            return
         }
 
         sectionsOfType.push(newSection)
@@ -49,6 +50,7 @@ const getSectionKey = (startPoint, endPoint) =>
 
 const getSectionKeyStart = (startPoint) => `${startPoint.x.toFixed(3)},${startPoint.y.toFixed(3)}`
 
+
 const splitIntoRemainingRemovedSections = (
     sectionStartPoint,
     sectionEndPoint,
@@ -60,7 +62,7 @@ const splitIntoRemainingRemovedSections = (
     distFunc,
     endPoint
 ) => {
-    let sectionsPostTrim = {}
+    const sectionsPostTrim = {}
     while (trimPointsQueue.size >= 0) {
         const isSectionTrimmed = getSectionFate(
             selectIntersections,

@@ -248,7 +248,8 @@ const elementsReducer = (state, action) => {
                         }
                     }
                 } else {
-                    newElements[replacedId].isShown = false
+                    const oldElement = (newElements[replacedId] || newElements[newGroupedElements[replacedId].groupId])
+                    oldElement.isShown = false
                 }
                 
                 for (const replacingElement of replacingElements) {
@@ -280,7 +281,12 @@ const elementsReducer = (state, action) => {
 
             const newElements = { ...state.elements }
             for (const replacedId of Object.keys(currentReplacements)) {
-                newElements[replacedId].isShown = true
+                const replacedParentElement = (
+                    newElements[replacedId] || 
+                    newElements[state.groupedElements[replacedId].groupId]
+                )
+
+                replacedParentElement.isShown = true
 
                 const replacingElements = currentReplacements[replacedId].replacingElements
                 for (const replacingElement of replacingElements) {
@@ -421,7 +427,7 @@ const useElements = (elementsContainer) => {
     const getElementsContainingPoint = useCallback((
             pointX, 
             pointY, 
-            { maxPointDiff, returnGroup = RETURN_GROUP_OPTS.OWNER }
+            { maxPointsDiff, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}
         ) => {
         /*
         returnGroup:
@@ -436,21 +442,21 @@ const useElements = (elementsContainer) => {
 
         let elementsWithPoint = []
         for (const elementId of elementIdsInDivision) {
-            const element = elementsState.elements[elementId] || elementsState.groupedElements[elementId]
+            const element = getElementById(elementId)
 
-            if (!element.checkIfPointOnElement(point, maxPointDiff)) continue
+            if (!element.checkIfPointOnElement(point, maxPointsDiff)) continue
 
             const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
             elementsWithPoint = elementsWithPoint.concat(elementsToAdd)
         }
 
         return elementsWithPoint.length > 0 ? elementsWithPoint : null
-    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementsFromReturnGroupOptions])
+    }, [elementsContainer, getElementById, getElementsFromReturnGroupOptions])
 
     const getElementsInContainer = useCallback((
             boxStartPoint, 
             boxEndPoint, 
-            { shouldSkipPartial = true, returnGroup = RETURN_GROUP_OPTS.OWNER }
+            { shouldSkipPartial = true, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}
         ) => {
         /*
         returnGroup:
@@ -467,10 +473,7 @@ const useElements = (elementsContainer) => {
 
         let elementsInContainer = []
         for (const elementId of elementIds) {
-            let element = elementsState.elements[elementId] || elementsState.groupedElements[elementId]
-            if (element.groupId) {
-                element = elementsState.elements[element.groupId]
-            }
+            const element = getElementById(elementId)
 
             const boundingBox = element.getBoundingBox()
 
@@ -497,6 +500,30 @@ const useElements = (elementsContainer) => {
         }
 
         return elementsInContainer.length > 0 ? elementsInContainer : null
+    }, [elementsContainer, getElementById, getElementsFromReturnGroupOptions])
+
+    const getElementsNearElement = useCallback((
+        element, 
+        { skipSiblings = true, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}) => {
+        const nearbyElementIds = elementsContainer.getElementIdsNearElement(element)
+
+        let elements = []
+        for (const elementId of nearbyElementIds) {
+            const nearbyElement = elementsState.elements[elementId] || elementsState.groupedElements[elementId]
+            if (
+                skipSiblings && 
+                nearbyElement.groupId && 
+                nearbyElement.groupId === element.groupId
+            ) {
+                continue
+            }
+
+            const elementsToAdd = getElementsFromReturnGroupOptions(nearbyElement, returnGroup)
+
+            elements = elements.concat(elementsToAdd)
+        }
+
+        return elements
     }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementsFromReturnGroupOptions])
 
     const addCurrentlyCreatedElement = (createdElement) =>
@@ -587,12 +614,14 @@ const useElements = (elementsContainer) => {
 
     const isReplacingElement = (element) => {
         const { currentlyReplacedElements } = elementsState
-        if (!currentlyReplacedElements || !currentlyReplacedElements.replacingElements) return false
+        if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return false
 
-        const { replacingElements } = currentlyReplacedElements
+        const { currentReplacements } = currentlyReplacedElements
 
-        // TODO: replacedIds - move away from array implementation?
-        return replacingElements.some(id => id === element.id)
+
+
+        // TODO: Change replacement logic to avoid nested looping
+        return Object.values(currentReplacements).some(cr => cr.replacingElements.some(re => re.id === element.id))
     }
 
     const setSnappedPoint = (snappedPoint) => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
@@ -634,7 +663,8 @@ const useElements = (elementsContainer) => {
         setSnappedPoint,
         clearSnappedPoint,
         getElementsContainingPoint,
-        getElementsInContainer
+        getElementsInContainer,
+        getElementsNearElement
     }
 }
 

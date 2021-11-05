@@ -39,7 +39,9 @@ const Canvas = () => {
         tool,
         setTool,
         zoomView,
-        setMouseDrag
+        setMouseDrag,
+        ACCEPTED_TOOL_KEYS,
+        setToolKeys,
     } = useToolsContext()
 
     const { 
@@ -169,7 +171,6 @@ const Canvas = () => {
                 return
         }
     }
-
     const changeTool = (tool) => {
         if (currentlyCreatedElement) {
             removeCurrentlyCreatedElement()
@@ -201,7 +202,6 @@ const Canvas = () => {
                 onMouseDown={handleMouseDown}
                 onWheel={handleMouseWheel}
                 onMouseMove={executeMouseMoveCommand}
-
             // onMouseDown={handleMouseDown}
             // onMouseUp={handleMouseUp}
             >

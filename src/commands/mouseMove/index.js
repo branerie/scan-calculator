@@ -70,7 +70,12 @@ const useMouseMoveCommands = () => {
         const realMousePosition = { mouseX: realClientX, mouseY: realClientY }
 
         if (tool.type === 'trim') {
-            if (tool.name === 'trim') {
+            let isTrim = tool.name === 'trim'
+            if (event.shiftKey) {
+                isTrim = !isTrim
+            }
+
+            if (isTrim) {
                 commands.trim(realMousePosition)
             } else {
                 commands.extend(realMousePosition)

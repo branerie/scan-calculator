@@ -32,8 +32,8 @@ const useTrimCommand = () => {
         const mousePoint = { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) }
         
         let elementsToTrim = lastClick
-                                ? getElementsInContainer(lastClick, mousePoint, { shouldSkipPartial: false, returnGroup: 0})
-                                : getElementsContainingPoint(mouseX, mouseY, { maxPointsDiff: selectDelta, returnGroup: 0 })
+                                ? getElementsInContainer(lastClick, mousePoint, { shouldSkipPartial: false, returnGroup: 2 })
+                                : getElementsContainingPoint(mouseX, mouseY, { maxPointsDiff: selectDelta, returnGroup: 2 })
         
         if (!elementsToTrim) {
             return clearReplacingElements()

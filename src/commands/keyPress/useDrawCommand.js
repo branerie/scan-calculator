@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useElementsContext } from '../../contexts/ElementsContext'
 import { useToolsContext } from '../../contexts/ToolsContext'
 
-const useEnterCommand = () => {
+const useDrawCommand = () => {
     const {
         elements: {
             currentlyCreatedElement,
@@ -36,4 +36,4 @@ const useEnterCommand = () => {
     return handleEnterCmd
 }
 
-export default useEnterCommand
+export default useDrawCommand

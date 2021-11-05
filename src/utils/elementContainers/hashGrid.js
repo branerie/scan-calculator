@@ -2,8 +2,9 @@ import { MAX_NUM_ERROR } from '../constants'
 import { createPoint } from '../elementFactory'
 import { getDimensionDivision1d } from '../hashGrid/utils'
 import { getLineX, getLineY } from '../line'
-import { getPointDistance } from '../point'
+import { getPointDistance, pointsMatch } from '../point'
 import PriorityQueue from '../../utils/priorityQueue'
+import { getNextInterceptPoint } from './gridUtils'
 
 class HashGridElementContainer {
     #hashGrid
@@ -20,11 +21,41 @@ class HashGridElementContainer {
 
     getElementsInContainer(firstContainerPoint, secondContainerPoint) {
         return this.#hashGrid.getContainerContents(firstContainerPoint, secondContainerPoint)
-    }    
+    }
+
+    getElementIdsNearElement(element) {
+        return this.#hashGrid.getElementIdsNearElement(element)
+    }
+
+    checkPointsLocality(pointA, pointB) {
+        // returns true if both points are in the same hash grid division, false otherwise
+        const pointADivision = this.#hashGrid.getPointDivision(pointA)
+        const pointBDivision = this.#hashGrid.getPointDivision(pointB)
+
+        return pointADivision[0] === pointBDivision[0] &&
+               pointADivision[1] === pointBDivision[1]
+    }
+
+    checkIfPointInDivision(point, division) {
+        const pointDivision = this.#hashGrid.getPointDivision(point)
+        return division[0] === pointDivision[0] &&
+               division[1] === pointDivision[1]
+    }
 
     *getNextElementsInLineDirection(line, fromStart) {   
         const pointOfExtend = fromStart ? line.startPoint : line.endPoint
-        yield this.#hashGrid.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y).filter(eid => eid !== line.id)
+        const contents = this.#hashGrid.getDivisionContentsFromCoordinates(pointOfExtend.x, pointOfExtend.y)
+                                       .filter(eid => eid !== line.id)
+
+        yield {
+            divContents: contents,
+            checkIfPointInSameDiv: (function(point) {
+                return this.checkIfPointInDivision(
+                    point, 
+                    this.#hashGrid.getPointDivision(pointOfExtend)
+                )
+            }).bind(this)
+        }
         
         const linePointsXDiff = line.startPoint.x - line.endPoint.x
         const xDivsGoingDown = (fromStart && linePointsXDiff < 0) ||
@@ -75,43 +106,6 @@ class HashGridElementContainer {
         //     // TODO: finish function for non-vertical an non-horizontal line
         // }
     
-        function* getNextInterceptPoint({
-            slope, 
-            intercept, 
-            currentDiv,
-            linePointsDiff, 
-            minDiv, 
-            maxDiv, 
-            divSize, 
-            getSecondaryDimensionIntercept, 
-            isDivsGoingDown, 
-            isHorizontal
-        }) {
-            if (linePointsDiff === 0) return null
-    
-            if (isDivsGoingDown) {
-                for (let divNum = currentDiv; divNum > minDiv; divNum--) {
-                    const currentDivCoordinate = divNum * divSize
-                    const secondaryDimCoordinate = getSecondaryDimensionIntercept(slope, intercept, currentDivCoordinate)
-    
-                    yield isHorizontal 
-                            ? createPoint(currentDivCoordinate, secondaryDimCoordinate) 
-                            : createPoint(secondaryDimCoordinate, currentDivCoordinate)
-                }
-            } else {
-                for (let divNum = currentDiv; divNum < maxDiv; divNum++) {
-                    const currentDivCoordinate = divNum * divSize
-                    const secondaryDimCoordinate = getSecondaryDimensionIntercept(slope, intercept, currentDivCoordinate)
-    
-                    yield isHorizontal 
-                            ? createPoint(currentDivCoordinate, secondaryDimCoordinate) 
-                            : createPoint(secondaryDimCoordinate, currentDivCoordinate)
-                }
-            }
-    
-            return null
-        }
-    
         const xDiv = getDimensionDivision1d(pointOfExtend.x, this.#hashGrid.startPosX, this.#hashGrid.divSizeX)
         const yDiv = getDimensionDivision1d(pointOfExtend.y, this.#hashGrid.startPosY, this.#hashGrid.divSizeY)
     
@@ -129,6 +123,7 @@ class HashGridElementContainer {
             isDivsGoingDown: xDivsGoingDown,
             isHorizontal: true
         })
+
         const yDivInterceptGen = getNextInterceptPoint({
             slope, 
             intercept, 
@@ -162,13 +157,34 @@ class HashGridElementContainer {
         let lastDivision = { xDiv, yDiv }
         while (queue.size > 0) {
             const interceptPoint = queue.pop()
-            const nextDivision = this.__getDivTransitionFromPoint(interceptPoint, lastDivision, xDivsGoingDown, yDivsGoingDown)
-            if (!nextDivision) {
-                throw new Error(`Invalid line intercept point. The point ${interceptPoint.x}, ${interceptPoint.y} does not
-                intercept with the hash grid`)
+
+            if (interceptPoint) {
+                const nextDivision = this.__getDivTransitionFromPoint(
+                    interceptPoint, { 
+                        lastDivision, 
+                        xDivsGoingDown, 
+                        yDivsGoingDown
+                    }
+                )
+
+                console.log(nextDivision)
+
+                if (!nextDivision) {
+                    throw new Error(`Invalid line intercept point. The point ${interceptPoint.x}, ${interceptPoint.y} does not
+                    intercept with the hash grid`)
+                }
+
+                const divContents = this.#hashGrid.getDivisionContents(nextDivision.xDiv, nextDivision.yDiv)
+        
+                yield {
+                    divContents: divContents || [],
+                    checkIfPointInSameDiv: (function(point) {
+                        return this.checkIfPointInDivision(point, [nextDivision.xDiv, nextDivision.yDiv])
+                    }).bind(this)
+                }
+
+                lastDivision = nextDivision
             }
-    
-            yield this.#hashGrid.getDivisionContents(nextDivision.xDiv, nextDivision.yDiv)
     
             // prepare for next round(s) of loop
             const nextXDivIntercept = xDivInterceptGen.next().value
@@ -180,14 +196,12 @@ class HashGridElementContainer {
             if (nextYDivIntercept) {
                 queue.push(nextYDivIntercept)
             }
-    
-            lastDivision = nextDivision
         }
     
         return null
     }
 
-    __getDivTransitionFromPoint(point, lastDivision, xDivsGoingDown, yDivsGoingDown) {
+    __getDivTransitionFromPoint(point, { lastDivision, xDivsGoingDown, yDivsGoingDown }) {
         const interceptsHorizontalBorder = 
                 Math.abs(point.x % this.#hashGrid.divSizeX) < MAX_NUM_ERROR
         const interceptsVerticalBorder = 

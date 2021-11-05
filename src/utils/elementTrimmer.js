@@ -3,11 +3,11 @@ import { pointsMatch } from './point'
 import { capitalize } from './text'
 import {
     assemblePointDistancesAndSubsections,
-    createSubsection,
     fixJoinedSections,
     fixJoinedPointDistances,
     getDistFunc,
-    getTrimSections
+    getTrimSections,
+    joinTrimEndSubsections
 } from './trimUtils/trim'
 
 class ElementTrimmer {
@@ -19,7 +19,7 @@ class ElementTrimmer {
             )
         }
 
-        const capitalizedElementType = capitalize(element.baseType)
+        const capitalizedElementType = capitalize(element.type)
         const methodName = `trim${capitalizedElementType}`
 
         return ElementTrimmer[methodName](element, trimPoints, selectPoints)
@@ -73,19 +73,9 @@ class ElementTrimmer {
             startPoint
         )
 
-        if (trimSections && trimSections.remaining.length > 1) {
-            const firstRemaining = trimSections.remaining[0]
-            const lastRemaining = trimSections.remaining[trimSections.remaining.length - 1]
-
-            if (pointsMatch(firstRemaining.startPoint, lastRemaining.endPoint)) {
-                trimSections.remaining = trimSections.remaining.slice(1, trimSections.length - 1)
-                const joinedSection = createSubsection(
-                    element,
-                    lastRemaining.startPoint,
-                    firstRemaining.endPoint
-                )
-                trimSections.remaining.push(joinedSection)
-            }
+        if (trimSections) {
+            trimSections.remaining = joinTrimEndSubsections(trimSections.remaining, element)
+            trimSections.removed = joinTrimEndSubsections(trimSections.removed, element)
         }
 
         return trimSections
@@ -123,6 +113,10 @@ class ElementTrimmer {
             endPoint = fixJoinedPointDistances(element, pointDistances, lastTrimPoint)
             startPoint = lastTrimPoint
             trimPoints.pop()
+
+            if (trimPoints.length === 0) {
+                return null
+            }
         } else {
             startPoint = element.startPoint
             endPoint = element.endPoint
@@ -139,6 +133,10 @@ class ElementTrimmer {
         )
 
         return trimSections
+    }
+
+    static trimRectangle(element, trimPointsByElement, selectPoints) {
+        return ElementTrimmer.trimPolyline(element, trimPointsByElement, selectPoints)
     }
 }
 

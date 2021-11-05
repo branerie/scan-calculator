@@ -31,7 +31,11 @@ const useExtendUtils = () => {
         }
 
         if (element.baseType === 'line') {
-            const extendPoint = getNextLineIntersection(element, tryFromStart)
+            const extendPoint = getNextLineIntersection(element, { 
+                shouldExtendFromStart: tryFromStart, 
+                shouldCheckPointsLocality: false 
+            })
+
             return extendPoint
         }
 

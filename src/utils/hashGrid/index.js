@@ -159,6 +159,37 @@ class HashGrid {
         return null
     }
 
+    getElementIdsNearElement(element) {
+        if (element.baseType === 'polyline') {
+            const subElementsNearbyElementIds = element.elements.map(subElement => {
+                return this.getElementIdsNearElement(subElement)
+            })
+
+            return SetUtils.union(...subElementsNearbyElementIds)
+        }
+
+        let elementDivs = this.#divsById[element.id]
+
+        let nearbyElementIds = new Set()
+        for (const elementDiv of elementDivs) {
+            nearbyElementIds = SetUtils.union(nearbyElementIds, this.#idsByDiv[elementDiv])
+        }
+
+        const deletedIdResult = nearbyElementIds.delete(element.id)
+        if (!deletedIdResult) {
+            throw new Error('Hash Grid not working correctly - discrepancy between idsByDiv and divsById')
+        }
+
+        return nearbyElementIds
+    }
+
+    getPointDivision(point) {
+        return [
+            getDimensionDivision1d(point.x, this.startPosX, this.divSizeX),
+            getDimensionDivision1d(point.y, this.startPosY, this.divSizeY),
+        ]
+    }
+
     // __updateHashGridDivs(leftDiv, topDiv, rightDiv, bottomDiv) {
     //     const leftDiff = this.#minDivIndexX - leftDiv
     //     if (leftDiff > 0) {

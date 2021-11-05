@@ -17,6 +17,9 @@ const useEscapeCommand = () => {
             selectedElements,
             clearSelection,
             clearSelectedPoints
+        },
+        history: {
+            addElements
         }
     } = useElementsContext() 
 
@@ -26,6 +29,8 @@ const useEscapeCommand = () => {
         if (currentlyCreatedElement) {
             if (currentlyCreatedElement.type === 'polyline' && currentlyCreatedElement.elements.length > 1) {
                 currentlyCreatedElement.elements.pop()
+                addElements([currentlyCreatedElement])
+                resetTool()
     
                 return
             }
@@ -45,7 +50,8 @@ const useEscapeCommand = () => {
         }
 
         if (currentlyCopiedElements) {
-            completeCopyingElements()
+            const positionedCopies = completeCopyingElements()
+            addElements(positionedCopies)
             return
         }
     
@@ -66,7 +72,8 @@ const useEscapeCommand = () => {
         resetTool,
         clearCurrentTool,
         currentlyCopiedElements,
-        completeCopyingElements
+        completeCopyingElements,
+        addElements
     ])
 
     return handleEscapeCmd

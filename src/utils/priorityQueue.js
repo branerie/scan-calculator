@@ -29,6 +29,10 @@ class PriorityQueue {
     }
 
     pop() {
+        if (this.size === 0) {
+            return null
+        }
+
         const poppedValue = this.peek()
         const bottom = this.size - 1
         if (bottom > top) {

@@ -89,6 +89,7 @@ function getIntersectionsQueue({
         
         // if false, assume distanceDiff is due to numeric rounding errors
         const isDistanceDiffSignificant = Math.abs(distanceDiff) > MAX_NUM_ERROR
+        // TODO: check if queue is working correctly
         return isDistanceDiffSignificant ? distanceDiff : 0
     })
     

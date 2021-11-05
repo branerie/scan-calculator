@@ -27,7 +27,7 @@ const useDrawing = () => {
         },
         hashGrid
     } = useElementsContext()
-    const { canvasContext, currentScale, currentTranslate, tool } = useToolsContext()
+    const { canvasContext, currentScale, currentTranslate, tool, keysRef: toolKeys } = useToolsContext()
 
     const drawHashGrid = () => {
         for (let xIdx = hashGrid.startPosX; xIdx <= hashGrid.initialNumDivsX; xIdx++) {
@@ -123,24 +123,31 @@ const useDrawing = () => {
 
         if (currentlyReplacedElements.currentReplacements) {
             const replacements = Object.values(currentlyReplacedElements.currentReplacements)
+            let isTrim = tool.name === 'trim'
+            if (toolKeys.current.shift) {
+                isTrim = !isTrim
+            }
+
             for (const replacement of replacements) {
                 for (const element of replacement.removedSections) {
                     // drawElement(element, { ...options, color: REPLACED_COLOR })
-                    tool.name === 'extend' 
+                    isTrim 
                         ? drawElement(element, { ...options, color: REPLACED_COLOR })
                         : drawElement(element)
+                }
+
+                for (const replacingElement of replacement.replacingElements) {
+                    isTrim 
+                        ? drawElement(replacingElement)
+                        : drawElement(replacingElement, { ...options, color: REPLACED_COLOR })
                 }
             }
         }
 
         if (currentlyReplacedElements.replacingElements) {
-            for (const replacingElement of currentlyReplacedElements.replacingElements) {
-                tool.name === 'extend' 
-                    ? drawElement(replacingElement, { ...options, color: REPLACED_COLOR })
-                    : drawElement(replacingElement)
-            }
+            
         }
-    }, [currentlyReplacedElements, drawElement, tool.name])
+    }, [currentlyReplacedElements, drawElement, tool.name, toolKeys])
 
     const drawSelectionPoints = useCallback((selectionPoints) => {
         for (const selectionPoint of selectionPoints) {

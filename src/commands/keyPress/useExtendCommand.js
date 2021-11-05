@@ -6,7 +6,8 @@ import { ENTER_KEY_CODE, ESCAPE_KEY_CODE, SPACE_KEY_CODE } from '../../utils/con
 const useExtendCommand = () => {
     const {
         elements: {
-            currentlyReplacedElements
+            currentlyReplacedElements,
+            clearReplacingElements
         },
         history: {
             replaceElements
@@ -18,6 +19,7 @@ const useExtendCommand = () => {
     const handleExtendCmd = useCallback((event) => {
         const isEscape = event.keyCode === ESCAPE_KEY_CODE
         if ((!currentlyReplacedElements || !currentlyReplacedElements.completed) && isEscape) {
+            clearReplacingElements()
             resetTool()
             return
 
@@ -34,7 +36,7 @@ const useExtendCommand = () => {
             resetTool()
             return
         }
-    }, [addToolProp, resetTool, replaceElements, currentlyReplacedElements, tool.isStarted])
+    }, [currentlyReplacedElements, tool.isStarted, clearReplacingElements, resetTool, addToolProp, replaceElements])
 
     return handleExtendCmd
 }

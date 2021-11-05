@@ -1,10 +1,25 @@
-import React, { useState, useContext, createContext, useCallback, useLayoutEffect } from 'react'
+import React, { 
+    useState, 
+    useContext, 
+    createContext, 
+    useCallback, 
+    useLayoutEffect,
+    useEffect, 
+    useRef 
+} from 'react'
 import { MAX_NUM_ERROR, SELECT_DELTA } from '../utils/constants'
 
 const VIEW_ZOOM_STEP_UP = 1.2
 const VIEW_ZOOM_STEP_DOWN = 1 / 1.2
 const VIEW_ZOOM_MAX_SCALE = VIEW_ZOOM_STEP_UP ** 15
 const VIEW_ZOOM_MIN_SCALE = VIEW_ZOOM_STEP_DOWN ** 15
+
+const ACCEPTED_TOOL_KEYS = {
+    CTRL: 'ctrl',
+    SHIFT: 'shift',
+    Z: 'z',
+    Y: 'y'
+}
 
 const Context = createContext()
 
@@ -19,6 +34,52 @@ export default function ToolsContextProvider({ children }) {
     const [options, setOptions] = useState({ snap: true, ortho: false })
     const [context, setContext] = useState(null)
     const [mouseDrag, setMouseDrag] = useState(null)
+    const keysRef = useRef({})
+
+    useEffect(() => {
+        const setToolKeys = (keys) => {
+            keysRef.current = {}
+
+            keys.forEach(key => {
+                keysRef.current[key] = true
+            })
+        }
+
+        const handleToolKeyAdd = (event) => {
+            const keysPressed = []
+            if (event.metaKey || event.ctrlKey) {
+                keysPressed.push(ACCEPTED_TOOL_KEYS.CTRL)
+            }
+    
+            if (event.shiftKey) {
+                keysPressed.push(ACCEPTED_TOOL_KEYS.SHIFT)
+            }
+    
+            if (event.key) {
+                if (event.key.toLowerCase() === 'z') {
+                    keysPressed.push(ACCEPTED_TOOL_KEYS.Z)
+                }
+    
+                if (event.key.toLowerCase() === 'y') {
+                    keysPressed.push(ACCEPTED_TOOL_KEYS.Y)
+                }
+            }
+    
+            setToolKeys(keysPressed)
+        }
+    
+        const handleToolKeyRemove = () => {
+            setToolKeys([])
+        }
+
+        window.addEventListener('keydown', handleToolKeyAdd)
+        window.addEventListener('keyup', handleToolKeyRemove)
+        
+        return () => {
+            window.removeEventListener('keydown', handleToolKeyAdd)
+            window.removeEventListener('keyup', handleToolKeyRemove)
+        }
+    }, [])
 
     useLayoutEffect(() => {
         const canvas = document.getElementById('canvas')
@@ -55,7 +116,10 @@ export default function ToolsContextProvider({ children }) {
         return
     }, [currentScale, currentTranslate, setCurrentScale, setCurrentTranslate])
 
-    const resetTool = useCallback(() => setTool({ type: 'select', name: 'select' }), [])
+    const resetTool = useCallback(() => {
+        setTool({ type: 'select', name: 'select' })
+        keysRef.current = {}
+    }, [])
 
     const addToolClick = useCallback((clickedPoint, isReferenceClick = true) => {
         setTool(tool => { 
@@ -129,6 +193,7 @@ export default function ToolsContextProvider({ children }) {
             setCurrentScale,
             selectDelta: SELECT_DELTA / currentScale,
             tool,
+            keysRef,
             setTool,
             resetTool,
             addToolClick,

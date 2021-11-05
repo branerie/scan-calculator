@@ -13,6 +13,30 @@ import {
     trimSubsectionElements
 } from './trimHelper'
 
+const joinTrimEndSubsections = (trimSections, element) => {
+    // joins subsections, in case the first subsection's startPoint coincides with the
+    // last subsection's endPoint
+
+    if (!trimSections || trimSections.length < 2) return trimSections
+
+    let editedSections = trimSections
+    const firstSection = editedSections[0]
+    const lastSection = editedSections[editedSections.length - 1]
+
+    if (pointsMatch(firstSection.startPoint, lastSection.endPoint)) {
+        editedSections = editedSections.slice(1, editedSections.length - 1)
+        const joinedSection = createSubsection(
+            element,
+            lastSection.startPoint,
+            firstSection.endPoint
+        )
+
+        editedSections.push(joinedSection)
+    }
+
+    return editedSections
+}
+
 const trimWithSingleClick = (
     element, 
     selectPoints, 
@@ -51,14 +75,19 @@ const trimWithSingleClick = (
     }
 
     // if | designates start of element, || end of element and x - intersections with elements we are trimming by:
-    // |---x---x---<trimmedSection>---x---...--x---||
+    // |---x---...---x---<trimmedSection>---x---...--x---||
     // i.e. original element is split into two elements
-    const firstSubsection = createSubsection(element, startPoint, trimSectionStartPoint, subsections)
-    const secondSubsection = createSubsection(element, trimSectionEndPoint, endPoint, subsections)
+    let remaining = [
+        createSubsection(element, startPoint, trimSectionStartPoint, subsections),
+        createSubsection(element, trimSectionEndPoint, endPoint, subsections)
+    ]
+
+    // currently not used - check is done separately for arc, circle and polyline
+    // remaining = joinTrimEndSubsections(remaining)
 
     const removedSubsection = createSubsection(element, trimSectionStartPoint, trimSectionEndPoint, subsections)
 
-    return { remaining: [firstSubsection, secondSubsection], removed: [removedSubsection] }
+    return { remaining, removed: [removedSubsection] }
 }
 
 const trimWithSelectBox = (
@@ -99,6 +128,12 @@ const trimWithSelectBox = (
     )
 
     if (!sectionsPostTrim.remaining || !sectionsPostTrim.removed) return null
+
+    // currently not used, check is done separately, at the end, for arc, circle and polyline
+    // const finalSectionsPostTrim = {
+    //     remaining: joinTrimEndSubsections(sectionsPostTrim.remaining, element),
+    //     removed: joinTrimEndSubsections(sectionsPostTrim.removed, element)
+    // }
 
     const remaining = sectionsPostTrim.remaining.map(section =>
         createSubsection(element, section.start, section.end, subsections)
@@ -173,7 +208,7 @@ const updateLastTrimSectionEnd = (currentSectionElements, sectionEnd, currentSub
     return false
 }
 
-const assemblePointDistancesAndSubsections = (element, trimPoints, selectPoints) => {
+const assemblePointDistancesAndSubsections = (element, trimPointsByElement, selectPoints) => {
     let pointDistances = { select: [] }
     const subsections = {}
     let currentSectionElements = []
@@ -194,7 +229,8 @@ const assemblePointDistancesAndSubsections = (element, trimPoints, selectPoints)
                     : subElement.endLine.angle
             })
 
-        const sortedSubElementTrimPoints = (trimPoints[subElement.id] || []).sort((a, b) => subElementDistFunc(a) < subElementDistFunc(b) ? -1 : 1)
+        const sortedSubElementTrimPoints = (trimPointsByElement[subElement.id] || []).sort((a, b) => 
+                subElementDistFunc(a) < subElementDistFunc(b) ? -1 : 1)
         const subElementStartPoint = isInPolylineDirection ? subElement.startPoint : subElement.endPoint
         let hasMatchedStart = false
         for (const trimPoint of sortedSubElementTrimPoints) {
@@ -392,5 +428,6 @@ export {
     assemblePointDistancesAndSubsections,
     getTrimSections,
     getDistFunc,
-    createSubsection
+    createSubsection,
+    joinTrimEndSubsections
 }

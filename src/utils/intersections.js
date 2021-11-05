@@ -3,12 +3,13 @@ import { MAX_NUM_ERROR } from './constants'
 import ElementIntersector from './elementIntersector'
 import { getPointDistance } from './point'
 
-const findClosestIntersectPoint = (
-    element,
+const findClosestIntersectPoint = ({
+    element, 
     elementsToIntersect,
     fromStart,
+    checkIntersectionLocality = null,
     excludeExistingIntersections = false
-) => {
+} = {}) => {
     const extendedPoint = fromStart ? element.startPoint : element.endPoint
 
     let minPoint = null
@@ -24,6 +25,12 @@ const findClosestIntersectPoint = (
 
         intersections.forEach(intersection => {
             if (excludeExistingIntersections && element.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+                return
+            }
+
+            if (checkIntersectionLocality && !checkIntersectionLocality(extendedPoint, intersection)) {
+                // elements intersect, but not in the locality of "element"'s extendedPoint
+                // i.e. there might be other intersections closer to this end
                 return
             }
 

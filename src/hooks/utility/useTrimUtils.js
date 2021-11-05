@@ -8,7 +8,7 @@ const useTrimUtils = () => {
     const {
         elements: {
             getElementById,
-            getElementsInContainer
+            getElementsNearElement
         },
         selection: {
             selectedElements,
@@ -17,20 +17,23 @@ const useTrimUtils = () => {
     } = useElementsContext()
 
     const getElementTrimPoints = useCallback((elementToTrim, includeEndPoints = false) => {
-        const elementBoundingBox = elementToTrim.getBoundingBox()
-        const elementsInContainer = getElementsInContainer(
-            { x: elementBoundingBox.left, y: elementBoundingBox.top  },
-            { x: elementBoundingBox.right, y: elementBoundingBox.bottom  },
-            false,
-            false
-        )
+        // if (elementToTrim.baseType === 'polyline') {
+        //     return elementToTrim.elements.map(se => getElementTrimPoints(se, includeEndPoints))
+        // }
 
-        const elementsToTrimBy = elementsInContainer.filter(
-            eic => eic.id !== elementToTrim.id && 
-            ((selectedElements && hasSelectedElement(eic)) || !selectedElements)
-        )
+        const nearbyElements = getElementsNearElement(elementToTrim, { returnGroup: 0, skipSiblings: true })
 
-        const trimPoints = elementsToTrimBy.reduce((acc, etb) => {
+        const checkShouldTrimByElement = elementToCheck => {
+            return elementToCheck.id !== elementToTrim.id && 
+                   ((selectedElements && hasSelectedElement(elementToCheck)) || !selectedElements)
+        }
+
+        const trimPoints = nearbyElements.reduce((acc, etb) => {
+            const shouldTrimByElement = checkShouldTrimByElement(etb)
+            if (!shouldTrimByElement) {
+                return acc
+            }
+
             let intersections = ElementIntersector.getIntersections(elementToTrim, etb)
             if (intersections) {
                 const elementStartPoint = elementToTrim.startPoint
@@ -49,21 +52,25 @@ const useTrimUtils = () => {
         }, [])
 
         return trimPoints
-    }, [getElementsInContainer, hasSelectedElement, selectedElements])
+    }, [getElementsNearElement, hasSelectedElement, selectedElements])
 
     const getSingleElementTrimResults = useCallback((elementsToTrim, pointsOfSelection) => {
         const commandResult = {}
         const polylines = {}
         for (const elementToTrim of elementsToTrim) {
-            if (elementToTrim.groupId) {
-                const polylineId = elementToTrim.groupId
-
-                if (!polylines[polylineId]) {
-                    polylines[polylineId] = {}
-                }
-
+            if (elementToTrim.baseType === 'polyline') {
+                polylines[elementToTrim.id] = {}
                 continue
             }
+            // if (elementToTrim.groupId) {
+            //     const polylineId = elementToTrim.groupId
+
+            //     if (!polylines[polylineId]) {
+            //         polylines[polylineId] = {}
+            //     }
+
+            //     continue
+            // }
 
             const pointsOfTrim = getElementTrimPoints(elementToTrim, elementToTrim.groupId)
             if (pointsOfTrim.length === 0) continue
