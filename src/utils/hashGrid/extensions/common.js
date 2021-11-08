@@ -1,6 +1,47 @@
 import { MAX_NUM_ERROR } from '../../constants'
 import { getDimensionDivision1d, getDivKey } from '../utils'
 
+function getContainingDivsFromIntersectionPoint(point, crossingAxis) {
+    // returns an array with two values, containing the hash grid divisions
+    // between which the intersection point lies
+    
+    const intersectionInitX = getDimensionDivision1d(
+        point.x,
+        this.startPosX,
+        this.divSizeX
+    )
+    const intersectionInitY = getDimensionDivision1d(
+        point.y,
+        this.startPosY,
+        this.divSizeY
+    )
+
+    const firstDivision = getDivKey(intersectionInitX, intersectionInitY)
+
+    // We have added first div of intersection. The function "getDimensionDivision1d" always returns the lower number
+    // in case of an intersection and, therefore, we can always find the second div part of the intersection by adding
+    // one to the X-div, Y-div or both (in case of a diagonal crossing)
+    let secondDivision = null
+    switch (crossingAxis) {
+        case 'H':
+            secondDivision = getDivKey(intersectionInitX, intersectionInitY - 1)
+            break
+        case 'V':
+            secondDivision = getDivKey(intersectionInitX - 1, intersectionInitY)
+            break
+        case 'B':
+            secondDivision = getDivKey(intersectionInitX - 1, intersectionInitY - 1)
+            break
+        default:
+            throw new Error('Invalid value for "crossing" property of element : HashGrid intersection')
+    }
+
+    return [
+        firstDivision,
+        secondDivision
+    ]
+}
+
 function getContainingDivsFromIntersectionsQueue(intersectionsQueue) {
     const containingDivs = new Set()
     while (intersectionsQueue.size > 0) {
@@ -22,39 +63,20 @@ function getContainingDivsFromIntersectionsQueue(intersectionsQueue) {
             throw new Error('An error occurred while calculating HashGrid divs of line')
         }
 
-        const intersectionInitX = getDimensionDivision1d(
-            currentIntersection.point.x,
-            this.startPosX,
-            this.divSizeX
+        const intersectionDivs = getContainingDivsFromIntersectionPoint.call(
+            this,
+            currentIntersection.point,
+            currentIntersection.crossing
         )
-        const intersectionInitY = getDimensionDivision1d(
-            currentIntersection.point.y,
-            this.startPosY,
-            this.divSizeY
-        )
-        containingDivs.add(getDivKey(intersectionInitX, intersectionInitY))
 
-        // We have added first div of intersection. The function "getDimensionDivision1d" always returns the lower number
-        // in case of an intersection and, therefore, we can always find the second div part of the intersection by adding
-        // one to the X-div, Y-div or both (in case of a diagonal crossing)
-        switch (currentIntersection.crossing) {
-            case 'H':
-                containingDivs.add(getDivKey(intersectionInitX, intersectionInitY - 1))
-                break
-            case 'V':
-                containingDivs.add(getDivKey(intersectionInitX - 1, intersectionInitY))
-                break
-            case 'B':
-                containingDivs.add(getDivKey(intersectionInitX - 1, intersectionInitY - 1))
-                break
-            default:
-                throw new Error('Invalid value for "crossing" property of element : HashGrid intersection')
-        }
+        containingDivs.add(intersectionDivs[0])
+        containingDivs.add(intersectionDivs[1])
     }
 
     return containingDivs
 }
 
 export { 
-    getContainingDivsFromIntersectionsQueue 
+    getContainingDivsFromIntersectionPoint,
+    getContainingDivsFromIntersectionsQueue,
 }

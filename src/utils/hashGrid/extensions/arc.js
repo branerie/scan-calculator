@@ -6,7 +6,7 @@ import PriorityQueue from '../../priorityQueue'
 import { getDivKey } from '../utils'
 import { getContainingDivsFromIntersectionsQueue } from './common'
 
-function* getIntersectionsWithAxis({
+function* getArcIntersectionsWithAxis({
     centerPoint: c,
     radius: r,
     startPoint,
@@ -100,18 +100,18 @@ function getIntersectionsQueue({
         checkIfPointOnElement: (point) => arc.checkIfPointOnElement(point)
     }
 
-    const verticalGen = getIntersectionsWithAxis.call(this, {
+    const verticalGen = getArcIntersectionsWithAxis.call(this, {
         ...generalParams,
         min: minV,
         max: maxV,
         axis: 'y'
     })
-    
+        
     for (const intersectionInfo of verticalGen) {
         intersectionsQueue.push(intersectionInfo)
     }
 
-    const horizontalGen = getIntersectionsWithAxis.call(this, {
+    const horizontalGen = getArcIntersectionsWithAxis.call(this, {
         ...generalParams,
         min: minH,
         max: maxH,
@@ -160,3 +160,7 @@ function getArcDivKeys(arc) {
 }
 
 export default getArcDivKeys
+
+export {
+    getArcIntersectionsWithAxis
+}

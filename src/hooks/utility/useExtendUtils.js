@@ -45,6 +45,8 @@ const useExtendUtils = () => {
                 shouldExtendFromStart: tryFromStart,
                 shouldCheckPointsLocality: false
             })
+
+            return extendPoint
         }
     }
 

@@ -40,8 +40,6 @@ const Canvas = () => {
         setTool,
         zoomView,
         setMouseDrag,
-        ACCEPTED_TOOL_KEYS,
-        setToolKeys,
     } = useToolsContext()
 
     const { 
