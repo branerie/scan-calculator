@@ -56,12 +56,6 @@ const Canvas = () => {
         resetCanvas()
 
         elements.forEach(e => {
-            if (
-                !e.isShown ||
-                hasSelectedElement(e) ||
-                isReplacingElement(e)
-            )
-
             if (e.isShown && !hasSelectedElement(e) && !isReplacingElement(e)) {
                 drawElement(e)
             }
