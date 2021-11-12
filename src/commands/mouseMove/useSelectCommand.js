@@ -1,12 +1,16 @@
 import { useCallback } from 'react'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useSelectCommand = () => {
-    const { tool, setTool } = useToolsContext()
+    const {
+        tools: { 
+            addToolProp 
+        }
+    } = useAppContext()
 
     const handleSelectCmd = useCallback((mousePosition) => {
-        setTool({ ...tool, mousePosition })
-    }, [tool, setTool])
+        addToolProp('mousePosition', mousePosition)
+    }, [addToolProp])
 
     return handleSelectCmd
 }

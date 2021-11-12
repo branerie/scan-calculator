@@ -1,8 +1,14 @@
 import React from 'react'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const Navbar = ({ changeTool }) => {
-    const { options, setOptions, tool } = useToolsContext()
+    const {
+        tools: { 
+            options, 
+            setOptions, 
+            tool 
+        }
+    } = useAppContext()
 
     return (
         <>

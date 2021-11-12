@@ -1,8 +1,13 @@
 import { useCallback } from 'react'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useDragCommand = () => {
-    const { mouseDrag, panView } = useToolsContext()
+    const {
+        tools: {
+            mouseDrag, 
+            panView
+        }
+    } = useAppContext()
 
     const handleDragCmd = useCallback((event) => {
         const { clientX, clientY } = event

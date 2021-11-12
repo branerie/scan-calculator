@@ -3,12 +3,13 @@ import { getDimensionDivision1d, parseDivKey } from '../hashGrid/utils'
 import { getLineX, getLineY } from '../line'
 import { getPointDistance } from '../point'
 import PriorityQueue from '../../utils/priorityQueue'
-import { getNextInterceptPoint } from './gridUtils'
-import getArcDivKeys, { getArcIntersectionsWithAxis } from '../hashGrid/extensions/arc'
+import { getNextInterceptPoint } from './utils/gridUtils'
+import { getArcIntersectionsWithAxis } from '../hashGrid/extensions/arc'
 import ElementManipulator from '../elementManipulator'
-import { getArcEndPoints } from '../arc'
 import { getAngleBetweenPoints } from '../angle'
 import { getContainingDivsFromIntersectionPoint } from '../hashGrid/extensions/common'
+import { sortDivsByArcIntersectionOrder } from './utils/elementUtils'
+import { getPointsAngleDistance } from '../arc'
 
 class HashGridElementContainer {
     #hashGrid
@@ -130,8 +131,6 @@ class HashGridElementContainer {
                     }
                 )
 
-                console.log(nextDivision)
-
                 if (!nextDivision) {
                     throw new Error(`Invalid line intercept point. The point ${interceptPoint.x}, ${interceptPoint.y} does not
                     intercept with the hash grid`)
@@ -180,74 +179,109 @@ class HashGridElementContainer {
         }
         
         const arcExtension = ElementManipulator.copyArc(arc, false)
-        const newStartPoint = arcExtension.endPoint
-        const newEndPoint = arcExtension.startPoint
+        const oldStartPoint = arcExtension.startPoint
+        const oldEndPoint = arcExtension.endPoint
 
-        arcExtension.startPoint = newStartPoint
-        arcExtension.endPoint = newEndPoint
-
+        arcExtension.setPointById(oldStartPoint.pointId, oldEndPoint.x, oldEndPoint.y)
+        arcExtension.setPointById(oldEndPoint.pointId, oldStartPoint.x, oldStartPoint.y)
 
         const { left, right, top, bottom } = arcExtension.getBoundingBox()
         const checkIfPointOnExtension = arcExtension.checkIfPointOnElement.bind(arcExtension)
-        const arcExtensionXIntersectionsGen = getArcIntersectionsWithAxis.call(
+        const arcExtensionHIntersectionsGen = getArcIntersectionsWithAxis.call(
             this.#hashGrid, {
-            centerPoint: arcExtension.centerPoint,
-            radius: arcExtension.radius,
-            startPoint: arcExtension.startPoint,
-            min: getDimensionDivision1d(left, this.#hashGrid.startPosX, this.#hashGrid.divSizeX),
-            max: getDimensionDivision1d(right, this.#hashGrid.startPosX, this.#hashGrid.divSizeX),
-            axis: 'x',
-            checkIfPointOnElement: checkIfPointOnExtension
-        })
-
-        const arcExtensionYIntersectionsGen = getArcIntersectionsWithAxis({
-            centerPoint: arcExtension.centerPoint,
-            radius: arcExtension.radius,
-            startPoint: arcExtension.startPoint,
-            min: getDimensionDivision1d(top, this.#hashGrid.startPosY, this.#hashGrid.divSizeY),
-            max: getDimensionDivision1d(bottom, this.#hashGrid.startPosY, this.#hashGrid.divSizeY),
-            axis: 'y',
-            checkIfPointOnElement: checkIfPointOnExtension
-        })
+                centerPoint: arcExtension.centerPoint,
+                radius: arcExtension.radius,
+                startPoint: arcExtension.startPoint,
+                min: getDimensionDivision1d(top, this.#hashGrid.startPosY, this.#hashGrid.divSizeY),
+                max: getDimensionDivision1d(bottom, this.#hashGrid.startPosY, this.#hashGrid.divSizeY),
+                axis: 'x',
+                checkIfPointOnElement: checkIfPointOnExtension
+            }
+        )
+        
+        const arcExtensionVIntersectionsGen = getArcIntersectionsWithAxis.call(
+            this.#hashGrid, {
+                centerPoint: arcExtension.centerPoint,
+                radius: arcExtension.radius,
+                startPoint: arcExtension.startPoint,
+                min: getDimensionDivision1d(left, this.#hashGrid.startPosX, this.#hashGrid.divSizeX),
+                max: getDimensionDivision1d(right, this.#hashGrid.startPosX, this.#hashGrid.divSizeX),
+                axis: 'y',
+                checkIfPointOnElement: checkIfPointOnExtension
+            }
+        )
 
         const centerPoint = arcExtension.centerPoint
-        const startAngle = arcExtension.startLine.angle
         const queue = new PriorityQueue((intersectionA, intersectionB) => {
-            return intersectionA.distanceFromSTart < intersectionB.distanceFromStart
+            return intersectionA.distanceFromStart < intersectionB.distanceFromStart
         })
 
-        for (const arcXIntersection of arcExtensionXIntersectionsGen) {
-            const angle = getAngleBetweenPoints(centerPoint, arcXIntersection)
+        for (const arcHIntersection of arcExtensionHIntersectionsGen) {
+            const angleDistance = getPointsAngleDistance(
+                centerPoint,
+                fromStart,
+                pointOfExtend,
+                arcHIntersection.point
+            )
 
-            queue.push({
-                point: arcXIntersection,
-                crossing: 'V',
-                distanceFromStart: Math.abs(angle - startAngle)
+            queue.push({ 
+                point: arcHIntersection.point,
+                crossing: arcHIntersection.crossing, 
+                distanceFromStart: angleDistance,
+                angle: getAngleBetweenPoints(centerPoint, arcHIntersection.point) 
             })
         }
 
-        for (const arcYIntersection of arcExtensionYIntersectionsGen) {
-            const angle = getAngleBetweenPoints(centerPoint, arcYIntersection)
+        for (const arcVIntersection of arcExtensionVIntersectionsGen) {
+            const angleDistance = getPointsAngleDistance(
+                centerPoint,
+                fromStart,
+                pointOfExtend,
+                arcVIntersection.point
+            )
 
-            queue.push({
-                point: arcYIntersection,
-                crossing: 'H',
-                distanceFromStart: Math.abs(angle - startAngle)
+            queue.push({ 
+                point: arcVIntersection.point,
+                crossing: arcVIntersection.crossing, 
+                distanceFromStart: angleDistance,
+                angle: getAngleBetweenPoints(centerPoint, arcVIntersection.point) 
             })
         }
 
-        while (queue.size > 0) {
+        while (queue.size > 0) { 
             const currentIntersection = queue.pop()
 
             const intersectionDivs = getContainingDivsFromIntersectionPoint.call(
                 this.#hashGrid,
                 currentIntersection.point,
                 currentIntersection.crossing
-            )
+            ).map(parseDivKey)
             
-            // TODO: Determine which of the two divs comes first and which second
-            // for that, we can use quadrants of the intersection point (relative to)
-            // arc centerPoint
+            const sortedDivs = sortDivsByArcIntersectionOrder(
+                intersectionDivs, 
+                currentIntersection.angle,
+                currentIntersection.crossing
+            )
+
+            yield {
+                divContents: this.#hashGrid.getDivisionContents(...sortedDivs[0]) || [],
+                checkIfPointInSameDiv: (function(point) {
+                    return this.checkIfPointInDivision(
+                        point, 
+                        sortedDivs[0]
+                    )
+                }).bind(this)
+            }
+
+            yield {
+                divContents: this.#hashGrid.getDivisionContents(...sortedDivs[1]) || [],
+                checkIfPointInSameDiv: (function(point) {
+                    return this.checkIfPointInDivision(
+                        point, 
+                        sortedDivs[1]
+                    )
+                }).bind(this)
+            }
         }
     }
 

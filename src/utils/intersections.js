@@ -1,10 +1,31 @@
 /* eslint-disable no-loop-func */
+import { getPointsAngleDistance } from './arc'
 import { MAX_NUM_ERROR } from './constants'
 import ElementIntersector from './elementIntersector'
-import { getPointDistance } from './point'
+import { getPointDistance, pointsMatch } from './point'
+
+const checkArcIntersectionValidity = (arc, extendFromStart, intersectionDistance) => {
+    let arcExtendPoint, arcStationaryPoint
+    if (extendFromStart) {
+        arcExtendPoint = arc.startPoint
+        arcStationaryPoint = arc.endPoint
+    } else {
+        arcExtendPoint = arc.endPoint
+        arcStationaryPoint = arc.startPoint
+    }
+
+    const arcPointsOppositeDirectionDistance = getPointsAngleDistance(
+        arc.centerPoint,
+        extendFromStart,
+        arcExtendPoint,
+        arcStationaryPoint
+    )
+
+    return intersectionDistance <= arcPointsOppositeDirectionDistance
+}
 
 const findClosestIntersectPoint = ({
-    element, 
+    element,
     elementsToIntersect,
     fromStart,
     checkIntersectionLocality = null,
@@ -24,8 +45,19 @@ const findClosestIntersectPoint = ({
         }
 
         intersections.forEach(intersection => {
-            if (excludeExistingIntersections && element.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+            if (!elementToIntersect.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
                 return
+            }
+
+            if (excludeExistingIntersections && element.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
+                if (element.type !== 'arc') {
+                    return
+                }
+
+                const stationaryPoint = fromStart ? element.endPoint : element.startPoint
+                if (!pointsMatch(intersection, stationaryPoint)) {
+                    return
+                }
             }
 
             if (checkIntersectionLocality && !checkIntersectionLocality(extendedPoint, intersection)) {
@@ -34,10 +66,33 @@ const findClosestIntersectPoint = ({
                 return
             }
 
-            // TODO: Check if intersection isn't in the opposite direction
+            // TODO: Check whether intersection in the opposite direction causes bugs at all
 
-            const distanceFromExtendPoint = getPointDistance(extendedPoint, intersection)
+            let getIntersectionDistance
+            if (element.type === 'line') {
+                getIntersectionDistance = getPointDistance
+            } else if (element.type === 'arc') {
+                getIntersectionDistance = (extendedPoint, intersectionPoint) => {
+                    return getPointsAngleDistance(
+                        element.centerPoint,
+                        fromStart,
+                        extendedPoint,
+                        intersectionPoint
+                    )
+                }
+            } else {
+                throw new Error('Only elements of type "line" and "arc" can be extended')
+            }
+
+            const distanceFromExtendPoint = getIntersectionDistance(extendedPoint, intersection)
             if (distanceFromExtendPoint < minPointDistance) {
+                if (
+                    element.type === 'arc' && 
+                    !checkArcIntersectionValidity(element, fromStart, distanceFromExtendPoint)
+                ) {
+                    return
+                }
+
                 minPoint = intersection
                 minPointDistance = distanceFromExtendPoint
             }

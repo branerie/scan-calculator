@@ -21,6 +21,39 @@ const getQuadrant = (deltaX, deltaY) => {
     return 3
 }
 
+const getQuadrantFromAngle = (angle) => {
+    if (angle > 0 && angle < 90) {
+        return 1
+    }
+
+    if (angle > 90 && angle < 180) {
+        return 2
+    }
+
+    if (angle > 180 && angle < 270) {
+        return 3
+    }
+
+    if (angle > 270 && angle < 360) {
+        return 4
+    }
+
+    if (angle < 0) {
+        return getQuadrantFromAngle(360 + (angle % 360))
+    }
+
+    if (angle > 360) {
+        return getQuadrantFromAngle(angle % 360)
+    }
+
+    if (Number.isNaN(angle)) {
+        throw new Error('Invalid value for "angle" - ' + angle)
+    }
+
+    // angle is 90, 180, 270 or 360 degrees
+    return 0
+}
+
 const radiansToDegrees = (radians) => {
     return (radians * 180) / Math.PI
 }
@@ -98,6 +131,7 @@ const getAngleBetweenLines = ({
 
 export {
     getQuadrant,
+    getQuadrantFromAngle,
     getAngleBetweenPoints,
     getAngleBetweenLines,
     radiansToDegrees,

@@ -1,17 +1,13 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useDeleteCommand = () => {
     const {
-        selection: {
-            selectedElements,
-            currentlyEditedElements,
-            clearSelection
-        },
-        history: {
-            deleteElements
+        elements: {
+            selection: { selectedElements, currentlyEditedElements, clearSelection },
+            history: { deleteElements }
         }
-    } = useElementsContext()
+    } = useAppContext()
 
     const handleDeleteCmd = useCallback(() => {
         if (!selectedElements || selectedElements.length === 0 || currentlyEditedElements) return

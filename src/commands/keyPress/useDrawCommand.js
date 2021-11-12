@@ -1,21 +1,17 @@
 import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useDrawCommand = () => {
     const {
         elements: {
             currentlyCreatedElement,
             clearSnappedPoint,
-            removeCurrentlyCreatedElement
+            removeCurrentlyCreatedElement,
+            history: { addElements }
         },
-        history: {
-            addElements
-        }
-    } = useElementsContext()
-
-    const { clearCurrentTool } = useToolsContext()
+        tools: { clearCurrentTool }
+    } = useAppContext()
 
     const handleEnterCmd = useCallback(() => {
         if (!currentlyCreatedElement || currentlyCreatedElement.baseType !== 'polyline') return
@@ -26,12 +22,18 @@ const useDrawCommand = () => {
 
         clearSnappedPoint()
 
-        currentlyCreatedElement.elements.forEach(e => e.id = uuidv4())
+        currentlyCreatedElement.elements.forEach(e => (e.id = uuidv4()))
         addElements([currentlyCreatedElement])
 
         removeCurrentlyCreatedElement()
         clearCurrentTool()
-    }, [addElements, clearSnappedPoint, currentlyCreatedElement, removeCurrentlyCreatedElement, clearCurrentTool])
+    }, [
+        addElements,
+        clearSnappedPoint,
+        currentlyCreatedElement,
+        removeCurrentlyCreatedElement,
+        clearCurrentTool
+    ])
 
     return handleEnterCmd
 }

@@ -1,24 +1,20 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useEditCommand = () => {
     const {
         elements: {
-            currentlyEditedElements
+            currentlyEditedElements,
+            history: { editElements }
         },
-        history: {
-            editElements
-        }
-    } = useElementsContext()
-
-    const { resetTool } = useToolsContext()
+        tools: { resetTool }
+    } = useAppContext()
 
     const handleEditCmd = useCallback(() => {
         if (!currentlyEditedElements) return
 
-        resetTool()
         editElements(currentlyEditedElements)
+        resetTool()
     }, [currentlyEditedElements, editElements, resetTool])
 
     return handleEditCmd

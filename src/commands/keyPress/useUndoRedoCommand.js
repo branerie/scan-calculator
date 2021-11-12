@@ -1,47 +1,45 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 import ElementManipulator from '../../utils/elementManipulator'
 
 const useUndoRedoCommand = () => {
     const {
         elements: {
             currentlyCreatedElement,
-            addCurrentlyCreatedElement
+            addCurrentlyCreatedElement,
+            history: { undo, redo }
         },
-        history: {
-            undo,
-            redo
-        }
-    } = useElementsContext()
+        tools: { tool }
+    } = useAppContext()
 
-    const { tool } = useToolsContext()
+    const handleUndoRedoCmd = useCallback(
+        event => {
+            if (currentlyCreatedElement && currentlyCreatedElement.type === 'polyline') {
+                const createdElementCopy = ElementManipulator.copyElement(currentlyCreatedElement)
+                const removedElement = createdElementCopy.elements.pop()
+                const removedElementLastPoint = removedElement.pointB
 
-    const handleUndoRedoCmd = useCallback((event) => {
-        if (currentlyCreatedElement && currentlyCreatedElement.type === 'polyline') {
-            const createdElementCopy = ElementManipulator.copyElement(currentlyCreatedElement)
-            const removedElement = createdElementCopy.elements.pop()
-            const removedElementLastPoint = removedElement.pointB
+                const currentLastElement = createdElementCopy.elements[createdElementCopy.elements.length - 1]
+                currentLastElement.setPointB(removedElementLastPoint.x, removedElementLastPoint.y)
 
-            const currentLastElement = createdElementCopy.elements[createdElementCopy.elements.length - 1]
-            currentLastElement.setPointB(removedElementLastPoint.x, removedElementLastPoint.y)
+                addCurrentlyCreatedElement(createdElementCopy)
 
-            addCurrentlyCreatedElement(createdElementCopy)
+                return
+            }
 
-            return
-        }
+            if (tool.type !== 'select') return
 
-        if (tool.type !== 'select') return
+            if (event.key && event.key.toLowerCase() === 'z') {
+                undo()
+                return
+            }
 
-        if (event.key && event.key.toLowerCase() === 'z') {
-            undo()
-            return
-        }
-        
-        if (event.key && event.key.toLowerCase() === 'y') {
-            redo()
-        }
-    }, [currentlyCreatedElement, tool.type, addCurrentlyCreatedElement, undo, redo])
+            if (event.key && event.key.toLowerCase() === 'y') {
+                redo()
+            }
+        },
+        [currentlyCreatedElement, tool.type, addCurrentlyCreatedElement, undo, redo]
+    )
 
     return handleUndoRedoCmd
 }

@@ -1,14 +1,29 @@
 /* eslint-disable no-loop-func */
-import { useElementsContext } from '../../contexts/ElementsContext'
+import { useAppContext } from '../../contexts/AppContext'
+import { createElement } from '../../utils/elementFactory'
 import { pointsMatch } from '../../utils/point'
 
 const useExtendUtils = () => {
     const {
-        elements: {
-            getNextArcIntersection,
-            getNextLineIntersection
+        elements: { getNextArcIntersection, getNextLineIntersection }
+    } = useAppContext()
+
+    const validateExtendedElement = element => {
+        if (element.type === 'arc') {
+            if (pointsMatch(element.startPoint, element.endPoint)) {
+                // Introduce a prompt to ask user whether to join arc into a circle
+
+                const centerPoint = element.centerPoint
+                const replacingCircle = createElement('circle', centerPoint.x, centerPoint.y)
+                replacingCircle.radius = element.radius
+                replacingCircle.id = element.id
+
+                return replacingCircle
+            }
         }
-    } = useElementsContext()
+
+        return element
+    }
 
     const tryExtendElementEnd = (element, tryFromStart) => {
         if (element.type === 'circle') return null
@@ -32,9 +47,9 @@ const useExtendUtils = () => {
         }
 
         if (element.baseType === 'line') {
-            const extendPoint = getNextLineIntersection(element, { 
-                shouldExtendFromStart: tryFromStart, 
-                shouldCheckPointsLocality: false 
+            const extendPoint = getNextLineIntersection(element, {
+                shouldExtendFromStart: tryFromStart,
+                shouldCheckPointsLocality: false
             })
 
             return extendPoint
@@ -51,7 +66,8 @@ const useExtendUtils = () => {
     }
 
     return {
-        tryExtendElementEnd
+        tryExtendElementEnd,
+        validateExtendedElement
     }
 }
 

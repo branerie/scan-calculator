@@ -12,6 +12,7 @@ class Arc extends BaseArc {
     #endLine
     #midLine
     #boundingBox
+    #isJoined
 
     constructor(centerPoint, { 
         radius = null, 
@@ -64,8 +65,15 @@ class Arc extends BaseArc {
     get startPoint() { return this.#startLine.pointB }
     get endPoint() { return this.#endLine.pointB }
 
-    set startPoint(value) { this.#startLine.setPointB(value.x, value.y) }
-    set endPoint(value) { this.#endLine.setPointB(value.x, value.y) }
+    set startPoint(value) { 
+        this.#startLine.setPointB(value.x, value.y) 
+        this.__updateDetails()
+    }
+    
+    set endPoint(value) { 
+        this.#endLine.setPointB(value.x, value.y)
+        this.__updateDetails()
+    }
 
     get startLine() { return this.#startLine }
     get endLine() { return this.#endLine }
@@ -97,12 +105,14 @@ class Arc extends BaseArc {
             (!!(this.#startLine) && this.#startLine.angle >= 0 && this.#startLine.angle <= 360)
         )
     }
+
+    get isJoined() { return this.#isJoined }
     
     get angle() {
         if (!this.containsAngle(0)) {
             return Math.abs(this.#startLine.angle - this.#endLine.angle)
         }
-    
+        
         return 360 - this.#endLine.angle + this.#startLine.angle
     }
 
@@ -305,6 +315,8 @@ class Arc extends BaseArc {
     __updateDetails() {
         this.__updateMidLine()
         this.__updateBoundingBox()
+
+        this.#isJoined = Math.abs(this.#startLine.angle - this.#endLine.angle) < MAX_NUM_ERROR
     }
 
     __updateBoundingBox() {

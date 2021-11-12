@@ -1,30 +1,33 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useCopyCommand = () => {
     const {
-        elements: {
-            moveCopyingElements,
-        }
-    } = useElementsContext()
+        elements: { moveCopyingElements },
+        tools: { tool, addToolProp }
+    } = useAppContext()
 
-    const { tool, setTool } = useToolsContext()
-    
-    const handleCopyCmd = useCallback((mousePosition) => {
-        const { mouseX, mouseY } = mousePosition
+    const handleCopyCmd = useCallback(
+        mousePosition => {
+            const { mouseX, mouseY } = mousePosition
 
-        if (tool.name === 'copy') {
-            const basePoint = tool.currentPos ? tool.currentPos : tool.clicks[0]
+            if (tool.name === 'copy') {
+                const basePoint = tool.currentPos ? tool.currentPos : tool.clicks[0]
 
-            const dX = mouseX - basePoint.x
-            const dY = mouseY - basePoint.y
+                const dX = mouseX - basePoint.x
+                const dY = mouseY - basePoint.y
 
-            moveCopyingElements(dX, dY)
-            setTool(currTool => ({ ...currTool, currentPos: { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) } }))
-            return
-        }
-    }, [moveCopyingElements, tool, setTool])
+                moveCopyingElements(dX, dY)
+                addToolProp(
+                    'currentPos',
+                    { x: Number(mouseX.toFixed(3)), y: Number(mouseY.toFixed(3)) }
+                )
+                
+                return
+            }
+        },
+        [moveCopyingElements, tool, addToolProp]
+    )
 
     return handleCopyCmd
 }

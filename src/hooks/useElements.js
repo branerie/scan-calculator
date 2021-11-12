@@ -279,16 +279,35 @@ const elementsReducer = (state, action) => {
 
             const { currentlyReplacedElements: { currentReplacements, completed } } = state
 
+            const { elementsToKeep } = action
+            let replacementsToKeep = null
+            let replacementsToRemove = currentReplacements
+            if (elementsToKeep && currentReplacements) {
+                replacementsToKeep = {}
+                replacementsToRemove = { ...currentReplacements }
+
+                for (const elementToKeep of elementsToKeep) {
+                    if (!(elementToKeep.id in replacementsToRemove)) {
+                        continue
+                    }
+
+                    replacementsToKeep[elementToKeep.id] = replacementsToRemove[elementToKeep.id]
+                    delete replacementsToRemove[elementToKeep.id]
+                }
+            }
+
             const newElements = { ...state.elements }
-            for (const replacedId of Object.keys(currentReplacements)) {
-                const replacedParentElement = (
-                    newElements[replacedId] || 
-                    newElements[state.groupedElements[replacedId].groupId]
-                )
+            for (const replacedId of Object.keys(replacementsToRemove)) {
+                // const replacedParentElement = (
+                //     newElements[replacedId] || 
+                //     newElements[state.groupedElements[replacedId].groupId]
+                // )
 
-                replacedParentElement.isShown = true
+                // replacedParentElement.isShown = true
+                const replacedElement = newElements[replacedId]
+                replacedElement.isShown = true
 
-                const replacingElements = currentReplacements[replacedId].replacingElements
+                const replacingElements = replacementsToRemove[replacedId].replacingElements
                 for (const replacingElement of replacingElements) {
                     delete newElements[replacingElement.id]
                 }
@@ -297,7 +316,11 @@ const elementsReducer = (state, action) => {
             return { 
                 ...state, 
                 elements: newElements, 
-                currentlyReplacedElements: completed ? { completed } : null 
+                // currentlyReplacedElements: completed ? { completed } : null
+                currentlyReplacedElements: completed || replacementsToKeep ? {
+                    ...(!!(completed) && { completed }),
+                    ...(!!(replacementsToKeep) && { currentReplacements: replacementsToKeep })
+                } : null
             }
         }
         case 'continueReplacingElements': {
@@ -319,7 +342,11 @@ const elementsReducer = (state, action) => {
                     delete newCompleted.replacingElements[replacedId]
 
                 } else {
-                    const removedElement = state.elements[replacedId]
+                    let removedElement = state.elements[replacedId] // || state.groupedElements[replacedId]
+                    // if (removedElement.groupId) {
+                    //     removedElement = state.elements[removedElement.groupId]
+                    // }
+
                     newCompleted.removedElements.push(removedElement)
                 }
                 
@@ -343,7 +370,11 @@ const elementsReducer = (state, action) => {
             }
 
             if (!completed) {
-                return {  ...state, currentlyReplacedElements: null, elements: newElements || state.elements }
+                return {  
+                    ...state, 
+                    elements: newElements || state.elements,
+                    currentlyReplacedElements: null, 
+                }
             }
             
             if (!newElements) {
@@ -573,6 +604,8 @@ const useElements = (elementsContainer) => {
 
     const startReplacingElements = (replacements) => 
                     elementsDispatch({ type: 'startReplacingElements', replacements })
+    const pruneReplacingElements = (elementsToKeep) => 
+                    elementsDispatch({ type: 'clearReplacingElements', elementsToKeep })
     const clearReplacingElements = () => {
         if (!elementsState.currentlyReplacedElements || !elementsState.currentlyReplacedElements.currentReplacements) return
 
@@ -602,11 +635,11 @@ const useElements = (elementsContainer) => {
         elementsContainer.addElements(replacingElements)
 
         for (const replacedId of replacedIds) {
-            const element = elementsState.elements[replacedId] 
-            if (element.baseType === 'polyline') {
-                elementsContainer.removeElements(element.elements)
-                continue
-            }
+            // const element = elementsState.elements[replacedId] || elementsState.groupedElements[replacedId]  
+            // if (element.baseType === 'polyline') {
+            //     elementsContainer.removeElements(element.elements)
+            //     continue
+            // }
 
             elementsContainer.removeElementById(replacedId)
         }
@@ -657,6 +690,7 @@ const useElements = (elementsContainer) => {
         completeCopyingElements,
         startReplacingElements,
         clearReplacingElements,
+        pruneReplacingElements,
         completeReplacingElements,
         continueReplacingElements,
         isReplacingElement,

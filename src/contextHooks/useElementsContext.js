@@ -1,4 +1,4 @@
-import React, { useState, useContext, createContext, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import useElements from '../hooks/useElements'
@@ -12,7 +12,6 @@ import { findClosestIntersectPoint } from '../utils/intersections'
 const HASH_GRID_DIV_SIZE_X = 80
 const HASH_GRID_DIV_SIZE_Y = 40
 
-
 const hashGrid = new HashGrid(
     Math.ceil(CANVAS_WIDTH / HASH_GRID_DIV_SIZE_X),
     HASH_GRID_DIV_SIZE_X,
@@ -22,13 +21,7 @@ const hashGrid = new HashGrid(
 
 const elementsContainer = new HashGridElementContainer(hashGrid)
 
-const Context = createContext()
-
-export function useElementsContext() {
-    return useContext(Context)
-}
-
-export default function ElementsContextProvider({ children }) {
+export default function useElementsContext() {
     const [historyPointer, setHistoryPointer] = useState(null)
     const [actionHistory, setActionHistory] = useState([])
 
@@ -36,6 +29,8 @@ export default function ElementsContextProvider({ children }) {
     const {
         currentlyEditedElements,
         currentlyReplacedElements,
+        currentlyCopiedElements,
+        currentlyCreatedElement,
         getElementById,
         addElements: addElementsToState,
         removeElements,
@@ -43,15 +38,20 @@ export default function ElementsContextProvider({ children }) {
         completeEditingElements,
         clearReplacingElements,
         completeReplacingElements,
+        removeCurrentlyCreatedElement,
+        completeCopyingElements,
+        stopEditingElements
     } = elementsUtils
 
     const selectUtils = useSelection()
     const {
+        selectedElements,
         selectedPoints,
         removeSelectedElements,
         addSelectedElements,
         clearSelectedPoints,
-        hasSelectedElement
+        hasSelectedElement,
+        setSelectedElements
     } = selectUtils
 
     const {
@@ -321,6 +321,41 @@ export default function ElementsContextProvider({ children }) {
         })
     }, [actionHistory.length, historyPointer, updateElementsFromHistory])
 
+    const resetCurrentModifications = useCallback(() => {
+        if (currentlyCreatedElement) {
+            return removeCurrentlyCreatedElement()
+        }
+
+        if (currentlyCopiedElements) {
+            const positionedCopies = completeCopyingElements()
+            addElements(positionedCopies)
+        }
+
+        if (currentlyEditedElements) {
+            const newSelectedElements = [...selectedElements]
+            newSelectedElements.forEach(se => (se.isShown = true))
+            setSelectedElements(newSelectedElements)
+
+            return stopEditingElements()
+        }
+
+        if (currentlyReplacedElements) {
+            replaceElements()
+        }
+    }, [
+        addElements,
+        completeCopyingElements, 
+        replaceElements, 
+        removeCurrentlyCreatedElement, 
+        stopEditingElements,
+        setSelectedElements,
+        currentlyCopiedElements, 
+        currentlyCreatedElement, 
+        currentlyEditedElements,  
+        currentlyReplacedElements,
+        selectedElements,
+    ])
+
     const getNextElementIntersection = useCallback((
         element,
         nextElementsGen,
@@ -331,19 +366,19 @@ export default function ElementsContextProvider({ children }) {
 
             const { divContents: nearbyElementIds, checkIfPointInSameDiv } = nextResults
     
-            const elements = []
+            const filteredNearbyElements = []
             for (const nearbyElementId of nearbyElementIds) {
                 const nearbyElement = getElementById(nearbyElementId)
                 if (selectUtils.selectedElements && !hasSelectedElement(nearbyElement)) {
                     continue
                 }
     
-                elements.push(element)
+                filteredNearbyElements.push(nearbyElement)
             }
     
             const nextIntersectPoint = findClosestIntersectPoint({
                 element, 
-                elementsToIntersect: elements,
+                elementsToIntersect: filteredNearbyElements,
                 fromStart: shouldExtendFromStart,
                 checkIntersectionLocality: shouldCheckPointsLocality 
                                             ? elementsContainer.checkPointsLocality.bind(elementsContainer)
@@ -387,31 +422,26 @@ export default function ElementsContextProvider({ children }) {
         )
     }, [getNextElementIntersection])
 
-    return (
-        <Context.Provider value={{
-            // TODO: which of the methods of the two states below do we need further down?
-            // some names clash, such as elementsState.addElements with addElements here
+    return {
+        // TODO: which of the methods of the two states below do we need further down?
+        // some names clash, such as elementsState.addElements with addElements here
 
-            elements: { 
-                ...elementsUtils, 
-                getNextArcIntersection,
-                getNextLineIntersection 
-            },
-            points: {
-                findNearbyPoints,
-            },
-            selection: selectUtils,
-            history: {
-                addElements,
-                editElements,
-                deleteElements,
-                replaceElements,
-                undo,
-                redo,
-            },
-            hashGrid
-        }}>
-            {children}
-        </Context.Provider>
-    )
+        ...elementsUtils, 
+        getNextArcIntersection,
+        getNextLineIntersection,
+        resetCurrentModifications,
+        points: {
+            findNearbyPoints,
+        },
+        selection: selectUtils,
+        history: {
+            addElements,
+            editElements,
+            deleteElements,
+            replaceElements,
+            undo,
+            redo,
+        },
+        hashGrid
+    }
 }

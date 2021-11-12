@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect } from 'react'
+import { useAppContext } from '../../contexts/AppContext'
 
 import useForm from '../../hooks/useForm'
 import Navbar from '../Navbar'
 import ToolInputMapper from '../ToolInputMapper'
 
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../../utils/constants'
-import { useToolsContext } from '../../contexts/ToolsContext'
-import { useElementsContext } from '../../contexts/ElementsContext'
 import useKeyPressCommands from '../../commands/keyPress'
 import useMouseClickCommands from '../../commands/mouseClick'
 import useDrawing from '../../hooks/useDrawing'
@@ -20,64 +19,67 @@ const Canvas = () => {
             currentlyEditedElements,
             currentlyCopiedElements,
             snappedPoint,
-            removeCurrentlyCreatedElement,
-            stopEditingElements,
             isReplacingElement,
+            selection: {
+                selectedElements,
+                selectedPoints,
+                hasSelectedElement,
+            }
         },
-        selection: {
-            selectedElements,
-            selectedPoints, 
-            setSelectedElements,
-            hasSelectedElement,
-            clearSelection,
+        tools: { 
+            currentTranslate, 
+            currentScale, 
+            tool, 
+            setTool, 
+            zoomView, 
+            setMouseDrag 
         }
-    } = useElementsContext()
+    } = useAppContext()
 
-    const { 
-        currentTranslate, 
-        currentScale, 
-        tool,
-        setTool,
-        zoomView,
-        setMouseDrag,
-    } = useToolsContext()
-
-    const { 
-        drawElement, 
+    const {
+        drawElement,
         drawSelectedElement,
         drawReplacedElements,
-        drawSelectionPoints, 
+        drawSelectionPoints,
         drawSnappedPoint,
-        resetCanvas, 
-        drawToolComponents 
+        resetCanvas,
+        drawToolComponents
     } = useDrawing()
 
     const executeKeyPressCommand = useKeyPressCommands()
     const executeMouseClickCommand = useMouseClickCommands()
     const executeMouseMoveCommand = useMouseMoveCommands()
-    
+
     const [inputValues, setInputValue] = useForm({})
 
     useLayoutEffect(() => {
         resetCanvas()
 
         elements.forEach(e => {
+            if (
+                !e.isShown ||
+                hasSelectedElement(e) ||
+                isReplacingElement(e)
+            )
+
             if (e.isShown && !hasSelectedElement(e) && !isReplacingElement(e)) {
                 drawElement(e)
             }
-            
+
             // const bb = e.getBoundingBox()
             // drawElement(new Line({ x: bb.left, y: bb.top }, { pointB: { x: bb.left, y: bb.bottom } }), false, { color: 'red' })
             // drawElement(new Line({ x: bb.left, y: bb.bottom }, { pointB: { x: bb.right, y: bb.bottom } }), false, { color: 'red' })
             // drawElement(new Line({ x: bb.right, y: bb.bottom }, { pointB: { x: bb.right, y: bb.top } }), false, { color: 'red' })
             // drawElement(new Line({ x: bb.right, y: bb.top }, { pointB: { x: bb.left, y: bb.top } }), false, { color: 'red' })
         })
-        
+
         drawReplacedElements()
 
         if (currentlyCreatedElement && currentlyCreatedElement.isFullyDefined) {
-            if (currentlyCreatedElement.type === 'polyline' && 
-                !currentlyCreatedElement.elements[currentlyCreatedElement.elements.length - 1].isFullyDefined) {
+            if (
+                currentlyCreatedElement.type === 'polyline' &&
+                !currentlyCreatedElement.elements[currentlyCreatedElement.elements.length - 1].isFullyDefined
+            ) {
                 for (let i = 0; i < currentlyCreatedElement.elements.length - 1; i++) {
                     drawElement(currentlyCreatedElement.elements[i])
                 }
@@ -114,32 +116,34 @@ const Canvas = () => {
         currentlyEditedElements.forEach(cee => {
             drawElement(cee, false)
         })
-    }, 
-    [
-        elements, 
-        currentlyCreatedElement, 
-        currentlyCopiedElements, 
-        selectedElements, 
-        selectedPoints, 
-        currentlyEditedElements, 
-        currentTranslate, 
-        currentScale, 
-        hasSelectedElement, 
+    }, [
+        elements,
+        currentlyCreatedElement,
+        currentlyCopiedElements,
+        selectedElements,
+        selectedPoints,
+        currentlyEditedElements,
+        currentTranslate,
+        currentScale,
+        hasSelectedElement,
         isReplacingElement,
-        snappedPoint, 
-        drawElement, 
-        drawReplacedElements, 
-        drawSelectedElement, 
+        snappedPoint,
+        drawElement,
+        drawReplacedElements,
+        drawSelectedElement,
         drawSelectionPoints,
-        drawSnappedPoint, 
-        drawToolComponents, 
-        resetCanvas, 
-        tool.type, 
+        drawSnappedPoint,
+        drawToolComponents,
+        resetCanvas,
+        tool.type
     ])
 
-    const handleKeyPress = useCallback((event) => {
-        executeKeyPressCommand(event)
-    }, [executeKeyPressCommand])
+    const handleKeyPress = useCallback(
+        event => {
+            executeKeyPressCommand(event)
+        },
+        [executeKeyPressCommand]
+    )
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyPress)
@@ -147,8 +151,8 @@ const Canvas = () => {
             document.removeEventListener('keydown', handleKeyPress)
         }
     }, [handleKeyPress])
-    
-    const handleMouseWheel = (event) => {
+
+    const handleMouseWheel = event => {
         const { deltaY } = event
         const { clientX, clientY } = event
 
@@ -157,8 +161,8 @@ const Canvas = () => {
         }
     }
 
-    const handleMouseDown = (event) => {
-        switch(event.button) {
+    const handleMouseDown = event => {
+        switch (event.button) {
             case 0:
                 executeMouseClickCommand(event)
                 break
@@ -169,24 +173,25 @@ const Canvas = () => {
                 return
         }
     }
-    const changeTool = (tool) => {
-        if (currentlyCreatedElement) {
-            removeCurrentlyCreatedElement()
-        }
 
-        if (currentlyEditedElements) {
-            const newSelectedElements = [...selectedElements]
-            newSelectedElements.forEach(se => se.isShown = true)
-            setSelectedElements(newSelectedElements)
-            stopEditingElements()
-        }
+    // const changeTool = tool => {
+    //     if (currentlyCreatedElement) {
+    //         removeCurrentlyCreatedElement()
+    //     }
 
-        setTool(tool)
+    //     if (currentlyEditedElements) {
+    //         const newSelectedElements = [...selectedElements]
+    //         newSelectedElements.forEach(se => (se.isShown = true))
+    //         setSelectedElements(newSelectedElements)
+    //         stopEditingElements()
+    //     }
 
-        if (tool.type !== 'transform' && tool.type !== 'copy' && tool.type !== 'trim') {
-            clearSelection()
-        }
-    }
+    //     setTool(tool)
+
+    //     if (tool.type !== 'transform' && tool.type !== 'copy' && tool.type !== 'trim') {
+    //         clearSelection()
+    //     }
+    // }
 
     return (
         <>
@@ -200,19 +205,20 @@ const Canvas = () => {
                 onMouseDown={handleMouseDown}
                 onWheel={handleMouseWheel}
                 onMouseMove={executeMouseMoveCommand}
-            // onMouseDown={handleMouseDown}
-            // onMouseUp={handleMouseUp}
+                // onMouseDown={handleMouseDown}
+                // onMouseUp={handleMouseUp}
             >
                 Canvas
             </canvas>
-            <Navbar
-                tool={tool}
-                changeTool={changeTool}
-            />
+            <Navbar tool={tool} changeTool={setTool} />
 
-            { tool &&
-                <ToolInputMapper inputValues={inputValues} setInputValue={setInputValue} toolName={tool.name} />
-            }
+            {tool && (
+                <ToolInputMapper
+                    inputValues={inputValues}
+                    setInputValue={setInputValue}
+                    toolName={tool.name}
+                />
+            )}
         </>
     )
 }

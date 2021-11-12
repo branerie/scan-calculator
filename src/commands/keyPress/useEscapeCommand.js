@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useEscapeCommand = () => {
     const {
@@ -12,18 +11,20 @@ const useEscapeCommand = () => {
             stopEditingElements,
             currentlyCopiedElements,
             completeCopyingElements,
+            selection: {
+                selectedElements,
+                clearSelection,
+                clearSelectedPoints
+            },
+            history: {
+                addElements
+            },
         },
-        selection: {
-            selectedElements,
-            clearSelection,
-            clearSelectedPoints
-        },
-        history: {
-            addElements
+        tools: { 
+            resetTool, 
+            clearCurrentTool 
         }
-    } = useElementsContext() 
-
-    const { resetTool, clearCurrentTool } = useToolsContext()
+    } = useAppContext()
 
     const handleEscapeCmd = useCallback(() => {
         if (currentlyCreatedElement) {

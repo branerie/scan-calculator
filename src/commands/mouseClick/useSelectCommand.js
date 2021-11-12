@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useSelectCommand = () => {
     const {
@@ -8,101 +7,98 @@ const useSelectCommand = () => {
             startEditingElements,
             getElementsContainingPoint,
             getElementsInContainer,
+            selection: {
+                selectedElements,
+                addSelectedElements,
+                setSelectedElements,
+                setSelectedPoints,
+                removeSelectedElements
+            },
+            points: { findNearbyPoints }
         },
-        selection: {
-            selectedElements,
-            addSelectedElements,
-            setSelectedElements,
-            setSelectedPoints,
-            removeSelectedElements,
-        },
-        points: {
-            findNearbyPoints
-        }
-    } = useElementsContext()
+        tools: { tool, setTool, selectDelta, addToolClick, clearCurrentTool }
+    } = useAppContext()
 
-    const { tool, setTool, selectDelta, addToolClick, clearCurrentTool } = useToolsContext()
+    const handleSelectCmd = useCallback(
+        (event, clickedPoint) => {
+            if (selectedElements && selectedElements.length > 0) {
+                const nearbyPoints = findNearbyPoints(clickedPoint.x, clickedPoint.y, selectDelta)
 
-    const handleSelectCmd = useCallback((event, clickedPoint) => {
-        if (selectedElements && selectedElements.length > 0) {
-            const nearbyPoints = findNearbyPoints(clickedPoint.x, clickedPoint.y, selectDelta)
+                const selectedPoints = []
+                const editedElements = []
+                for (const point of nearbyPoints) {
+                    const editedElement = selectedElements.find(se => se.getPointById(point.pointId))
+                    if (editedElement) {
+                        selectedPoints.push(point)
+                        editedElements.push(editedElement)
 
-            const selectedPoints = []
-            const editedElements = []
-            for (const point of nearbyPoints) {
-                const editedElement = selectedElements.find(se => se.getPointById(point.pointId))
-                if (editedElement) {
-                    selectedPoints.push(point)
-                    editedElements.push(editedElement)
-
-                    // editedElement.isShown = false
+                        // editedElement.isShown = false
+                    }
                 }
-            }
 
-            if (editedElements.length > 0) {
-                startEditingElements(editedElements, false)
-                setSelectedPoints(selectedPoints)
-                setSelectedElements([...selectedElements])
-                setTool({ type: 'edit', name: 'edit' })
-                addToolClick(selectedPoints[0])
-                return
-            }
-        }
-
-        const clickedElements = getElementsContainingPoint(
-            clickedPoint.x, 
-            clickedPoint.y, 
-            { maxPointsDiff: selectDelta }
-        )
-
-        if (!tool.clicks) {
-            if (clickedElements) {
-                if (event.shiftKey) {
-                    removeSelectedElements(clickedElements)
+                if (editedElements.length > 0) {
+                    setTool({ type: 'edit', name: 'edit' })
+                    addToolClick(selectedPoints[0])
+                    
+                    startEditingElements(editedElements, false)
+                    setSelectedPoints(selectedPoints)
+                    setSelectedElements([...selectedElements])
                     return
                 }
-    
-                addSelectedElements(clickedElements)
-                return    
             }
 
-            addToolClick(clickedPoint, false)
+            const clickedElements = getElementsContainingPoint(clickedPoint.x, clickedPoint.y, {
+                maxPointsDiff: selectDelta
+            })
+
+            if (!tool.clicks) {
+                if (clickedElements) {
+                    if (event.shiftKey) {
+                        removeSelectedElements(clickedElements)
+                        return
+                    }
+
+                    addSelectedElements(clickedElements)
+                    return
+                }
+
+                addToolClick(clickedPoint, false)
+                return
+            }
+
+            const initialClick = tool.clicks[0]
+            const newlySelectedElements = getElementsInContainer(initialClick, clickedPoint, {
+                shouldSkipPartial: initialClick.x < clickedPoint.x
+            })
+
+            if (newlySelectedElements) {
+                if (event.shiftKey) {
+                    removeSelectedElements(newlySelectedElements)
+                } else {
+                    addSelectedElements(newlySelectedElements)
+                }
+            }
+
+            clearCurrentTool()
             return
-        }
-
-        const initialClick = tool.clicks[0]
-        const newlySelectedElements = getElementsInContainer(
-            initialClick, 
-            clickedPoint, 
-            { shouldSkipPartial: initialClick.x < clickedPoint.x }
-        )
-        
-        if (newlySelectedElements) {
-            if (event.shiftKey) {
-                removeSelectedElements(newlySelectedElements)
-            } else {
-                addSelectedElements(newlySelectedElements)
-            }
-        }
-
-        clearCurrentTool()
-        return
-    }, [
-        getElementsContainingPoint, 
-        selectDelta, 
-        tool.clicks, 
-        getElementsInContainer, 
-        clearCurrentTool, 
-        selectedElements, 
-        addToolClick, 
-        addSelectedElements, 
-        removeSelectedElements, 
-        findNearbyPoints, 
-        startEditingElements, 
-        setSelectedPoints, 
-        setSelectedElements, 
-        setTool,
-    ])
+        },
+        [
+            getElementsContainingPoint,
+            selectDelta,
+            tool.clicks,
+            getElementsInContainer,
+            clearCurrentTool,
+            selectedElements,
+            addToolClick,
+            addSelectedElements,
+            removeSelectedElements,
+            findNearbyPoints,
+            startEditingElements,
+            setSelectedPoints,
+            setSelectedElements,
+            setTool
+        ]
+    )
 
     return handleSelectCmd
 }

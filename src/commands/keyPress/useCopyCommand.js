@@ -1,18 +1,14 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useCopyCommand = () => {
     const {
         elements: {
-            completeCopyingElements
+            completeCopyingElements,
+            history: { addElements }
         },
-        history: {
-            addElements
-        }
-    } = useElementsContext()
-
-    const { resetTool } = useToolsContext()
+        tools: { resetTool }
+    } = useAppContext()
 
     const handleCopyCmd = useCallback(() => {
         const positionedCopies = completeCopyingElements()

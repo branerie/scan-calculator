@@ -1,3 +1,4 @@
+import { getAngleBetweenPoints } from './angle'
 import { createPoint } from './elementFactory'
 
 const getPointWithMinDimension = (firstPoint, secondPoint, dim) =>
@@ -30,6 +31,26 @@ const getArcEndPoints = (arc) => {
     return { left, right, top, bottom }
 }
 
+const getPointsAngleDistance = (arcCenter, shouldCheckClockwise, pointFrom, pointTo) => {
+    const angleFrom = getAngleBetweenPoints(arcCenter, pointFrom)
+    const angleTo = getAngleBetweenPoints(arcCenter, pointTo)
+
+    if (shouldCheckClockwise) {
+        if (angleFrom < angleTo) {
+            return angleTo - angleFrom
+        }
+
+        return (360 - angleFrom) + angleTo
+    }
+
+    if (angleFrom > angleTo) {
+        return angleFrom - angleTo
+    }
+
+    return (360 - angleTo) + angleFrom
+}
+
 export {
-    getArcEndPoints
+    getArcEndPoints,
+    getPointsAngleDistance
 }

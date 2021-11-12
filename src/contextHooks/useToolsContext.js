@@ -1,7 +1,5 @@
-import React, { 
+import { 
     useState, 
-    useContext, 
-    createContext, 
     useCallback, 
     useLayoutEffect,
     useEffect, 
@@ -21,13 +19,7 @@ const ACCEPTED_TOOL_KEYS = {
     Y: 'y'
 }
 
-const Context = createContext()
-
-export function useToolsContext() {
-    return useContext(Context)
-}
-
-export default function ToolsContextProvider({ children }) {
+export default function useToolsContext() {
     const [currentTranslate, setCurrentTranslate] = useState([0, 0])
     const [currentScale, setCurrentScale] = useState(1)
     const [tool, setTool] = useState({ type: 'select', name: 'select' })
@@ -185,35 +177,31 @@ export default function ToolsContextProvider({ children }) {
         setTool(tool => ({ ...tool, [propName]: propValue }))
     }, [])
 
-    return (
-        <Context.Provider value={{
-            currentTranslate,
-            setCurrentTranslate,
-            currentScale,
-            setCurrentScale,
-            selectDelta: SELECT_DELTA / currentScale,
-            tool,
-            keysRef,
-            setTool,
-            resetTool,
-            addToolClick,
-            editLastToolClick,
-            addToolProp,
-            clearCurrentTool,
-            getLastReferenceClick,
-            removeLastToolClick,
-            getRealMouseCoordinates,
-            panView,
-            zoomView,
-            canvasContext: context,
-            mouseDrag,
-            setMouseDrag,
-            options,
-            setOptions,
-        }}>
-            {children}
-        </Context.Provider>
-    )
+    return {
+        currentTranslate,
+        setCurrentTranslate,
+        currentScale,
+        setCurrentScale,
+        selectDelta: SELECT_DELTA / currentScale,
+        tool,
+        keysRef,
+        setTool,
+        resetTool,
+        addToolClick,
+        editLastToolClick,
+        addToolProp,
+        clearCurrentTool,
+        getLastReferenceClick,
+        removeLastToolClick,
+        getRealMouseCoordinates,
+        panView,
+        zoomView,
+        canvasContext: context,
+        mouseDrag,
+        setMouseDrag,
+        options,
+        setOptions,
+    }
 }
 
 

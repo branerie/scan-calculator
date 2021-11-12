@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 import useCopyCommand from './useCopyCommand'
 import useDeleteCommand from './useDeleteCommand'
 import useDrawCommand from './useDrawCommand'
@@ -21,7 +21,11 @@ const useKeyPressCommands = () => {
         extend: useExtendCommand()
     }
 
-    const { tool } = useToolsContext()
+    const { 
+        tools: { 
+            tool 
+        } 
+    } = useAppContext()
 
     const executeKeyPressCommand = useCallback((event) => {
         if ((event.metaKey || event.ctrlKey) && (event.key === 'z' || event.key === 'y')) {

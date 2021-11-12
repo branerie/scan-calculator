@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
-import { useElementsContext } from '../../contexts/ElementsContext'
-import { useToolsContext } from '../../contexts/ToolsContext'
+import { useAppContext } from '../../contexts/AppContext'
 
 const useCopyCommand = () => {
     const {
@@ -8,25 +7,31 @@ const useCopyCommand = () => {
             currentlyCopiedElements,
             startCopyingElements,
             continueCopyingElements,
+            selection: { selectedElements }
         },
-        selection: {
-            selectedElements
-        }
-    } = useElementsContext()
+        tools: { addToolClick }
+    } = useAppContext()
 
-    const { addToolClick } = useToolsContext()
-    
-    const handleCopyCmd = useCallback((event, clickedPoint) => {
-        if (!selectedElements) return
+    const handleCopyCmd = useCallback(
+        (event, clickedPoint) => {
+            if (!selectedElements) return
 
-        if (!currentlyCopiedElements) {
-            startCopyingElements(selectedElements)
-            addToolClick(clickedPoint)
-            return
-        }
+            if (!currentlyCopiedElements) {
+                startCopyingElements(selectedElements)
+                addToolClick(clickedPoint)
+                return
+            }
 
-        continueCopyingElements()
-    }, [currentlyCopiedElements, selectedElements, addToolClick, startCopyingElements, continueCopyingElements])
+            continueCopyingElements()
+        },
+        [
+            currentlyCopiedElements,
+            selectedElements,
+            addToolClick,
+            startCopyingElements,
+            continueCopyingElements
+        ]
+    )
 
     return handleCopyCmd
 }

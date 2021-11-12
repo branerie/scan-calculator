@@ -1,4 +1,4 @@
-import { createPoint } from '../elementFactory'
+import { createPoint } from '../../elementFactory'
 
 function* getNextInterceptPoint({
     slope,

@@ -11,8 +11,17 @@ class Polyline extends Element {
     #elements
     #startPoint
     #endPoint
+    #isStartInPolyDirection
+    #isEndInPolyDirection
 
-    constructor(initialPoint, { id = null, groupId = null, elements = null } = {}) {
+    constructor(
+        initialPoint, { 
+            id = null, 
+            groupId = null, 
+            elements = null,
+            isStartInPolyDirection = true,
+            isEndInPolyDirection = true
+        } = {}) {
         super(id, groupId)
         if (groupId && !id) {
             this.id = groupId
@@ -21,9 +30,15 @@ class Polyline extends Element {
         
         // this.#isJoined = false
 
+        this.#isStartInPolyDirection = isStartInPolyDirection
+        this.#isEndInPolyDirection = isEndInPolyDirection
+
         if (elements) {
             // do not use this.#elements directly; must go through setter logic
             this.elements = elements
+
+            this._updateEndPoints()
+
             return
         }
 
@@ -65,6 +80,7 @@ class Polyline extends Element {
         this.#isFullyDefined = isFullyDefined
         if (isFullyDefined) {
             this._updateBoundingBox()
+            this._updateEndPoints()
             // this.joinEnds()
         }
     }
@@ -82,12 +98,11 @@ class Polyline extends Element {
             startElement.endPoint = value
         }
 
-
         // if (!pointsMatch(value, this.#endPoint)) {
         //     throw new Error(END_POINT_ERROR)
         // }
 
-        this.#startPoint = { ...value, elementId: this.centerPoint.elementId }
+        this.#startPoint = { ...value, elementId: this.id }
     }
 
     set endPoint(value) {
@@ -108,7 +123,7 @@ class Polyline extends Element {
         //     throw new Error(END_POINT_ERROR)
         // }
 
-        this.#endPoint = { ...value, elementId: this.centerPoint.elementId }
+        this.#endPoint = { ...value, elementId: this.id }
     }
 
     checkIfPointOnElement(point, maxDiff) {
@@ -143,6 +158,7 @@ class Polyline extends Element {
         
         if (this.#isFullyDefined) {
             this._updateBoundingBox()
+            this._updateEndPoints()
             // this.joinEnds()
         }
     }
@@ -227,6 +243,22 @@ class Polyline extends Element {
         this._updateBoundingBox()
     }
 
+    replaceElement(newElement, elementId) {
+        elementId = elementId || newElement.id
+
+        for(let elementIndex = 0; elementIndex < this.#elements.length; elementIndex++) {
+            if (this.#elements[elementIndex].id === elementId) {
+                this.#elements[elementIndex] = newElement
+
+                if (elementIndex === 0 || elementIndex === this.#elements.length - 1) {
+                    this._updateEndPoints()
+                }
+
+                break
+            }
+        }
+    }
+
     _setPointsElementId() {
         if (!this.#elements) return
         
@@ -252,6 +284,18 @@ class Polyline extends Element {
         }
 
         this.#boundingBox = { left, right, top, bottom }
+    }
+
+    _updateEndPoints() {
+        const startPoint = this.#isStartInPolyDirection
+                                ? this.#elements[0].startPoint
+                                : this.#elements[0].endPoint
+        const endPoint = this.#isEndInPolyDirection
+                                ? this.#elements[this.#elements.length - 1].endPoint
+                                : this.#elements[this.#elements.length - 1].startPoint
+
+        this.#startPoint = { ...startPoint, elementId: this.id }
+        this.#endPoint = { ...endPoint, elementId: this.id }
     }
 }
 
