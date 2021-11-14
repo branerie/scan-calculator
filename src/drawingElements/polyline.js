@@ -248,7 +248,12 @@ class Polyline extends Element {
 
         for(let elementIndex = 0; elementIndex < this.#elements.length; elementIndex++) {
             if (this.#elements[elementIndex].id === elementId) {
+                if (!this._validateElementReplacement(elementIndex, newElement)) {
+                    throw new Error('Invalid polyline element replacement')
+                }
+
                 this.#elements[elementIndex] = newElement
+
 
                 if (elementIndex === 0 || elementIndex === this.#elements.length - 1) {
                     this._updateEndPoints()
@@ -296,6 +301,30 @@ class Polyline extends Element {
 
         this.#startPoint = { ...startPoint, elementId: this.id }
         this.#endPoint = { ...endPoint, elementId: this.id }
+    }
+
+    _validateElementReplacement(elementIndex, newElement) {
+        let isStartValid = true
+        if (elementIndex > 0) {
+            const previousElement = this.#elements[elementIndex - 1]
+            isStartValid = 
+                pointsMatch(previousElement.endPoint, newElement.startPoint) ||
+                pointsMatch(previousElement.startPoint, newElement.startPoint) ||
+                pointsMatch(previousElement.startPoint, newElement.endPoint) ||
+                pointsMatch(previousElement.endPoint, newElement.endPoint)
+        }
+
+        let isEndValid = true
+        if (elementIndex < this.#elements.length - 1) {
+            const nextElement = this.#elements[this.#elements.length - 1]
+            isEndValid = 
+                pointsMatch(nextElement.startPoint, newElement.endPoint) ||
+                pointsMatch(nextElement.endPoint, newElement.endPoint) ||
+                pointsMatch(nextElement.endPoint, newElement.startPoint) ||
+                pointsMatch(nextElement.startPoint, newElement.startPoint)
+        }
+
+        return isStartValid && isEndValid
     }
 }
 

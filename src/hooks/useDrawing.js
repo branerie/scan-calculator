@@ -154,9 +154,6 @@ const useDrawing = () => {
                     }
                 }
             }
-
-            if (currentlyReplacedElements.replacingElements) {
-            }
         },
         [currentlyReplacedElements, drawElement, tool.name, toolKeys]
     )

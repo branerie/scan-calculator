@@ -113,9 +113,12 @@ const useExtendCommand = () => {
 
                     editedElement = validateExtendedElement(editedElement)
 
-                    commandResult[element.id] = { replacingElements: [], removedSections: [] }
-                    commandResult[element.id].replacingElements.push(editedElement)
-                    commandResult[element.id].removedSections.push(element)
+                    commandResult[elementToExtend.id] = { replacingElements: [], removedSections: [] }
+                    commandResult[elementToExtend.id].replacingElements.push(editedElement)
+                    commandResult[elementToExtend.id].removedSections.push(elementToExtend)
+                    // commandResult[element.id] = { replacingElements: [], removedSections: [] }
+                    // commandResult[element.id].replacingElements.push(editedElement)
+                    // commandResult[element.id].removedSections.push(element)
                 }
             }
 

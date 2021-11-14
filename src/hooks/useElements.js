@@ -241,19 +241,28 @@ const elementsReducer = (state, action) => {
                 
                 if (currentReplacements[replacedId]) {
                     for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
-                        delete newElements[oldReplacingElement.id]
+                        if (newElements[oldReplacingElement.id]) {
+                            delete newElements[oldReplacingElement.id]
+                        } else {
+                            delete newGroupedElements[oldReplacingElement.id]
+                        }
 
                         if (oldReplacingElement.baseType === 'polyline') {
                             oldReplacingElement.elements.forEach(e => delete newGroupedElements[e.id])
                         }
                     }
                 } else {
-                    const oldElement = (newElements[replacedId] || newElements[newGroupedElements[replacedId].groupId])
+                    // const oldElement = (newElements[replacedId] || newElements[newGroupedElements[replacedId].groupId])
+                    const oldElement = newElements[replacedId] || newGroupedElements[replacedId]
                     oldElement.isShown = false
                 }
                 
                 for (const replacingElement of replacingElements) {
-                    newElements[replacingElement.id] = replacingElement
+                    if (replacingElement.groupId) {
+                        newGroupedElements[replacingElement.id] = replacingElement
+                    } else {
+                        newElements[replacingElement.id] = replacingElement
+                    }
 
                     if (replacingElement.baseType === 'polyline') {
                         replacingElement.elements.forEach(e => newGroupedElements[e.id] = e)
@@ -297,6 +306,7 @@ const elementsReducer = (state, action) => {
             }
 
             const newElements = { ...state.elements }
+            const newGroupedElements = { ...state.groupedElements }  
             for (const replacedId of Object.keys(replacementsToRemove)) {
                 // const replacedParentElement = (
                 //     newElements[replacedId] || 
@@ -304,18 +314,23 @@ const elementsReducer = (state, action) => {
                 // )
 
                 // replacedParentElement.isShown = true
-                const replacedElement = newElements[replacedId]
+                const replacedElement = newElements[replacedId] || newGroupedElements[replacedId]
                 replacedElement.isShown = true
 
                 const replacingElements = replacementsToRemove[replacedId].replacingElements
                 for (const replacingElement of replacingElements) {
-                    delete newElements[replacingElement.id]
+                    if (newElements[replacingElement.id]) {
+                        delete newElements[replacingElement.id]
+                    } else {
+                        delete newGroupedElements[replacingElements.id]
+                    }
                 }
             }
 
             return { 
                 ...state, 
-                elements: newElements, 
+                elements: newElements,
+                groupedElements: newGroupedElements,
                 // currentlyReplacedElements: completed ? { completed } : null
                 currentlyReplacedElements: completed || replacementsToKeep ? {
                     ...(!!(completed) && { completed }),
@@ -342,16 +357,23 @@ const elementsReducer = (state, action) => {
                     delete newCompleted.replacingElements[replacedId]
 
                 } else {
-                    let removedElement = state.elements[replacedId] // || state.groupedElements[replacedId]
-                    // if (removedElement.groupId) {
-                    //     removedElement = state.elements[removedElement.groupId]
-                    // }
+                    let removedElement = state.elements[replacedId] || state.groupedElements[replacedId]
+                    if (removedElement.groupId) {
+                        removedElement = state.elements[removedElement.groupId]
+                    }
 
                     newCompleted.removedElements.push(removedElement)
                 }
                 
                 replacingElements.forEach(re => {
-                    newCompleted.replacingElements[re.id] = re
+                    if (re.groupId) {
+                        const parentElementCopy = ElementManipulator.copyPolyline(state.elements[re.groupId], false)
+                        parentElementCopy.replaceElement(re, replacedId)
+
+                        newCompleted.replacingElements[re.groupId] = parentElementCopy
+                    } else {
+                        newCompleted.replacingElements[re.id] = re
+                    }
                 })
             }
 
@@ -362,10 +384,13 @@ const elementsReducer = (state, action) => {
 
             const { completed, currentReplacements } = state.currentlyReplacedElements
             let newElements = null
+            let newGroupedElements = null
             if (currentReplacements) {
                 newElements = { ...state.elements }
+                newGroupedElements = { ...state.groupedElements }   
                 for (const replacedId of Object.keys(currentReplacements)) {
-                    newElements[replacedId].isShown = true
+                    const replacedElement = newElements[replacedId] || newGroupedElements[replacedId]
+                    replacedElement.isShown = true
                 }
             }
 
@@ -373,15 +398,16 @@ const elementsReducer = (state, action) => {
                 return {  
                     ...state, 
                     elements: newElements || state.elements,
+                    groupedElements: newGroupedElements || state.groupedElements,
                     currentlyReplacedElements: null, 
                 }
             }
             
             if (!newElements) {
                 newElements = { ...state.elements }
+                newGroupedElements = { ...state.groupedElements }  
             }
 
-            const newGroupedElements = { ...state.groupedElements }
             for (const removedElement of completed.removedElements) {
                 delete newElements[removedElement.id]
 
