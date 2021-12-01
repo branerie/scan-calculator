@@ -176,6 +176,9 @@ export default function useElementsContext() {
         let newSelectionPoints = []
         for (const removedElement of completed.removedElements) {
             removedElement.isShown = true
+            if (removedElement.baseType === 'polyline') {
+                removedElement.elements.forEach(subElement => subElement.isShown = true)    
+            }
     
             removedSelectionPoints = removedSelectionPoints.concat(removedElement.getSelectionPoints())
         }

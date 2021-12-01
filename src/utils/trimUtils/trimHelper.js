@@ -171,7 +171,7 @@ const trimSubsectionElements = (subsectionElements) => {
     for (let subIndex = 0; subIndex < subsectionElements.length; subIndex++) {
         const subsectionElementInfo = subsectionElements[subIndex]
         const { element: subElement, trimStart, trimEnd, isInPolylineDirection } = subsectionElementInfo
-        const trimmedSubElement = ElementManipulator.copyElement(subElement, false)
+        const trimmedSubElement = ElementManipulator.copyElement(subElement, { assignId: true })
         if (!isInPolylineDirection) {
             const tempEnd = trimmedSubElement.startPoint
             trimmedSubElement.startPoint = trimmedSubElement.endPoint

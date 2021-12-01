@@ -109,7 +109,7 @@ const elementsReducer = (state, action) => {
 
             for (const editedElement of editedElements) {
                 const editedElementCopy = shouldCopyElements 
-                                            ? ElementManipulator.copyElement(editedElement, true)
+                                            ? ElementManipulator.copyElement(editedElement, { keepIds: true })
                                             : editedElement
     
                 newCurrentlyEditedElements[editedElement.id] = editedElementCopy
@@ -173,7 +173,7 @@ const elementsReducer = (state, action) => {
             const { elementsToCopy } = action
             const newCopiedElements = []
             elementsToCopy.forEach(element => {
-                const copyOfElement = ElementManipulator.copyElement(element, false)
+                const copyOfElement = ElementManipulator.copyElement(element, { assignId: true })
                 newCopiedElements.push(copyOfElement)
             })
 
@@ -212,7 +212,7 @@ const elementsReducer = (state, action) => {
 
             const newCurrent = []
             current.forEach(element => {
-                const copyOfElement = ElementManipulator.copyElement(element, false)
+                const copyOfElement = ElementManipulator.copyElement(element, { assignId: true })
                 newCurrent.push(copyOfElement)
             })
 
@@ -344,13 +344,15 @@ const elementsReducer = (state, action) => {
             const { currentlyReplacedElements: { currentReplacements, completed } } = state
 
             const newCompleted = completed ? { 
-                removedElements: [ ...completed.removedElements ], 
+                removedElements: new Set(completed.removedElements), 
                 replacingElements: { ...completed.replacingElements } 
             } : { 
-                removedElements: [], 
+                removedElements: new Set(), 
                 replacingElements: {} 
             }
 
+            let newElements = null
+            let newGroupedElements = null
             for (const [replacedId, { replacingElements }] of Object.entries(currentReplacements)) {
                 if (newCompleted.replacingElements[replacedId]) {
                     // we are trimming an element which was formed by trimming another element in the current command
@@ -362,13 +364,42 @@ const elementsReducer = (state, action) => {
                         removedElement = state.elements[removedElement.groupId]
                     }
 
-                    newCompleted.removedElements.push(removedElement)
+                    // const removedElement = state.elements[replacedId] || state.groupedElements[replacedId]
+                    newCompleted.removedElements.add(removedElement)
                 }
                 
+                // eslint-disable-next-line no-loop-func
                 replacingElements.forEach(re => {
                     if (re.groupId) {
-                        const parentElementCopy = ElementManipulator.copyPolyline(state.elements[re.groupId], false)
-                        parentElementCopy.replaceElement(re, replacedId)
+                        if (!newElements) {
+                            newElements = { ...state.elements }
+                            newGroupedElements = { ...state.groupedElements }
+                        }
+
+                        const oldParentElement = newCompleted.replacingElements[re.groupId] || state.elements[re.groupId]
+                        if (newCompleted.replacingElements[re.groupId]) {
+                            // we are trimming / extending the same polyline twice
+                            delete newElements[oldParentElement.id]
+                            oldParentElement.elements.forEach(subElement => {
+                                delete newGroupedElements[subElement.id]
+                            })
+                        } else {
+                            newElements[re.groupId].isShown = false
+                        }
+
+                        /*
+                        If replacingElement is a polyline subElement: 
+                            1) hide the old polyline, 
+                            2) add a modified copy to elements (and groupedElements for the subElements)
+                            3) in completed, add replacement for the whole polyline
+                        */
+                        const parentElementCopy = ElementManipulator.copyPolyline(oldParentElement, true, true)
+                        parentElementCopy.replaceElement(re, replacedId)                        
+
+                        newElements[parentElementCopy.id] = parentElementCopy
+                        parentElementCopy.elements.forEach(pece => {
+                            newGroupedElements[pece.id] = pece
+                        })
 
                         newCompleted.replacingElements[re.groupId] = parentElementCopy
                     } else {
@@ -377,7 +408,12 @@ const elementsReducer = (state, action) => {
                 })
             }
 
-            return { ...state, currentlyReplacedElements: { completed: newCompleted } }            
+            return { 
+                ...state, 
+                ...(newElements && { elements: newElements }),
+                ...(newGroupedElements && { groupedElements: newGroupedElements }),
+                currentlyReplacedElements: { completed: newCompleted } 
+            }            
         }
         case 'completeReplacingElements': {
             if (!state.currentlyReplacedElements) return state
@@ -408,12 +444,17 @@ const elementsReducer = (state, action) => {
                 newGroupedElements = { ...state.groupedElements }  
             }
 
+            
             for (const removedElement of completed.removedElements) {
-                delete newElements[removedElement.id]
+                if (removedElement.groupId) {
 
-                if (removedElement.baseType === 'polyline') {
-                    removedElement.elements.forEach(e => delete newGroupedElements[e.id])
                 }
+
+                // delete newElements[removedElement.id]
+
+                // if (removedElement.baseType === 'polyline') {
+                //     removedElement.elements.forEach(e => delete newGroupedElements[e.id])
+                // }
             }   
             
             return {

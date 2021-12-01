@@ -101,7 +101,7 @@ const useExtendCommand = () => {
                 }
 
                 if (newStartPos || newEndPos) {
-                    let editedElement = ElementManipulator.copyElement(element, false)
+                    let editedElement = ElementManipulator.copyElement(elementToExtend, { assignId: true })
 
                     if (newStartPos) {
                         editedElement.startPoint = newStartPos

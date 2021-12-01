@@ -56,8 +56,7 @@ const useDrawing = () => {
         drawHashGrid()
     }, [canvasContext, currentScale, currentTranslate])
 
-    const drawElement = useCallback(
-        (element, options = {}) => {
+    const drawElement = useCallback((element, options = {}) => {
             canvasContext.beginPath()
 
             const { color, lineDash } = options
@@ -89,11 +88,13 @@ const useDrawing = () => {
                     break
                 case 'polyline':
                 case 'rectangle':
-                    element.elements.forEach(e => {
-                        if (e.isShown) {
-                            drawElement(e, options)
-                        }
-                    })
+                    if (element.isShown) {
+                        element.elements.forEach(e => {
+                            if (e.isShown) {
+                                drawElement(e, options)
+                            }
+                        })
+                    }
                     return
                 case 'circle':
                     canvasContext.moveTo(element.centerPoint.x + element.radius, element.centerPoint.y)

@@ -41,7 +41,7 @@ const useDrawCommand = () => {
 
             const copiedPoint = snappedPoint ? createPoint(clickedPoint.x, clickedPoint.y) : clickedPoint
 
-            const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, true)
+            const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, { keepIds: true })
             newCurrentlyCreatedElement.defineNextAttribute(copiedPoint)
             addCurrentlyCreatedElement(newCurrentlyCreatedElement)
 

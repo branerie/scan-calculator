@@ -316,7 +316,7 @@ class Polyline extends Element {
 
         let isEndValid = true
         if (elementIndex < this.#elements.length - 1) {
-            const nextElement = this.#elements[this.#elements.length - 1]
+            const nextElement = this.#elements[elementIndex + 1]
             isEndValid = 
                 pointsMatch(nextElement.startPoint, newElement.endPoint) ||
                 pointsMatch(nextElement.endPoint, newElement.endPoint) ||

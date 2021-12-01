@@ -15,7 +15,7 @@ const useUndoRedoCommand = () => {
     const handleUndoRedoCmd = useCallback(
         event => {
             if (currentlyCreatedElement && currentlyCreatedElement.type === 'polyline') {
-                const createdElementCopy = ElementManipulator.copyElement(currentlyCreatedElement)
+                const createdElementCopy = ElementManipulator.copyElement(currentlyCreatedElement, { assignId: true })
                 const removedElement = createdElementCopy.elements.pop()
                 const removedElementLastPoint = removedElement.pointB
 

@@ -1,11 +1,12 @@
 import { MAX_NUM_ERROR } from '../utils/constants'
 import { createLine } from '../utils/elementFactory'
 import ElementManipulator from '../utils/elementManipulator'
-import { getPointDistance, getRotatedPointAroundPivot } from '../utils/point'
+import { getPointDistance, getRotatedPointAroundPivot, pointsMatch } from '../utils/point'
 import BaseArc from './baseArc'
 import Line from './line'
 
 const INCONSISTENT_ARC_ERROR = 'Inconsistent arc - the end of startLine and the end of endLine must lie the same distance from the arc center (its radius)'
+const INCONSISTENT_LINE_ERROR = 'Inconsistent inner line of arc - either line length does not equal arc radius or its startPoint does not coincide with arc center'
 
 class Arc extends BaseArc {
     #startLine
@@ -78,6 +79,36 @@ class Arc extends BaseArc {
     get startLine() { return this.#startLine }
     get endLine() { return this.#endLine }
     get midLine() { return this.#midLine }
+
+    set startLine(newLine) {
+        const isConsistent = this.__checkNewInnerLineConsistency(newLine)
+        if (isConsistent) {
+            this.#startLine = newLine
+            return
+        }
+
+        throw new Error(INCONSISTENT_LINE_ERROR)
+    }
+
+    set endLine(newLine) {
+        const isConsistent = this.__checkNewInnerLineConsistency(newLine)
+        if (isConsistent) {
+            this.#endLine = newLine
+            return
+        }
+
+        throw new Error(INCONSISTENT_LINE_ERROR)
+    }
+
+    set midLine(newLine) {
+        const isConsistent = this.__checkNewInnerLineConsistency(newLine)
+        if (isConsistent) {
+            this.#midLine = newLine
+            return
+        }
+
+        throw new Error(INCONSISTENT_LINE_ERROR)
+    }
 
     get radius() { return super.radius }
     set radius(value) {
@@ -372,6 +403,18 @@ class Arc extends BaseArc {
             : -this.radius
 
         this.#midLine.setLength(newLength, false)
+    }
+
+    __checkNewInnerLineConsistency(newLine) {
+        if (Math.abs(newLine.length - this.radius) > MAX_NUM_ERROR) {
+            return false
+        }
+
+        if (!pointsMatch(newLine.startPoint, this.centerPoint)) {
+            return false
+        }
+
+        return true
     }
 }
 

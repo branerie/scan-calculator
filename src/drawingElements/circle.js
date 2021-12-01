@@ -7,6 +7,8 @@ import BaseArc from './baseArc'
 const RADIUS_MIN_DIFF = 1e-3
 const FULL_CIRCLE_ANGLE = 360
 
+const INCONSISTENT_END_POINTS_ERROR = 'Trying to manually set end points on a circle element which are inconsistent with circle size'
+
 class Circle extends BaseArc {
     #endPoints
     #boundingBox
@@ -28,6 +30,15 @@ class Circle extends BaseArc {
     get endPoint() { return this.#endPoints[0] }
 
     get endPoints() { return this.#endPoints }
+
+    set endPoints(newEndPoints) {
+        const areConsistent = this.__checkNewEndPointsConsistency(newEndPoints)
+        if (areConsistent) {
+            this.#endPoints = newEndPoints
+        }
+
+        throw new Error(INCONSISTENT_END_POINTS_ERROR)
+    }
 
     get radius() { return super.radius }
     set radius(newRadius) {
@@ -153,7 +164,7 @@ class Circle extends BaseArc {
     }
 
     __setDetails() {
-        this.__setEndPoints()
+        this.__createEndPoints()
         this.__setBoundingBox()
     }
 
@@ -169,7 +180,7 @@ class Circle extends BaseArc {
         }
     }
 
-    __setEndPoints() {
+    __createEndPoints() {
         const centerPoint = this.centerPoint
         const radius = this.radius
 
@@ -255,6 +266,19 @@ class Circle extends BaseArc {
         if (isEndPointsInconsistent) {
             throw new Error('Inconsisent circle element. End points not lying on the circle')
         }
+    }
+
+    __checkNewEndPointsConsistency(newEndPoints) {
+        const centerPoint = this.centerPoint
+        const radius = this.radius
+        for (const newEndPoint of newEndPoints) {
+            const distanceFromCenter = getPointDistance(newEndPoint, centerPoint)
+            if (Math.abs(distanceFromCenter - radius) > MAX_NUM_ERROR) {
+                return false
+            }
+        }
+
+        return true
     }
 }
 
