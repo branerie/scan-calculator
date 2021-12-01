@@ -7,7 +7,8 @@ import BaseArc from './baseArc'
 const RADIUS_MIN_DIFF = 1e-3
 const FULL_CIRCLE_ANGLE = 360
 
-const INCONSISTENT_END_POINTS_ERROR = 'Trying to manually set end points on a circle element which are inconsistent with circle size'
+const INCONSISTENT_END_POINTS_ERROR =
+    'Trying to manually set end points on a circle element which are inconsistent with circle size'
 
 class Circle extends BaseArc {
     #endPoints
@@ -25,24 +26,44 @@ class Circle extends BaseArc {
         }
     }
 
-    get basePoint() { return this.centerPoint }
-    get startPoint() { return this.#endPoints[0] }
-    get endPoint() { return this.#endPoints[0] }
+    get basePoint() {
+        return this.centerPoint
+    }
+    get startPoint() {
+        return this.#endPoints[0]
+    }
+    get endPoint() {
+        return this.#endPoints[0]
+    }
 
-    get endPoints() { return this.#endPoints }
+    get endPoints() {
+        return this.#endPoints
+    }
 
     set endPoints(newEndPoints) {
+        if (!newEndPoints) {
+            this.#endPoints = null
+            return
+        }
+
+        if (!this.radius) {
+            this._setRadius(getPointDistance(this.centerPoint, newEndPoints[0]))
+        }
+
         const areConsistent = this.__checkNewEndPointsConsistency(newEndPoints)
         if (areConsistent) {
             this.#endPoints = newEndPoints
+            return
         }
 
         throw new Error(INCONSISTENT_END_POINTS_ERROR)
     }
 
-    get radius() { return super.radius }
+    get radius() {
+        return super.radius
+    }
     set radius(newRadius) {
-        this.__setRadius(newRadius)
+        this._setRadius(newRadius)
         this.__setDetails()
     }
 
@@ -54,21 +75,19 @@ class Circle extends BaseArc {
         return !!this.centerPoint
     }
 
-    get angle() { return FULL_CIRCLE_ANGLE }
-    get length() { return 2 * Math.PI * this.radius }
+    get angle() {
+        return FULL_CIRCLE_ANGLE
+    }
+    get length() {
+        return 2 * Math.PI * this.radius
+    }
 
     getSelectionPoints(pointType) {
         return [
-            ...(
-                !pointType || pointType === 'center' 
-                    ? [{ ...this.centerPoint, pointType: 'center' }] 
-                    : []
-            ),
-            ...(
-                !pointType || pointType === 'endPoint'
-                    ? this.#endPoints.map(ep => ({ ...ep, pointType: 'endPoint' }))
-                    : []
-            )
+            ...(!pointType || pointType === 'center' ? [{ ...this.centerPoint, pointType: 'center' }] : []),
+            ...(!pointType || pointType === 'endPoint'
+                ? this.#endPoints.map(ep => ({ ...ep, pointType: 'endPoint' }))
+                : [])
         ]
     }
 
@@ -86,12 +105,7 @@ class Circle extends BaseArc {
     }
 
     setLastAttribute(pointX, pointY) {
-        this.__setRadius(
-            getPointDistance(
-                this.centerPoint, 
-                createPoint(pointX, pointY, { assignId: false })
-            )
-        )
+        this._setRadius(getPointDistance(this.centerPoint, createPoint(pointX, pointY, { assignId: false })))
 
         this.__setDetails()
     }
@@ -132,7 +146,7 @@ class Circle extends BaseArc {
         centerCopy.x += dX
         centerCopy.y += dY
 
-        this.__setCenterPoint(centerCopy)
+        this._setCenterPoint(centerCopy)
 
         this.#endPoints.forEach(ep => {
             ep.x += dX
@@ -145,22 +159,26 @@ class Circle extends BaseArc {
         this.#boundingBox.bottom += dY
     }
 
-    getBoundingBox() { return this.#boundingBox }
+    getBoundingBox() {
+        return this.#boundingBox
+    }
 
-    containsAngle(angle) { return true }
+    containsAngle(angle) {
+        return true
+    }
 
     _setPointsElementId() {
         const elementId = this.id
 
         const newCenterPoint = ElementManipulator.copyPoint(this.centerPoint, true)
         newCenterPoint.elementId = elementId
-        this.__setCenterPoint(newCenterPoint)
+        this._setCenterPoint(newCenterPoint)
 
         if (!this.#endPoints) return
-        
+
         for (const endPoint of this.#endPoints) {
             endPoint.elementId = elementId
-        }        
+        }
     }
 
     __setDetails() {
@@ -186,26 +204,22 @@ class Circle extends BaseArc {
 
         if (!this.#endPoints) {
             this.#endPoints = [
-                createPoint(
-                    centerPoint.x + radius, 
-                    centerPoint.y,
-                    { elementId: centerPoint.elementId, assignId: true }   
-                ),
-                createPoint(
-                    centerPoint.x - radius, 
-                    centerPoint.y, 
-                    { elementId: centerPoint.elementId, assignId: true }
-                ),
-                createPoint(
-                    centerPoint.x, 
-                    centerPoint.y + radius,
-                    { elementId: centerPoint.elementId, assignId: true }
-                ),
-                createPoint(
-                    centerPoint.x, 
-                    centerPoint.y - radius,
-                    { elementId: centerPoint.elementId, assignId: true } 
-                ),
+                createPoint(centerPoint.x + radius, centerPoint.y, {
+                    elementId: centerPoint.elementId,
+                    assignId: true
+                }),
+                createPoint(centerPoint.x - radius, centerPoint.y, {
+                    elementId: centerPoint.elementId,
+                    assignId: true
+                }),
+                createPoint(centerPoint.x, centerPoint.y + radius, {
+                    elementId: centerPoint.elementId,
+                    assignId: true
+                }),
+                createPoint(centerPoint.x, centerPoint.y - radius, {
+                    elementId: centerPoint.elementId,
+                    assignId: true
+                })
             ]
 
             return
@@ -248,7 +262,7 @@ class Circle extends BaseArc {
                 )
             }
 
-            this.__setRadius(firstPointDistance)
+            this._setRadius(firstPointDistance)
         }
 
         if (isNaN(Number(radius) || radius <= 0)) {
@@ -269,6 +283,10 @@ class Circle extends BaseArc {
     }
 
     __checkNewEndPointsConsistency(newEndPoints) {
+        if (!this.isFullyDefined) {
+            return true
+        }
+          
         const centerPoint = this.centerPoint
         const radius = this.radius
         for (const newEndPoint of newEndPoints) {

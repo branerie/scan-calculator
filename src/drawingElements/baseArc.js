@@ -28,8 +28,8 @@ class BaseArc extends Element {
         throw new Error('Method "containsAngle" not implemented')
     }
 
-    __setRadius(value) { this.#radius = value }
-    __setCenterPoint(value) { this.#centerPoint = { ...value, elementId: value.elementId || this.id } }
+    _setRadius(value) { this.#radius = value }
+    _setCenterPoint(value) { this.#centerPoint = { ...value, elementId: value.elementId || this.id } }
 }
 
 export default BaseArc

@@ -241,6 +241,7 @@ class Polyline extends Element {
         this.#elements.forEach(e => e.groupId = this.id)
 
         this._updateBoundingBox()
+        this._updateEndPoints()
     }
 
     replaceElement(newElement, elementId) {

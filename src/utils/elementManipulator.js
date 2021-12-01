@@ -91,6 +91,34 @@ class ElementManipulator {
     } 
     
     static copyArc(arc, keepIds = false, assignId = false) {
+        // const newStartLine = arc.startLine ? ElementManipulator.copyLine(arc.startLine, keepIds) : null
+        // const newEndLine = arc.endLine ? ElementManipulator.copyLine(arc.endLine, keepIds) : null
+        // const newMidLine = arc.midLine ? ElementManipulator.copyLine(arc.midLine, keepIds) : null
+
+        // let newCenterPoint
+        // if (keepIds) {
+        //     newCenterPoint = new Point(arc.centerPoint.x, arc.centerPoint.y)
+        //     newCenterPoint.pointId = arc.centerPoint.pointId
+        // } else {
+        //     newCenterPoint = createElement('point', arc.centerPoint.x, arc.centerPoint.y)
+        // }
+    
+        // const newArc = new Arc(
+        //     newCenterPoint, 
+        //     { 
+        //         groupId: arc.groupId,
+        //         id: arc.id,
+        //         radius: arc.radius,
+        //         startLine: newStartLine,
+        //         endLine: newEndLine,
+        //         midLine: newMidLine
+        //     }
+        // )
+
+        // return newArc
+
+
+        
         // const newCenterPoint = ElementManipulator.copyPoint(arc.centerPoint, keepIds)
     
         const newArc = createElement('arc', arc.centerPoint.x, arc.centerPoint.y, { 
@@ -99,16 +127,13 @@ class ElementManipulator {
             ...(keepIds && { pointsElementId: arc.id }) 
         })
 
-        if (keepIds) {
+        if (keepIds && !assignId) {
             newArc.id = arc.id
         }
 
-        const newStartLine = arc.startLine ? ElementManipulator.copyLine(arc.startLine, keepIds) : null
-        const newEndLine = arc.endLine ? ElementManipulator.copyLine(arc.endLine, keepIds) : null
-        const newMidLine = arc.midLine ? ElementManipulator.copyLine(arc.midLine, keepIds) : null
-        newArc.startLine = newStartLine
-        newArc.endLine = newEndLine
-        newArc.midLine = newMidLine
+        newArc.startLine = arc.startLine ? ElementManipulator.copyLine(arc.startLine, keepIds) : null
+        newArc.endLine = arc.endLine ? ElementManipulator.copyLine(arc.endLine, keepIds) : null
+        newArc.midLine = arc.midLine ? ElementManipulator.copyLine(arc.midLine, keepIds) : null
 
         // const newArc = new Arc(
         //     newCenterPoint, 
