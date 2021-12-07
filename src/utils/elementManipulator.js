@@ -54,7 +54,7 @@ class ElementManipulator {
     }
 
     static copyPolyline(polyline, keepIds = false, assignId = false) {
-        const copiedElements = polyline.elements.map(e => ElementManipulator.copyElement(e, { keepIds, assignId }))
+        const copiedElements = polyline.elements.map(e => ElementManipulator.copyElement(e, { keepIds, assignId: !keepIds }))
         if (keepIds) {
             const newInitialPoint = ElementManipulator.copyPoint(polyline.basePoint, keepIds)
             const newPolyline = new Polyline(newInitialPoint, { id: polyline.id, groupId: polyline.groupId, elements: copiedElements })

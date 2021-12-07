@@ -1,6 +1,7 @@
 import Element from './element'
 import { createLine } from '../utils/elementFactory'
 import { pointsMatch } from '../utils/point'
+import ElementManipulator from '../utils/elementManipulator'
 
 const END_POINT_ERROR = 'Cannot set a polyline start point which is not an end point for the first element.'
 
@@ -251,6 +252,11 @@ class Polyline extends Element {
             if (this.#elements[elementIndex].id === elementId) {
                 if (!this._validateElementReplacement(elementIndex, newElement)) {
                     throw new Error('Invalid polyline element replacement')
+                }
+
+                if (newElement.groupId !== this.id) {
+                    newElement = ElementManipulator.copyElement(newElement, { keepIds: true, assignId: false })
+                    newElement.groupId = this.id
                 }
 
                 this.#elements[elementIndex] = newElement
