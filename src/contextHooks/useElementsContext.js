@@ -174,18 +174,37 @@ export default function useElementsContext() {
 
         let removedSelectionPoints = []
         let newSelectionPoints = []
-        for (const removedElement of completed.removedElements) {
-            removedElement.isShown = true
-            if (removedElement.baseType === 'polyline') {
-                removedElement.elements.forEach(subElement => subElement.isShown = true)    
-            }
-    
-            removedSelectionPoints = removedSelectionPoints.concat(removedElement.getSelectionPoints())
-        }
+
+        const allRemovedElements = []
+        const allAddedElements = []
+        for (const [replacedId, { removedElements, replacingElements }] of Object.entries(completed)) {
+            for (const removedElement of removedElements) {
+                removedElement.isShown = true
+                if (removedElement.baseType === 'polyline') {
+                    removedElement.elements.forEach(subElement => subElement.isShown = true)    
+                }
         
-        const replacingElements = Object.values(completed.replacingElements)
-        for (const replacingElement of replacingElements) {
-            newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
+                removedSelectionPoints = removedSelectionPoints.concat(removedElement.getSelectionPoints())
+
+                allRemovedElements.push(removedElement)
+            }
+            
+            const currentReplacingElements = Object.values(replacingElements)
+            for (const replacingElement of currentReplacingElements) {
+                if (replacingElement.groupId) {
+                    if (currentReplacingElements.length > 1) {
+                        throw new Error('Unknown operation. Polyline subElements can only be replaced by one other subElement')
+                    }
+
+                    // we are replacing one polyline subElement with another
+                    const polyline = getElementById(replacingElement.groupId)
+                    polyline.replaceElement(replacingElement, replacedId)
+                }
+
+                newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
+                
+                allAddedElements.push(replacingElement)
+            }
         }
 
         removeSelectionPoints(removedSelectionPoints)
@@ -193,8 +212,8 @@ export default function useElementsContext() {
 
         updateHistoryEvents({ 
             action: 'replace', 
-            removedElements: completed.removedElements, 
-            addedElements: replacingElements 
+            removedElements: allRemovedElements, 
+            addedElements: allAddedElements 
         })
 
         completeReplacingElements()
@@ -204,7 +223,8 @@ export default function useElementsContext() {
         currentlyReplacedElements,
         removeSelectionPoints,
         updateHistoryEvents,
-        clearReplacingElements
+        clearReplacingElements,
+        getElementById
     ])
 
     const updateElementsFromHistory = useCallback((lastEventIndex, isUndo) => {

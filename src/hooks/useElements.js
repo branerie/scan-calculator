@@ -16,10 +16,14 @@ const elementsReducer = (state, action) => {
             const newStateElements = { ...state.elements }
             const newGroupedElements = {}
             action.newElements.forEach(newElement => {
-                newStateElements[newElement.id] = newElement
-
-                if (newElement.baseType === 'polyline') {
-                    newElement.elements.forEach(e => newGroupedElements[e.id] = e)
+                if (newElement.groupId) {
+                    newGroupedElements[newElement.id] = newElement
+                } else {
+                    newStateElements[newElement.id] = newElement
+    
+                    if (newElement.baseType === 'polyline') {
+                        newElement.elements.forEach(e => newGroupedElements[e.id] = e)
+                    }
                 }
             })
 
@@ -67,17 +71,26 @@ const elementsReducer = (state, action) => {
             let newGroupedElements = null
             for (const removedElement of removedElements) {
                 const elementId = removedElement.id
-                delete newElements[elementId]
-
-                if (removedElement.baseType === 'polyline') {
+                if (removedElement.groupId) {
                     if (!newGroupedElements) {
                         newGroupedElements = { ...state.groupedElements }
                     }
 
-                    for (const element of removedElement.elements) {
-                        delete newGroupedElements[element.id]
+                    delete newGroupedElements[elementId]
+                } else {
+                    delete newElements[elementId]
+    
+                    if (removedElement.baseType === 'polyline') {
+                        if (!newGroupedElements) {
+                            newGroupedElements = { ...state.groupedElements }
+                        }
+    
+                        for (const element of removedElement.elements) {
+                            delete newGroupedElements[element.id]
+                        }
                     }
                 }
+
 
                 if (newCurrentlyEditedElements && elementId in newCurrentlyEditedElements) {
                     if (newCurrentlyEditedElements === currentlyEditedElements) {
@@ -239,17 +252,18 @@ const elementsReducer = (state, action) => {
             for (const replacedId of Object.keys(action.replacements)) {
                 const { replacingElements, removedSections } = action.replacements[replacedId]
                 
-                if (currentReplacements[replacedId]) {
-                    for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
-                        delete newElements[oldReplacingElement.id]
+                // if (currentReplacements[replacedId]) {
+                //     for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
+                //         delete newElements[oldReplacingElement.id]
 
-                        if (oldReplacingElement.baseType === 'polyline') {
-                            oldReplacingElement.elements.forEach(e => delete newGroupedElements[e.id])
-                        }
-                    }
-                } else {
-                    newElements[replacedId].isShown = false
-                }
+                //         if (oldReplacingElement.baseType === 'polyline') {
+                //             oldReplacingElement.elements.forEach(e => delete newGroupedElements[e.id])
+                //         }
+                //     }
+                // } else {
+                const currentElement = newElements[replacedId] || newGroupedElements[replacedId]
+                currentElement.isShown = false
+                // }
                 
                 for (const replacingElement of replacingElements) {
                     newElements[replacingElement.id] = replacingElement
@@ -279,18 +293,24 @@ const elementsReducer = (state, action) => {
             const { currentlyReplacedElements: { currentReplacements, completed } } = state
 
             const newElements = { ...state.elements }
+            const newGroupedElements = { ...state.groupedElements }
             for (const replacedId of Object.keys(currentReplacements)) {
-                newElements[replacedId].isShown = true
+                (newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
 
                 const replacingElements = currentReplacements[replacedId].replacingElements
                 for (const replacingElement of replacingElements) {
-                    delete newElements[replacingElement.id]
+                    if (newElements[replacingElement.id]) {
+                        delete newElements[replacingElement.id]
+                    } else {
+                        delete newGroupedElements[replacingElement.id]
+                    }
                 }
             }
 
             return { 
                 ...state, 
-                elements: newElements, 
+                elements: newElements,
+                groupedElements: newGroupedElements,
                 currentlyReplacedElements: completed ? { completed } : null 
             }
         }
@@ -299,26 +319,20 @@ const elementsReducer = (state, action) => {
 
             const { currentlyReplacedElements: { currentReplacements, completed } } = state
 
-            const newCompleted = completed ? { 
-                removedElements: [ ...completed.removedElements ], 
-                replacingElements: { ...completed.replacingElements } 
-            } : { 
-                removedElements: [], 
-                replacingElements: {} 
-            }
-
+            const newCompleted = completed ? { ...completed } : {}
             for (const [replacedId, { replacingElements }] of Object.entries(currentReplacements)) {
-                if (newCompleted.replacingElements[replacedId]) {
+                if (newCompleted[replacedId]) {
                     // we are trimming an element which was formed by trimming another element in the current command
-                    delete newCompleted.replacingElements[replacedId]
-
+                    delete newCompleted[replacedId].replacingElements
                 } else {
-                    const removedElement = state.elements[replacedId]
-                    newCompleted.removedElements.push(removedElement)
+                    newCompleted[replacedId] = { removedElements: [], replacingElements: {} }
+
+                    const removedElement = state.elements[replacedId] || state.groupedElements[replacedId]
+                    newCompleted[replacedId].removedElements.push(removedElement)
                 }
                 
                 replacingElements.forEach(re => {
-                    newCompleted.replacingElements[re.id] = re
+                    newCompleted[replacedId].replacingElements[re.id] = re
                 })
             }
 
@@ -329,10 +343,12 @@ const elementsReducer = (state, action) => {
 
             const { completed, currentReplacements } = state.currentlyReplacedElements
             let newElements = null
+            let newGroupedElements
             if (currentReplacements) {
                 newElements = { ...state.elements }
+                newGroupedElements = { ...state.groupedElements }
                 for (const replacedId of Object.keys(currentReplacements)) {
-                    newElements[replacedId].isShown = true
+                    (newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
                 }
             }
 
@@ -344,13 +360,29 @@ const elementsReducer = (state, action) => {
                 newElements = { ...state.elements }
             }
 
-            const newGroupedElements = { ...state.groupedElements }
-            for (const removedElement of completed.removedElements) {
-                delete newElements[removedElement.id]
+            for (const { removedElements } of Object.values(completed)) {
+                for (const removedElement of removedElements) {
+                    if (newElements[removedElement.id]) {
+                        delete newElements[removedElement.id]
 
-                if (removedElement.baseType === 'polyline') {
-                    removedElement.elements.forEach(e => delete newGroupedElements[e.id])
-                }
+                        if (removedElement.baseType === 'polyline') {
+                            // eslint-disable-next-line no-loop-func
+                            removedElement.elements.forEach(e => delete newGroupedElements[e.id])
+                        }
+                    } else {
+                        if (!newGroupedElements) {
+                            newGroupedElements = { ...state.groupedElements }
+                        }
+
+                        delete newGroupedElements[removedElement.id]
+                    }
+
+                    /* TODO (07.12.21)
+                        Опитвам се да подкарам extend-a ако само subElement-ите се заменят, като полилинията остава същата
+                        Бъгва се след като ги replace-неш - появяват се две полилинии, а в subElement-ите се трият старите и остават само новите
+                    */
+
+               }
             }   
             
             return {
