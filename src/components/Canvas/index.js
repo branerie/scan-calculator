@@ -186,7 +186,7 @@ const Canvas = () => {
     //         clearSelection()
     //     }
     // }
-
+    
     return (
         <>
             <canvas

@@ -2,6 +2,7 @@ import { useCallback, useReducer } from 'react'
 import { createElement, createPoint } from '../utils/elementFactory'
 import ElementIntersector from '../utils/elementIntersector'
 import ElementManipulator from '../utils/elementManipulator'
+import ElementReplacement from '../utils/elementReplacement'
 
 const RETURN_GROUP_OPTS = {
     INVIDIVUAL: 0,
@@ -246,37 +247,43 @@ const elementsReducer = (state, action) => {
             const currentReplacements = (currentlyReplacedElements && currentlyReplacedElements.currentReplacements)
                         ? { ...currentlyReplacedElements.currentReplacements }
                         : {}
-            
+                        
             const newElements = { ...state.elements }
             const newGroupedElements = { ...state.groupedElements }
             for (const replacedId of Object.keys(action.replacements)) {
                 const { replacingElements, removedSections } = action.replacements[replacedId]
-                
-                // if (currentReplacements[replacedId]) {
-                //     for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
-                //         delete newElements[oldReplacingElement.id]
 
-                //         if (oldReplacingElement.baseType === 'polyline') {
-                //             oldReplacingElement.elements.forEach(e => delete newGroupedElements[e.id])
-                //         }
+                // // if (currentReplacements[replacedId]) {
+                //     //     for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
+                // //         delete newElements[oldReplacingElement.id]
+                
+                // //         if (oldReplacingElement.baseType === 'polyline') {
+                // //             oldReplacingElement.elements.forEach(e => delete newGroupedElements[e.id])
+                // //         }
+                // //     }
+                // // } else {
+
+                // // add replacing elements to element collections so they can be visualized
+                // for (const replacingElement of replacingElements) {
+                //     newElements[replacingElement.id] = replacingElement
+
+                //     if (replacingElement.baseType === 'polyline') {
+                //         replacingElement.elements.forEach(e => newGroupedElements[e.id] = e)
                 //     }
-                // } else {
-                const currentElement = newElements[replacedId] || newGroupedElements[replacedId]
-                currentElement.isShown = false
                 // }
-                
-                for (const replacingElement of replacingElements) {
-                    newElements[replacingElement.id] = replacingElement
 
-                    if (replacingElement.baseType === 'polyline') {
-                        replacingElement.elements.forEach(e => newGroupedElements[e.id] = e)
-                    }
-                }
+                // const currentElement = newElements[replacedId] || newGroupedElements[replacedId]
+                // currentElement.isShown = false
+                // // }
                 
                 currentReplacements[replacedId] = { replacingElements, removedSections }
+
+                const replacedElement = newElements[replacedId] || newGroupedElements[replacedId]
+                replacedElement.isShown = false
             }
-            
-            const completed = state.currentlyReplacedElements ? state.currentlyReplacedElements.completed : null
+
+            const completed = currentlyReplacedElements?.completed || null
+                        
             return {
                 ...state,
                 elements: newElements,
@@ -299,11 +306,15 @@ const elementsReducer = (state, action) => {
 
                 const replacingElements = currentReplacements[replacedId].replacingElements
                 for (const replacingElement of replacingElements) {
-                    if (newElements[replacingElement.id]) {
+                    // if (newElements[replacingElement.id]) {
                         delete newElements[replacingElement.id]
-                    } else {
-                        delete newGroupedElements[replacingElement.id]
-                    }
+
+                        if (replacingElement.type === 'polyline') {
+                            replacingElement.elements.forEach(e => delete newGroupedElements[e.id])
+                        }
+                     // } else {
+                    //     delete newGroupedElements[replacingElement.id]
+                    // }
                 }
             }
 
@@ -317,79 +328,130 @@ const elementsReducer = (state, action) => {
         case 'continueReplacingElements': {
             if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) return state
 
-            const { currentlyReplacedElements: { currentReplacements, completed } } = state
-
-            const newCompleted = completed ? { ...completed } : {}
-            for (const [replacedId, { replacingElements }] of Object.entries(currentReplacements)) {
-                if (newCompleted[replacedId]) {
-                    // we are trimming an element which was formed by trimming another element in the current command
-                    delete newCompleted[replacedId].replacingElements
-                } else {
-                    newCompleted[replacedId] = { removedElements: [], replacingElements: {} }
-
-                    const removedElement = state.elements[replacedId] || state.groupedElements[replacedId]
-                    newCompleted[replacedId].removedElements.push(removedElement)
-                }
-                
-                replacingElements.forEach(re => {
-                    newCompleted[replacedId].replacingElements[re.id] = re
-                })
-            }
-
-            return { ...state, currentlyReplacedElements: { completed: newCompleted } }            
-        }
-        case 'completeReplacingElements': {
-            if (!state.currentlyReplacedElements) return state
-
-            const { completed, currentReplacements } = state.currentlyReplacedElements
-            let newElements = null
-            let newGroupedElements
-            if (currentReplacements) {
-                newElements = { ...state.elements }
-                newGroupedElements = { ...state.groupedElements }
-                for (const replacedId of Object.keys(currentReplacements)) {
-                    (newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
-                }
-            }
-
-            if (!completed) {
-                return {  ...state, currentlyReplacedElements: null, elements: newElements || state.elements }
-            }
+            const { currentlyReplacedElements: { completed } } = state
             
-            if (!newElements) {
-                newElements = { ...state.elements }
-            }
+            let newElements = { ...state.elements }
+            let newGroupedElements = null
+            const newCompleteAdded = {}
+            const newCompleteRemoved = {}
+            for (const [replacedId, { replacingElements, replacedElement }] of Object.entries(action.replacements)) {
+                replacedElement.isShown = true
 
-            for (const { removedElements } of Object.values(completed)) {
-                for (const removedElement of removedElements) {
-                    if (newElements[removedElement.id]) {
-                        delete newElements[removedElement.id]
+                newCompleteRemoved[replacedElement.id] = replacedElement
+                delete newElements[replacedElement.id]
+                if (replacedElement.type === 'polyline') {
+                    newGroupedElements = newGroupedElements ?? { ...state.groupedElements }
 
-                        if (removedElement.baseType === 'polyline') {
-                            // eslint-disable-next-line no-loop-func
-                            removedElement.elements.forEach(e => delete newGroupedElements[e.id])
-                        }
-                    } else {
-                        if (!newGroupedElements) {
-                            newGroupedElements = { ...state.groupedElements }
-                        }
-
-                        delete newGroupedElements[removedElement.id]
+                    if (newGroupedElements[replacedId]) {
+                        // currently replacedId is that of a subElement when using the extend cmd
+                        newGroupedElements[replacedId].isShown = true
                     }
 
-                    /* TODO (07.12.21)
-                        Опитвам се да подкарам extend-a ако само subElement-ите се заменят, като полилинията остава същата
-                        Бъгва се след като ги replace-неш - появяват се две полилинии, а в subElement-ите се трият старите и остават само новите
-                    */
+                    for (const subElement of replacedElement.elements) {
+                        subElement.isShown = true
+                        delete newGroupedElements[subElement.id]
+                    }
 
-               }
-            }   
+                    // delete newGroupedElements[replacedId]
+                }
+
+                for (const replacingElement of replacingElements) {
+                    if (replacingElement.type === 'polyline') {
+                        newGroupedElements = newGroupedElements ?? { ...state.groupedElements }
+                        for (const subElement of replacingElement.elements) {
+                            newGroupedElements[subElement.id] = subElement
+                        }
+                    }
+
+                    newElements[replacingElement.id] = replacingElement
+                    newCompleteAdded[replacingElement.id] = replacingElement
+                }
+            }
+
+            const newCompleted = completed ? completed.clone() : new ElementReplacement()
+            newCompleted.addStep({ removed: newCompleteRemoved, added: newCompleteAdded })            
+            
+            return { 
+                ...state, 
+                elements: newElements,
+                ...(newGroupedElements && { groupedElements: newGroupedElements }),
+                currentlyReplacedElements: { completed: newCompleted } 
+            }            
+        }
+        case 'updateReplacementSteps': {
+            if (!state.currentlyReplacedElements?.completed) return state
+
+            const { completed } = state.currentlyReplacedElements
+
+            const { elementsToAdd, elementsToRemove, undo } = action
+            const newCompleted = completed.clone()
+
+            const changeWasMade = undo ? newCompleted.undo() : newCompleted.redo()
+            if (!changeWasMade) {
+                // there was nothing to undo/redo
+                return state
+            }
+
+            const newElements = { ...state.elements }
+            let newGroupedElements = null
+            for (const elementToRemove of Object.values(elementsToRemove)) {
+                delete newElements[elementToRemove.id]
+
+                if (elementToRemove.type === 'polyline') {
+                    if (!newGroupedElements) {
+                        newGroupedElements = { ...state.groupedElements }
+                    }
+
+                    for (const subElement of elementToRemove.elements) {
+                        delete newGroupedElements[subElement.id] 
+                    }
+                }
+            }
+            
+            for (const elementToAdd of Object.values(elementsToAdd)) {
+                newElements[elementToAdd.id] = elementToAdd
+
+                if (elementToAdd.type === 'polyline') {
+                    if (!newGroupedElements) {
+                        newGroupedElements = { ...state.groupedElements }
+                    }
+
+                    for (const subElement of elementToAdd.elements) {
+                        newGroupedElements[subElement.id] = subElement
+                    }
+                }
+            }
             
             return {
                 ...state,
                 elements: newElements,
-                groupedElements: newGroupedElements,
-                currentlyReplacedElements: null
+                ...(newGroupedElements && { groupedElements: newGroupedElements }),
+                currentlyReplacedElements: {
+                    completed: newCompleted
+                }
+            }
+        }
+        case 'completeReplacingElements': {
+            if (!state.currentlyReplacedElements) return state
+
+            const { currentReplacements } = state.currentlyReplacedElements
+            let newElements = null
+            let newGroupedElements = null
+            if (currentReplacements) {
+                // active replacement was not completed, show hidden elements
+                newElements = { ...state.elements }
+                // newGroupedElements = { ...state.groupedElements }
+                for (const replacedId of Object.keys(currentReplacements)) {
+                    // (newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
+                    newElements[replacedId].isShown = true
+                }
+            }
+  
+            return {  
+                ...state, 
+                currentlyReplacedElements: null, 
+                elements: newElements || state.elements,
+                groupedElements: newGroupedElements || state.groupedElements
             }
         }
         case 'setSnappedPoint': {
@@ -601,6 +663,7 @@ const useElements = (elementsContainer) => {
                     elementsDispatch({ type: 'startReplacingElements', replacements })
     const pruneReplacingElements = (elementsToKeep) => 
                     elementsDispatch({ type: 'clearReplacingElements', elementsToKeep })
+                    
     const clearReplacingElements = () => {
         if (!elementsState.currentlyReplacedElements || !elementsState.currentlyReplacedElements.currentReplacements) return
 
@@ -618,38 +681,116 @@ const useElements = (elementsContainer) => {
         return completed
     }
 
+    const updateReplacementSteps = (undo) => {
+        if (!elementsState.currentlyReplacedElements?.completed) return
+
+        const { currentlyReplacedElements: { completed } } = elementsState
+
+        let elementsToAdd,
+            elementsToRemove
+        if (undo) {
+            if (!completed.current) return
+
+            // for undo, must take current step and undo its changes
+            // (i.e. need step BEFORE undo)
+            const { added, removed } = completed.current
+
+            elementsToRemove = added
+            elementsToAdd = removed
+        } else {
+            // for redo, must take next step and redo its changes
+            // (i.e. need step AFTER redo) 
+            if (!completed.next) return
+
+            const { added, removed } = completed.next
+
+            elementsToRemove = removed
+            elementsToAdd = added
+        }
+
+        elementsContainer.removeElements(Object.values(elementsToRemove))
+        elementsContainer.addElements(Object.values(elementsToAdd))
+
+        elementsDispatch({ type: 'updateReplacementSteps', undo, elementsToAdd, elementsToRemove })
+    }
+
     const continueReplacingElements = () => {
         const { currentlyReplacedElements } = elementsState
-        if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return
+        if (!currentlyReplacedElements?.currentReplacements) return
 
         const { currentReplacements } = currentlyReplacedElements
-        const replacingElements = Object.values(currentReplacements).reduce((acc, cr) => [...acc, ...cr.replacingElements], [])
-        const replacedIds = Object.keys(currentReplacements)
+        // const replacingElements = Object.values(currentReplacements).reduce((acc, cr) => {
+        //     acc.push(...cr.replacingElements)
+        //     return acc
+        // }, [])
+        // const replacedIds = Object.keys(currentReplacements)
+        const { elements, groupedElements } = elementsState
+        const replacements = {}
+        
+        // needed since with extend we might be extending the same element twice in the same command
+        const allReplacedElementsKvp = {} 
+        const allReplacingElementsKvp = {}
+        for (const [replacedId, { replacingElements }] of Object.entries(currentReplacements)) {
+            const replacedElement = elements[replacedId] || groupedElements[replacedId]
+            // always take the parent element at this stage, in case we are replacing a subElement of a polyline
+            const parentReplacedElement = replacedElement.groupId 
+                ? elements[replacedElement.groupId] 
+                : replacedElement
 
-        elementsDispatch({ type: 'continueReplacingElements' })
-        elementsContainer.addElements(replacingElements)
+            const currentElementReplacingElements = []
+            for (const replacingElement of replacingElements) {
+                if (replacingElement.groupId) {
+                    const polylineId = replacingElement.groupId
 
-        for (const replacedId of replacedIds) {
-            const element = elementsState.elements[replacedId] || elementsState.groupedElements[replacedId]  
-            if (element.baseType === 'polyline') {
-                elementsContainer.removeElements(element.elements)
-                continue
+                    // we are replacing the subElement of a polyline - this polyline is the 
+                    // "parentReplacedElement"; we need to substitute the old subElement 
+                    // with the new one to get the new polyline state
+                    let polylineCopy
+                    if (allReplacingElementsKvp[polylineId]) {
+                        polylineCopy = allReplacingElementsKvp[polylineId]
+                    } else {
+                        polylineCopy = ElementManipulator.copyPolyline(parentReplacedElement, true, true)
+                        allReplacingElementsKvp[polylineId] = polylineCopy
+                    }
+                    // TODO: need to make sure all subElements are replaced with copies, with new IDs
+                    // or that somehow we keep information about which subElement was replaced
+                    polylineCopy.replaceElement(replacingElement, replacedId)
+                    
+                    currentElementReplacingElements.push(polylineCopy)
+                    continue
+                }
+
+                allReplacingElementsKvp[replacingElement.id] = replacingElement
+                currentElementReplacingElements.push(replacingElement)
             }
-
-            elementsContainer.removeElementById(replacedId)
+            
+            allReplacedElementsKvp[parentReplacedElement.id] = parentReplacedElement
+            
+            replacements[replacedId] = {
+                replacedElement: parentReplacedElement,
+                replacingElements: currentElementReplacingElements
+            }
         }
+        
+        elementsContainer.addElements(Object.values(allReplacingElementsKvp))
+        elementsContainer.removeElements(Object.values(allReplacedElementsKvp))
+        elementsDispatch({ type: 'continueReplacingElements', replacements })
     }
 
     const isReplacingElement = (element) => {
         const { currentlyReplacedElements } = elementsState
-        if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return false
+        if (!currentlyReplacedElements) return false
 
-        const { currentReplacements } = currentlyReplacedElements
-
-
+        const { currentReplacements, completed } = currentlyReplacedElements
 
         // TODO: Change replacement logic to avoid nested looping
-        return Object.values(currentReplacements).some(cr => cr.replacingElements.some(re => re.id === element.id))
+        const isInCurrentReplacements = currentReplacements &&
+                Object.values(currentReplacements).some(cr => cr.replacingElements.some(re => re.id === element.id))
+
+        if (isInCurrentReplacements) return true
+
+        // TODO: What happens if replacing a polyline? (14.02.2022)
+        return !!completed?.current?.removed && completed.current.removed[element.id]
     }
 
     const setSnappedPoint = (snappedPoint) => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
@@ -686,6 +827,7 @@ const useElements = (elementsContainer) => {
         startReplacingElements,
         clearReplacingElements,
         pruneReplacingElements,
+        updateReplacementSteps,
         completeReplacingElements,
         continueReplacingElements,
         isReplacingElement,

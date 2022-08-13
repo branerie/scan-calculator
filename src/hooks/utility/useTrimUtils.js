@@ -102,8 +102,7 @@ const useTrimUtils = () => {
         [getElementTrimPoints]
     )
 
-    const getPolylineTrimResults = useCallback(
-        (polylines, pointsOfSelection) => {
+    const getPolylineTrimResults = useCallback((polylines, pointsOfSelection) => {
             const commandResult = {}
 
             for (const [polylineId, trimPoints] of Object.entries(polylines)) {

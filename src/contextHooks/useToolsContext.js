@@ -177,6 +177,13 @@ export default function useToolsContext() {
         setTool(tool => ({ ...tool, [propName]: propValue }))
     }, [])
 
+    const isToolBeingUsed = useCallback(() => {
+        return (tool.clicks && tool.clicks.length > 0) || tool.isStarted
+    }, [tool])
+
+    const startUsingTool = useCallback(() => setTool(currTool => ({ ...currTool, isStarted: true })), [])
+    const stopUsingTool = useCallback(() => setTool(currTool => ({ ...currTool, isStarted: false })), [])
+
     return {
         currentTranslate,
         setCurrentTranslate,
@@ -187,6 +194,9 @@ export default function useToolsContext() {
         keysRef,
         setTool,
         resetTool,
+        startUsingTool,
+        stopUsingTool,
+        isToolBeingUsed,
         addToolClick,
         editLastToolClick,
         addToolProp,

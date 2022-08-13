@@ -1,4 +1,4 @@
-import { MAX_NUM_ERROR } from '../utils/constants'
+import { MAX_NUM_ERROR, SELECT_DELTA } from '../utils/constants'
 import { createPoint } from '../utils/elementFactory'
 import ElementManipulator from '../utils/elementManipulator'
 import { getPointDistance } from '../utils/point'
@@ -91,7 +91,7 @@ class Circle extends BaseArc {
         ]
     }
 
-    checkIfPointOnElement(point, maxDiff) {
+    checkIfPointOnElement(point, maxDiff = SELECT_DELTA) {
         const distanceFromCenter = getPointDistance(this.centerPoint, point)
         if (Math.abs(this.radius - distanceFromCenter) > maxDiff) {
             return false

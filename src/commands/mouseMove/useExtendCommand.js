@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useAppContext } from '../../contexts/AppContext'
 import useExtendUtils from '../../hooks/utility/useExtendUtils'
+import { SELECT_DELTA } from '../../utils/constants'
 import { checkIsElementStartCloserThanEnd } from '../../utils/element'
 import { createElement } from '../../utils/elementFactory'
 import ElementIntersector from '../../utils/elementIntersector'
@@ -9,7 +10,6 @@ import ElementManipulator from '../../utils/elementManipulator'
 const useExtendCommand = () => {
     const {
         elements: {
-            elements,
             getElementsContainingPoint,
             getElementsInContainer,
             getElementById,
@@ -42,54 +42,24 @@ const useExtendCommand = () => {
                 return clearReplacingElements()
             }
 
-            const filteredElementsToExtend = []
-            const polylines = {}
-            for (const elementToExtend of elementsToExtend) {
-                if (hasSelectedElement(elementToExtend) || elementToExtend.type === 'circle') {
-                    continue
-                }
-
-                if (elementToExtend.groupId) {
-                    // will not be polyline, need to move condition
-                    const polyline = getElementById(elementToExtend.groupId)
-                    polylines[polyline.id] = polyline
-
-                    if (polyline.isJoined || hasSelectedElement(polyline)) {
-                        continue
-                    }
-                }
-
-                filteredElementsToExtend.push(elementToExtend)
-            }
-
-            pruneReplacingElements(filteredElementsToExtend)
-
-            // TODO: For trim/extend and possibly other commands: what if first and second click are the same point?
             const commandResult = {}
-            for (const elementToExtend of filteredElementsToExtend) {
-                const element = elementToExtend.groupId ? polylines[elementToExtend.groupId] : elementToExtend
-
-                let extendPoints = null
-                if (lastClick) {
-                    const selectRect = createElement('rectangle', lastClick.x, lastClick.y)
-                    selectRect.setLastAttribute(mousePoint.x, mousePoint.y)
-
-                    extendPoints = ElementIntersector.getIntersections(element, selectRect)
-                } else if (element.checkIfPointOnElement(mousePoint, selectDelta)) {
-                    extendPoints = [mousePoint]
-                }
-
-                if (!extendPoints) continue
+            const retrieveElementExtensionEnds = (element, elementToExtend, extendPoints) => {
+                const filteredExtendPoints = elementToExtend.groupId 
+                    ? extendPoints.filter(ep => elementToExtend.checkIfPointOnElement(ep, SELECT_DELTA)) 
+                    : extendPoints
 
                 const nearestEndPoints = checkIsElementStartCloserThanEnd(
                     element,
-                    extendPoints,
+                    filteredExtendPoints,
                     elementToExtend.groupId ? elementToExtend : null
                 )
 
                 const shouldExtendStart = nearestEndPoints.some(nep => nep)
                 const shouldExtendEnd = nearestEndPoints.some(nep => !nep)
+                return [shouldExtendStart, shouldExtendEnd]
+            }
 
+            const retrieveElementCommandResult = (elementToExtend, shouldExtendStart, shouldExtendEnd) => {
                 let newStartPos = null
                 let newEndPos = null
                 if (shouldExtendStart) {
@@ -113,14 +83,84 @@ const useExtendCommand = () => {
 
                     editedElement = validateExtendedElement(editedElement)
 
-                    commandResult[elementToExtend.id] = { replacingElements: [], removedSections: [] }
-                    commandResult[elementToExtend.id].replacingElements.push(editedElement)
-                    commandResult[elementToExtend.id].removedSections.push(elementToExtend)
-                    // commandResult[element.id] = { replacingElements: [], removedSections: [] }
-                    // commandResult[element.id].replacingElements.push(editedElement)
-                    // commandResult[element.id].removedSections.push(element)
+                    return { replacingElements: [editedElement], removedSections: [elementToExtend] }
+                }
+
+                return null
+            }
+
+            const filteredElementsToExtendById = {}
+            const polylines = {}
+            for (const elementToExtend of elementsToExtend) {
+                // filter cases where no extension is required
+                if (hasSelectedElement(elementToExtend) || elementToExtend.type === 'circle') {
+                    continue
+                }
+
+                if (elementToExtend.groupId) {
+                    // will not be polyline, need to move condition
+                    const polyline = getElementById(elementToExtend.groupId)
+                    polylines[polyline.id] = polyline
+
+                    if (polyline.isJoined || hasSelectedElement(polyline)) {
+                        continue
+                    }
+                }
+
+                // try to make extension and store result in commandResult
+                const element = elementToExtend.groupId ? polylines[elementToExtend.groupId] : elementToExtend
+
+                let extendPoints = null
+                if (lastClick) {
+                    const selectRect = createElement('rectangle', lastClick.x, lastClick.y)
+                    selectRect.setLastAttribute(mousePoint.x, mousePoint.y)
+
+                    extendPoints = ElementIntersector.getIntersections(element, selectRect)
+                } else if (element.checkIfPointOnElement(mousePoint, selectDelta)) {
+                    extendPoints = [mousePoint]
+                }
+
+                if (!extendPoints) continue
+
+                const [shouldExtendStart, shouldExtendEnd] = retrieveElementExtensionEnds(
+                    element,
+                    elementToExtend,
+                    extendPoints
+                )
+
+                if (filteredElementsToExtendById[element.id]) {
+                    // this would happen if element is a polyline and we are extending by more than
+                    // one subElement
+                    filteredElementsToExtendById[element.id].shouldExtendStart =
+                        filteredElementsToExtendById[element.id].shouldExtendStart || shouldExtendStart
+
+                    filteredElementsToExtendById[element.id].shouldExtendEnd =
+                        filteredElementsToExtendById[element.id].shouldExtendEnd || shouldExtendEnd
+                } else {
+                    filteredElementsToExtendById[element.id] = {
+                        element,
+                        shouldExtendStart,
+                        shouldExtendEnd
+                    }
                 }
             }
+
+            const filteredElementsToExtend = Object.values(filteredElementsToExtendById)
+            for(const filteredElement of filteredElementsToExtend) {
+                const result = retrieveElementCommandResult(
+                    filteredElement.element,
+                    filteredElement.shouldExtendStart,
+                    filteredElement.shouldExtendEnd
+                )
+
+                if (result) {
+                    commandResult[filteredElement.element.id] = result
+                }
+            }
+
+            pruneReplacingElements(filteredElementsToExtend.map(fe => fe.element))
+
+            // TODO: For trim/extend and possibly other commands: what if first and second click are the same point?
 
             if (Object.keys(commandResult).length) {
                 startReplacingElements(commandResult)

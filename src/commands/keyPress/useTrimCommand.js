@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useAppContext } from '../../contexts/AppContext'
+import useKeyPress from '../../hooks/useKeyPress'
 import { ENTER_KEY_CODE, ESCAPE_KEY_CODE, SPACE_KEY_CODE } from '../../utils/constants'
 
 const useTrimCommand = () => {
@@ -7,29 +8,45 @@ const useTrimCommand = () => {
         elements: {
             currentlyReplacedElements,
             resetCurrentModifications,
+            updateReplacementSteps,
             history: { replaceElements }
         },
-        tools: { tool, addToolProp, resetTool }
+        tools: { tool, resetTool, startUsingTool }
     } = useAppContext()
+
+    const { undoIsPressed, redoIsPressed } = useKeyPress()
 
     const handleTrimCmd = useCallback(
         event => {
-            const isEscape = event.keyCode === ESCAPE_KEY_CODE
-            if ((!currentlyReplacedElements || !currentlyReplacedElements.completed) && isEscape) {
-                resetCurrentModifications()
-                resetTool()
+            if (tool.isStarted && currentlyReplacedElements?.completed) {
+                if (undoIsPressed(event)) {
+                    return updateReplacementSteps(true)
+                }
 
-                return
+                if (redoIsPressed(event)) {
+                    return updateReplacementSteps(false)
+                }
             }
+
+            const isEscape = event.keyCode === ESCAPE_KEY_CODE
+            // if ((!currentlyReplacedElements || !currentlyReplacedElements.completed) && isEscape) {
+            //     resetCurrentModifications()
+            //     resetTool()
+
+            //     return
+            // }
 
             const isEnterOrSpace = event.keyCode === ENTER_KEY_CODE || event.keyCode === SPACE_KEY_CODE
             if (!tool.isStarted && isEnterOrSpace) {
-                addToolProp('isStarted', true)
+                startUsingTool()
                 return
             }
 
             if (isEnterOrSpace || isEscape) {
-                replaceElements()
+                if (currentlyReplacedElements?.completed) {
+                    replaceElements()
+                }
+
                 resetTool()
                 return
             }
@@ -37,10 +54,13 @@ const useTrimCommand = () => {
         [
             currentlyReplacedElements,
             tool.isStarted,
-            resetCurrentModifications,
-            addToolProp,
+            // resetCurrentModifications,
             replaceElements,
-            resetTool
+            resetTool,
+            startUsingTool,
+            undoIsPressed,
+            redoIsPressed,
+            updateReplacementSteps
         ]
     )
 

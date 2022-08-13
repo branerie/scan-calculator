@@ -2,6 +2,7 @@ import Element from './element'
 import { createLine } from '../utils/elementFactory'
 import { pointsMatch } from '../utils/point'
 import ElementManipulator from '../utils/elementManipulator'
+import { SELECT_DELTA } from '../utils/constants'
 
 const END_POINT_ERROR = 'Cannot set a polyline start point which is not an end point for the first element.'
 
@@ -127,7 +128,7 @@ class Polyline extends Element {
         this.#endPoint = { ...value, elementId: this.id }
     }
 
-    checkIfPointOnElement(point, maxDiff) {
+    checkIfPointOnElement(point, maxDiff = SELECT_DELTA) {
         return this.#elements.some(e => e.checkIfPointOnElement(point, maxDiff))
     }
 

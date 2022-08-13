@@ -8,6 +8,7 @@ import useTrimCommand from './useTrimCommand'
 import useUndoRedoCommand from './useUndoRedoCommand'
 import useExtendCommand from './useExtendCommand'
 import { ENTER_KEY_CODE, ESCAPE_KEY_CODE, DELETE_KEY_CODE, SPACE_KEY_CODE } from '../../utils/constants'
+import useKeyPress from '../../hooks/useKeyPress'
 
 
 const useKeyPressCommands = () => {
@@ -21,14 +22,22 @@ const useKeyPressCommands = () => {
         extend: useExtendCommand()
     }
 
-    const { 
+    const {
         tools: { 
-            tool 
+            tool,
+            isToolBeingUsed
         } 
     } = useAppContext()
 
+    const {
+        undoIsPressed,
+        redoIsPressed
+    } = useKeyPress()
+
     const executeKeyPressCommand = useCallback((event) => {
-        if ((event.metaKey || event.ctrlKey) && (event.key === 'z' || event.key === 'y')) {
+        if ((undoIsPressed(event) || redoIsPressed(event)) &&
+            !isToolBeingUsed()
+        ) {
             commands.undoRedo(event)
             return
         }
@@ -68,7 +77,7 @@ const useKeyPressCommands = () => {
         }
     
         return null
-    }, [commands, tool.type, tool.name])
+    }, [undoIsPressed, redoIsPressed, isToolBeingUsed, tool.type, tool.name, commands])
 
     return executeKeyPressCommand
 }

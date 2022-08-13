@@ -57,69 +57,65 @@ const useDrawing = () => {
     }, [canvasContext, currentScale, currentTranslate])
 
     const drawElement = useCallback((element, options = {}) => {
-            canvasContext.beginPath()
+        if (!element.isShown && !options.forceHidden) {
+            return;
+        }
 
-            const { color, lineDash } = options
+        canvasContext.beginPath()
 
-            if (color) {
-                canvasContext.strokeStyle = color
-            }
+        const { color, lineDash } = options
 
-            if (lineDash) {
-                canvasContext.setLineDash(lineDash)
-            }
+        if (color) {
+            canvasContext.strokeStyle = color
+        }
 
-            canvasContext.lineWidth = 1 / currentScale
-            switch (element.type) {
-                case 'line':
-                    canvasContext.moveTo(element.pointA.x, element.pointA.y)
-                    canvasContext.lineTo(element.pointB.x, element.pointB.y)
-                    break
-                case 'arc':
-                    canvasContext.moveTo(element.startLine.pointB.x, element.startLine.pointB.y)
-                    canvasContext.arc(
-                        element.centerPoint.x,
-                        element.centerPoint.y,
-                        element.radius,
-                        degreesToRadians(element.startLine.angle),
-                        degreesToRadians(element.endLine.angle),
-                        true
-                    )
-                    break
-                case 'polyline':
-                case 'rectangle':
-                    if (element.isShown) {
-                        element.elements.forEach(e => {
-                            if (e.isShown) {
-                                drawElement(e, options)
-                            }
-                        })
-                    }
-                    return
-                case 'circle':
-                    canvasContext.moveTo(element.centerPoint.x + element.radius, element.centerPoint.y)
-                    canvasContext.arc(
-                        element.centerPoint.x,
-                        element.centerPoint.y,
-                        element.radius,
-                        0,
-                        2 * Math.PI,
-                        true
-                    )
-                    break
-                default:
-                    throw new Error(`Element type ${element.type} not supported`)
-            }
+        if (lineDash) {
+            canvasContext.setLineDash(lineDash)
+        }
 
-            canvasContext.stroke()
-            canvasContext.strokeStyle = '#000000'
-            canvasContext.setLineDash([])
-        },
-        [canvasContext, currentScale]
-    )
+        canvasContext.lineWidth = 1 / currentScale
+        switch (element.type) {
+            case 'line':
+                canvasContext.moveTo(element.pointA.x, element.pointA.y)
+                canvasContext.lineTo(element.pointB.x, element.pointB.y)
+                break
+            case 'arc':
+                canvasContext.moveTo(element.startLine.pointB.x, element.startLine.pointB.y)
+                canvasContext.arc(
+                    element.centerPoint.x,
+                    element.centerPoint.y,
+                    element.radius,
+                    degreesToRadians(element.startLine.angle),
+                    degreesToRadians(element.endLine.angle),
+                    true
+                )
+                break
+            case 'polyline':
+            case 'rectangle':
+                element.elements.forEach(e => drawElement(e, options))
+                return
+            case 'circle':
+                canvasContext.moveTo(element.centerPoint.x + element.radius, element.centerPoint.y)
+                canvasContext.arc(
+                    element.centerPoint.x,
+                    element.centerPoint.y,
+                    element.radius,
+                    0,
+                    2 * Math.PI,
+                    true
+                )
+                break
+            default:
+                throw new Error(`Element type ${element.type} not supported`)
+        }
 
-    const drawSelectedElement = useCallback(
-        (element, options = {}) => {
+        canvasContext.stroke()
+        canvasContext.strokeStyle = '#000000'
+        canvasContext.setLineDash([])
+    },
+    [canvasContext, currentScale])
+
+    const drawSelectedElement = useCallback((element, options = {}) => {
             drawElement(element, {
                 ...options,
                 lineDash: [LINE_DASH_LINE_SIZE / currentScale, LINE_DASH_SPACE_SIZE / currentScale]
@@ -128,8 +124,7 @@ const useDrawing = () => {
         [currentScale, drawElement]
     )
 
-    const drawReplacedElements = useCallback(
-        (options = {}) => {
+    const drawReplacedElements = useCallback((options = {}) => {
             // if (!currentlyReplacedElements || !currentlyReplacedElements.currentReplacements) return
             if (!currentlyReplacedElements) return
 
@@ -142,16 +137,21 @@ const useDrawing = () => {
 
                 for (const replacement of replacements) {
                     for (const element of replacement.removedSections) {
-                        // drawElement(element, { ...options, color: REPLACED_COLOR })
-                        isTrim
-                            ? drawElement(element, { ...options, color: REPLACED_COLOR })
-                            : drawElement(element)
+                        if (isTrim) {
+                            drawElement(element, { ...options, color: REPLACED_COLOR, forceHidden: true })
+                            continue
+                        }
+                        
+                        drawElement(element, { ...options, forceHidden: true })
                     }
 
                     for (const replacingElement of replacement.replacingElements) {
-                        isTrim
-                            ? drawElement(replacingElement)
-                            : drawElement(replacingElement, { ...options, color: REPLACED_COLOR })
+                        if (isTrim) {
+                            drawElement(replacingElement, { ...options, forceHidden: true })
+                            continue
+                        }
+
+                        drawElement(replacingElement, { ...options, color: REPLACED_COLOR, forceHidden: true })
                     }
                 }
             }
@@ -159,8 +159,7 @@ const useDrawing = () => {
         [currentlyReplacedElements, drawElement, tool.name, toolKeys]
     )
 
-    const drawSelectionPoints = useCallback(
-        selectionPoints => {
+    const drawSelectionPoints = useCallback(selectionPoints => {
             for (const selectionPoint of selectionPoints) {
                 const pointFill =
                     selectedPoints && selectedPoints.some(p => p.pointId === selectionPoint.pointId)

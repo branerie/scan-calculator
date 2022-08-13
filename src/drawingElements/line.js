@@ -2,6 +2,7 @@ import { getPointDistance } from '../utils/point'
 import { degreesToRadians, getQuadrant, getAngleBetweenPoints } from '../utils/angle'
 import Element from './element'
 import { createPoint } from '../utils/elementFactory'
+import { SELECT_DELTA } from '../utils/constants'
 
 class Line extends Element {
     #pointA
@@ -97,7 +98,7 @@ class Line extends Element {
         this.__updateDetails()
     }
 
-    checkIfPointOnElement(point, maxDiff) {
+    checkIfPointOnElement(point, maxDiff = SELECT_DELTA) {
         if (!this.#pointA || !this.#pointB) {
             throw new Error('Cannot use method \'checkIfPointOnElement\' before line is fully defined.')
         }

@@ -172,43 +172,18 @@ export default function useElementsContext() {
 
         const { completed } = currentlyReplacedElements
 
-        let removedSelectionPoints = []
-        let newSelectionPoints = []
+        const allRemovedElements = Object.values(completed.aggregate.removed)
+        const removedSelectionPoints = allRemovedElements.reduce((acc, el) => {
+            return acc.concat(el.getSelectionPoints())
+        }, [])
 
-        const allRemovedElements = []
-        const allAddedElements = []
-        for (const [replacedId, { removedElements, replacingElements }] of Object.entries(completed)) {
-            for (const removedElement of removedElements) {
-                removedElement.isShown = true
-                if (removedElement.baseType === 'polyline') {
-                    removedElement.elements.forEach(subElement => subElement.isShown = true)    
-                }
+        const allAddedElements = Object.values(completed.aggregate.added)
+        const addedSelectionPoints = allAddedElements.reduce((acc, el) => {
+            return acc.concat(el.getSelectionPoints())
+        }, [])
         
-                removedSelectionPoints = removedSelectionPoints.concat(removedElement.getSelectionPoints())
-
-                allRemovedElements.push(removedElement)
-            }
-            
-            const currentReplacingElements = Object.values(replacingElements)
-            for (const replacingElement of currentReplacingElements) {
-                if (replacingElement.groupId) {
-                    if (currentReplacingElements.length > 1) {
-                        throw new Error('Unknown operation. Polyline subElements can only be replaced by one other subElement')
-                    }
-
-                    // we are replacing one polyline subElement with another
-                    const polyline = getElementById(replacingElement.groupId)
-                    polyline.replaceElement(replacingElement, replacedId)
-                }
-
-                newSelectionPoints = newSelectionPoints.concat(replacingElement.getSelectionPoints())
-                
-                allAddedElements.push(replacingElement)
-            }
-        }
-
         removeSelectionPoints(removedSelectionPoints)
-        addSelectionPoints(newSelectionPoints)
+        addSelectionPoints(addedSelectionPoints)
 
         updateHistoryEvents({ 
             action: 'replace', 
@@ -223,8 +198,7 @@ export default function useElementsContext() {
         currentlyReplacedElements,
         removeSelectionPoints,
         updateHistoryEvents,
-        clearReplacingElements,
-        getElementById
+        clearReplacingElements
     ])
 
     const updateElementsFromHistory = useCallback((lastEventIndex, isUndo) => {

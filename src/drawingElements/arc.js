@@ -1,4 +1,4 @@
-import { MAX_NUM_ERROR } from '../utils/constants'
+import { MAX_NUM_ERROR, SELECT_DELTA } from '../utils/constants'
 import { createLine } from '../utils/elementFactory'
 import ElementManipulator from '../utils/elementManipulator'
 import { getPointDistance, getRotatedPointAroundPivot, pointsMatch } from '../utils/point'
@@ -198,7 +198,7 @@ class Arc extends BaseArc {
         ]
     }
 
-    checkIfPointOnElement(point, maxDiff = MAX_NUM_ERROR) {
+    checkIfPointOnElement(point, maxDiff = SELECT_DELTA) {
         const distanceFromCenter = getPointDistance(this.centerPoint, point)
         if (Math.abs(this.radius - distanceFromCenter) > maxDiff) {
             return false
