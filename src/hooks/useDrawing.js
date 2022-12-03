@@ -112,8 +112,7 @@ const useDrawing = () => {
         canvasContext.stroke()
         canvasContext.strokeStyle = '#000000'
         canvasContext.setLineDash([])
-    },
-    [canvasContext, currentScale])
+    }, [canvasContext, currentScale])
 
     const drawSelectedElement = useCallback((element, options = {}) => {
             drawElement(element, {
@@ -145,13 +144,14 @@ const useDrawing = () => {
                         drawElement(element, { ...options, forceHidden: true })
                     }
 
-                    for (const replacingElement of replacement.replacingElements) {
-                        if (isTrim) {
+                    if (isTrim) {
+                        for (const replacingElement of replacement.replacingElements) {
                             drawElement(replacingElement, { ...options, forceHidden: true })
-                            continue
                         }
-
-                        drawElement(replacingElement, { ...options, color: REPLACED_COLOR, forceHidden: true })
+                    } else if (replacement.diffElements) {
+                        for (const diffElement of replacement.diffElements) {
+                            drawElement(diffElement, { ...options, color: REPLACED_COLOR, forceHidden: true })
+                        }
                     }
                 }
             }

@@ -26,32 +26,30 @@ class Arc extends BaseArc {
         this.#startLine = startLine
         this.#endLine = endLine
         this.#midLine = midLine
-
+        
         if (startLine) {
-            if (Math.abs(getPointDistance(centerPoint, startLine.pointB) - this.radius) > MAX_NUM_ERROR) {
+            if (!this.radius) {
+                this._setRadius(getPointDistance(centerPoint, startLine.pointB))
+            } else if (
+                Math.abs(getPointDistance(centerPoint, startLine.pointB) - this.radius) > MAX_NUM_ERROR
+            ) {
                 throw new Error(INCONSISTENT_ARC_ERROR)
             }
 
             if (getPointDistance(centerPoint, startLine.pointA) > 0) {
                 this.#startLine.setPointA(centerPoint)
             }
-
-            if (!this.radius) {
-                this._setRadius(getPointDistance(centerPoint, startLine.pointB))
-            }
         }
 
         if (endLine) {
-            if (getPointDistance(centerPoint, endLine.pointA) > 0) {
-                this.#endLine.setPointA(this.centerPoint)
-            }
-
             if (!this.radius) {
                 this._setRadius(getPointDistance(centerPoint, endLine.pointB))
+            } else if (Math.abs(getPointDistance(centerPoint, endLine.pointB) - this.radius) > MAX_NUM_ERROR) {
+                throw new Error(INCONSISTENT_ARC_ERROR)
             }
 
-            if (Math.abs(getPointDistance(centerPoint, endLine.pointB) - this.radius) > MAX_NUM_ERROR) {
-                throw new Error(INCONSISTENT_ARC_ERROR)
+            if (getPointDistance(centerPoint, endLine.pointA) > 0) {
+                this.#endLine.setPointA(this.centerPoint)
             }
         }
 

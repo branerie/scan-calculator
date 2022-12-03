@@ -90,6 +90,13 @@ const createLine = (
     return line
 }
 
+const createArc = (centerPoint, startPoint, endPoint) => {
+    return new Arc(centerPoint, {
+        startLine: new Line(centerPoint, { pointB: startPoint }),
+        endLine: new Line(centerPoint, { pointB: endPoint })
+    })
+}
+
 function createElementFromInitialPoint(type, initialPoint, groupId = null) {
     if (type === 'point') {
         return initialPoint
@@ -110,5 +117,6 @@ export {
     createElement,
     createPoint,
     createLine,
+    createArc,
     createEditedElement
 }

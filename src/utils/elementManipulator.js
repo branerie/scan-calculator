@@ -1,10 +1,8 @@
 import { v4 as uuidv4 } from 'uuid'
 import { createElement } from './elementFactory'
-import Arc from '../drawingElements/arc'
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
-import Circle from '../drawingElements/circle'
 import Rectangle from '../drawingElements/rectangle'
 
 class ElementManipulator {

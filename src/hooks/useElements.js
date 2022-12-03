@@ -21,9 +21,9 @@ const elementsReducer = (state, action) => {
                     newGroupedElements[newElement.id] = newElement
                 } else {
                     newStateElements[newElement.id] = newElement
-    
+
                     if (newElement.baseType === 'polyline') {
-                        newElement.elements.forEach(e => newGroupedElements[e.id] = e)
+                        newElement.elements.forEach(e => (newGroupedElements[e.id] = e))
                     }
                 }
             })
@@ -32,7 +32,9 @@ const elementsReducer = (state, action) => {
                 ...state,
                 elements: newStateElements,
                 currentlyCreatedElement: null,
-                ...(Object.keys(newGroupedElements).length && { groupedElements: { ...state.groupedElements, ...newGroupedElements } })
+                ...(Object.keys(newGroupedElements).length && {
+                    groupedElements: { ...state.groupedElements, ...newGroupedElements }
+                })
             }
         }
         case 'changeElements': {
@@ -51,16 +53,16 @@ const elementsReducer = (state, action) => {
                         newGroupedElements = { ...state.groupedElements }
                     }
 
-                    eac.elements.forEach(e => newGroupedElements[e.id] = e)
+                    eac.elements.forEach(e => (newGroupedElements[e.id] = e))
                 }
-                
+
                 newElements[eac.id] = eac
             })
 
-            return { 
-                ...state, 
+            return {
+                ...state,
                 elements: newElements,
-                ...(newGroupedElements && { groupedElements: newGroupedElements }) 
+                ...(newGroupedElements && { groupedElements: newGroupedElements })
             }
         }
         case 'removeElements': {
@@ -80,18 +82,17 @@ const elementsReducer = (state, action) => {
                     delete newGroupedElements[elementId]
                 } else {
                     delete newElements[elementId]
-    
+
                     if (removedElement.baseType === 'polyline') {
                         if (!newGroupedElements) {
                             newGroupedElements = { ...state.groupedElements }
                         }
-    
+
                         for (const element of removedElement.elements) {
                             delete newGroupedElements[element.id]
                         }
                     }
                 }
-
 
                 if (newCurrentlyEditedElements && elementId in newCurrentlyEditedElements) {
                     if (newCurrentlyEditedElements === currentlyEditedElements) {
@@ -102,9 +103,9 @@ const elementsReducer = (state, action) => {
                 }
             }
 
-            return { 
-                ...state, 
-                elements: newElements, 
+            return {
+                ...state,
+                elements: newElements,
                 currentlyEditedElements: newCurrentlyEditedElements,
                 ...(newGroupedElements && { groupedElements: newGroupedElements })
             }
@@ -122,10 +123,10 @@ const elementsReducer = (state, action) => {
             const newElements = { ...state.elements }
 
             for (const editedElement of editedElements) {
-                const editedElementCopy = shouldCopyElements 
-                                            ? ElementManipulator.copyElement(editedElement, { keepIds: true })
-                                            : editedElement
-    
+                const editedElementCopy = shouldCopyElements
+                    ? ElementManipulator.copyElement(editedElement, { keepIds: true })
+                    : editedElement
+
                 newCurrentlyEditedElements[editedElement.id] = editedElementCopy
 
                 if (shouldHideOriginal) {
@@ -136,7 +137,9 @@ const elementsReducer = (state, action) => {
             return { ...state, currentlyEditedElements: newCurrentlyEditedElements, elements: newElements }
         }
         case 'changeEditingElements': {
-            const newCurrentlyEditedElements = state.currentlyEditedElements ? { ...state.currentlyEditedElements } : {}
+            const newCurrentlyEditedElements = state.currentlyEditedElements
+                ? { ...state.currentlyEditedElements }
+                : {}
 
             for (const newEditingElement of action.newEditingElements) {
                 newCurrentlyEditedElements[newEditingElement.id] = newEditingElement
@@ -175,12 +178,12 @@ const elementsReducer = (state, action) => {
                 }
             }
 
-            return { 
-                ...state, 
-                elements: newElements, 
+            return {
+                ...state,
+                elements: newElements,
                 groupedElements: newGroupedElements,
-                currentlyEditedElements: null, 
-                snappedPoint: null 
+                currentlyEditedElements: null,
+                snappedPoint: null
             }
         }
         case 'startCopyingElements': {
@@ -244,97 +247,83 @@ const elementsReducer = (state, action) => {
         }
         case 'startReplacingElements': {
             const { currentlyReplacedElements } = state
-            const currentReplacements = (currentlyReplacedElements && currentlyReplacedElements.currentReplacements)
-                        ? { ...currentlyReplacedElements.currentReplacements }
-                        : {}
-                        
+            const currentReplacements =
+                currentlyReplacedElements && currentlyReplacedElements.currentReplacements
+                    ? { ...currentlyReplacedElements.currentReplacements }
+                    : {}
+
             const newElements = { ...state.elements }
             const newGroupedElements = { ...state.groupedElements }
             for (const replacedId of Object.keys(action.replacements)) {
-                const { replacingElements, removedSections } = action.replacements[replacedId]
+                const { replacingElements, removedSections, diffElements } = action.replacements[replacedId]
 
-                // // if (currentReplacements[replacedId]) {
-                //     //     for (const oldReplacingElement of currentReplacements[replacedId].replacingElements) {
-                // //         delete newElements[oldReplacingElement.id]
-                
-                // //         if (oldReplacingElement.baseType === 'polyline') {
-                // //             oldReplacingElement.elements.forEach(e => delete newGroupedElements[e.id])
-                // //         }
-                // //     }
-                // // } else {
-
-                // // add replacing elements to element collections so they can be visualized
-                // for (const replacingElement of replacingElements) {
-                //     newElements[replacingElement.id] = replacingElement
-
-                //     if (replacingElement.baseType === 'polyline') {
-                //         replacingElement.elements.forEach(e => newGroupedElements[e.id] = e)
-                //     }
-                // }
-
-                // const currentElement = newElements[replacedId] || newGroupedElements[replacedId]
-                // currentElement.isShown = false
-                // // }
-                
-                currentReplacements[replacedId] = { replacingElements, removedSections }
+                currentReplacements[replacedId] = { replacingElements, removedSections, diffElements }
 
                 const replacedElement = newElements[replacedId] || newGroupedElements[replacedId]
                 replacedElement.isShown = false
             }
 
             const completed = currentlyReplacedElements?.completed || null
-                        
+
             return {
                 ...state,
                 elements: newElements,
                 groupedElements: newGroupedElements,
                 currentlyReplacedElements: {
                     currentReplacements,
-                    ...(!!(completed) && { completed })
+                    ...(!!completed && { completed })
                 }
             }
         }
         case 'clearReplacingElements': {
-            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) return state
+            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements)
+                return state
 
-            const { currentlyReplacedElements: { currentReplacements, completed } } = state
+            const {
+                currentlyReplacedElements: { currentReplacements, completed }
+            } = state
 
             const newElements = { ...state.elements }
             const newGroupedElements = { ...state.groupedElements }
             for (const replacedId of Object.keys(currentReplacements)) {
-                (newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
+                ;(newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
 
                 const replacingElements = currentReplacements[replacedId].replacingElements
                 for (const replacingElement of replacingElements) {
                     // if (newElements[replacingElement.id]) {
-                        delete newElements[replacingElement.id]
+                    delete newElements[replacingElement.id]
 
-                        if (replacingElement.type === 'polyline') {
-                            replacingElement.elements.forEach(e => delete newGroupedElements[e.id])
-                        }
-                     // } else {
+                    if (replacingElement.type === 'polyline') {
+                        replacingElement.elements.forEach(e => delete newGroupedElements[e.id])
+                    }
+                    // } else {
                     //     delete newGroupedElements[replacingElement.id]
                     // }
                 }
             }
 
-            return { 
-                ...state, 
+            return {
+                ...state,
                 elements: newElements,
                 groupedElements: newGroupedElements,
-                currentlyReplacedElements: completed ? { completed } : null 
+                currentlyReplacedElements: completed ? { completed } : null
             }
         }
         case 'continueReplacingElements': {
-            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) return state
+            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements)
+                return state
 
-            const { currentlyReplacedElements: { completed } } = state
-            
+            const {
+                currentlyReplacedElements: { completed }
+            } = state
+
             let newElements = { ...state.elements }
             let newGroupedElements = null
             const newCompleteAdded = {}
             const newCompleteRemoved = {}
-            for (const [replacedId, { replacingElements, replacedElement }] of Object.entries(action.replacements)) {
+            for (const [replacedId, { replacingElements, replacedElement }] of Object.entries(
+                action.replacements
+            )) {
                 replacedElement.isShown = true
 
                 newCompleteRemoved[replacedElement.id] = replacedElement
@@ -369,14 +358,14 @@ const elementsReducer = (state, action) => {
             }
 
             const newCompleted = completed ? completed.clone() : new ElementReplacement()
-            newCompleted.addStep({ removed: newCompleteRemoved, added: newCompleteAdded })            
-            
-            return { 
-                ...state, 
+            newCompleted.addStep({ removed: newCompleteRemoved, added: newCompleteAdded })
+
+            return {
+                ...state,
                 elements: newElements,
                 ...(newGroupedElements && { groupedElements: newGroupedElements }),
-                currentlyReplacedElements: { completed: newCompleted } 
-            }            
+                currentlyReplacedElements: { completed: newCompleted }
+            }
         }
         case 'updateReplacementSteps': {
             if (!state.currentlyReplacedElements?.completed) return state
@@ -403,11 +392,11 @@ const elementsReducer = (state, action) => {
                     }
 
                     for (const subElement of elementToRemove.elements) {
-                        delete newGroupedElements[subElement.id] 
+                        delete newGroupedElements[subElement.id]
                     }
                 }
             }
-            
+
             for (const elementToAdd of Object.values(elementsToAdd)) {
                 newElements[elementToAdd.id] = elementToAdd
 
@@ -421,7 +410,7 @@ const elementsReducer = (state, action) => {
                     }
                 }
             }
-            
+
             return {
                 ...state,
                 elements: newElements,
@@ -446,10 +435,10 @@ const elementsReducer = (state, action) => {
                     newElements[replacedId].isShown = true
                 }
             }
-  
-            return {  
-                ...state, 
-                currentlyReplacedElements: null, 
+
+            return {
+                ...state,
+                currentlyReplacedElements: null,
                 elements: newElements || state.elements,
                 groupedElements: newGroupedElements || state.groupedElements
             }
@@ -465,7 +454,7 @@ const elementsReducer = (state, action) => {
     }
 }
 
-const useElements = (elementsContainer) => {
+const useElements = elementsContainer => {
     const [elementsState, elementsDispatch] = useReducer(elementsReducer, {
         elements: {},
         groupedElements: {},
@@ -473,164 +462,198 @@ const useElements = (elementsContainer) => {
         currentlyEditedElements: null,
         currentlyCopiedElements: null,
         currentlyReplacedElements: null,
-        snappedPoint: null,
+        snappedPoint: null
     })
 
-    const addElements = useCallback((newElements) => {
-        elementsDispatch({ type: 'addElements', newElements })
-        elementsContainer.addElements(newElements)
-    }, [elementsContainer])
+    const addElements = useCallback(
+        newElements => {
+            elementsDispatch({ type: 'addElements', newElements })
+            elementsContainer.addElements(newElements)
+        },
+        [elementsContainer]
+    )
 
-    const removeElements = useCallback((removedElements) => {
-        elementsDispatch({ type: 'removeElements', removedElements })
-        elementsContainer.removeElements(removedElements)
-    }, [elementsContainer])
+    const removeElements = useCallback(
+        removedElements => {
+            elementsDispatch({ type: 'removeElements', removedElements })
+            elementsContainer.removeElements(removedElements)
+        },
+        [elementsContainer]
+    )
 
-    const changeElements = useCallback((elementsAfterChange) => {
-        elementsDispatch({ type: 'changeElements', elementsAfterChange })
-        elementsContainer.changeElements(elementsAfterChange)
-    }, [elementsContainer])
+    const changeElements = useCallback(
+        elementsAfterChange => {
+            elementsDispatch({ type: 'changeElements', elementsAfterChange })
+            elementsContainer.changeElements(elementsAfterChange)
+        },
+        [elementsContainer]
+    )
 
-    const getElementById = useCallback((elementId) => {
-        return elementsState.elements[elementId] || elementsState.groupedElements[elementId]
-    }, [elementsState.elements, elementsState.groupedElements])
+    const getElementById = useCallback(
+        elementId => {
+            return elementsState.elements[elementId] || elementsState.groupedElements[elementId]
+        },
+        [elementsState.elements, elementsState.groupedElements]
+    )
 
-    const getElementsFromReturnGroupOptions = useCallback((originalElement, returnGroupOption) => {
-        if (!originalElement.groupId || returnGroupOption === RETURN_GROUP_OPTS.INVIDIVUAL) {
-            return [originalElement]
-        }
+    const getElementsFromReturnGroupOptions = useCallback(
+        (originalElement, returnGroupOption) => {
+            if (!originalElement.groupId || returnGroupOption === RETURN_GROUP_OPTS.INVIDIVUAL) {
+                return [originalElement]
+            }
 
-        const groupOwner = getElementById(originalElement.groupId)
-        if (returnGroupOption === RETURN_GROUP_OPTS.OWNER) {
-            return [groupOwner]
-        }
-        
-        if (returnGroupOption === RETURN_GROUP_OPTS.MEMBERS) {
-            return groupOwner.elements
-        } else {
-            throw new Error('Invalid value for returnGroup parameter - ' + returnGroupOption)
-        }
-    }, [getElementById])
+            const groupOwner = getElementById(originalElement.groupId)
+            if (returnGroupOption === RETURN_GROUP_OPTS.OWNER) {
+                return [groupOwner]
+            }
 
-    const getElementsContainingPoint = useCallback((
-            pointX, 
-            pointY, 
-            { maxPointsDiff, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}
-        ) => {
-        /*
+            if (returnGroupOption === RETURN_GROUP_OPTS.MEMBERS) {
+                return groupOwner.elements
+            } else {
+                throw new Error('Invalid value for returnGroup parameter - ' + returnGroupOption)
+            }
+        },
+        [getElementById]
+    )
+
+    const getElementsContainingPoint = useCallback(
+        (pointX, pointY, { maxPointsDiff, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}) => {
+            /*
         returnGroup:
             0 - returns group members contained in point
             1 - returns all group members 
             2 - returns group owner (polyline)
         */
-        const elementIdsInDivision = elementsContainer.getElementsNearPoint(pointX, pointY)
-        if (!elementIdsInDivision) return null
+            const elementIdsInDivision = elementsContainer.getElementsNearPoint(pointX, pointY)
+            if (!elementIdsInDivision) return null
 
-        const point = createPoint(pointX, pointY)
+            const point = createPoint(pointX, pointY)
 
-        let elementsWithPoint = []
-        for (const elementId of elementIdsInDivision) {
-            const element = getElementById(elementId)
+            let elementsWithPoint = []
+            for (const elementId of elementIdsInDivision) {
+                const element = getElementById(elementId)
 
-            if (!element.checkIfPointOnElement(point, maxPointsDiff)) continue
+                if (!element.checkIfPointOnElement(point, maxPointsDiff)) continue
 
-            const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
-            elementsWithPoint = elementsWithPoint.concat(elementsToAdd)
-        }
+                const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
+                elementsWithPoint = elementsWithPoint.concat(elementsToAdd)
+            }
 
-        return elementsWithPoint.length > 0 ? elementsWithPoint : null
-    }, [elementsContainer, getElementById, getElementsFromReturnGroupOptions])
+            return elementsWithPoint.length > 0 ? elementsWithPoint : null
+        },
+        [elementsContainer, getElementById, getElementsFromReturnGroupOptions]
+    )
 
-    const getElementsInContainer = useCallback((
-            boxStartPoint, 
-            boxEndPoint, 
+    const getElementsInContainer = useCallback(
+        (
+            boxStartPoint,
+            boxEndPoint,
             { shouldSkipPartial = true, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}
         ) => {
-        /*
+            /*
         returnGroup:
             0 - returns group members contained in point
             1 - returns all group members 
             2 - returns group owner (polyline)
         shouldSkipPartial: true if only elements completely contained within selection window should be returned
         */
-        const startPoint = { x: Math.min(boxStartPoint.x, boxEndPoint.x), y: Math.min(boxStartPoint.y, boxEndPoint.y) }
-        const endPoint = { x: Math.max(boxStartPoint.x, boxEndPoint.x), y: Math.max(boxStartPoint.y, boxEndPoint.y) }
-
-        const elementIds = elementsContainer.getElementsInContainer(startPoint, endPoint)
-        if (!elementIds) return null
-
-        let elementsInContainer = []
-        for (const elementId of elementIds) {
-            const element = getElementById(elementId)
-
-            const boundingBox = element.getBoundingBox()
-
-            const isLeftInContainer = boundingBox.left >= startPoint.x
-            const isTopInContainer = boundingBox.top >= startPoint.y
-            const isRightInContainer = boundingBox.right <= endPoint.x
-            const isBottomInContainer = boundingBox.bottom <= endPoint.y
-
-            if (isLeftInContainer && isTopInContainer && isRightInContainer && isBottomInContainer) {
-                const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
-                elementsInContainer = elementsInContainer.concat(elementsToAdd)
-                continue
+            const startPoint = {
+                x: Math.min(boxStartPoint.x, boxEndPoint.x),
+                y: Math.min(boxStartPoint.y, boxEndPoint.y)
+            }
+            const endPoint = {
+                x: Math.max(boxStartPoint.x, boxEndPoint.x),
+                y: Math.max(boxStartPoint.y, boxEndPoint.y)
             }
 
-            if (shouldSkipPartial) continue
+            const elementIds = elementsContainer.getElementsInContainer(startPoint, endPoint)
+            if (!elementIds) return null
 
-            const container = createElement('rectangle', startPoint.x, startPoint.y)
-            container.setLastAttribute(endPoint.x, endPoint.y)
-            const intersections = ElementIntersector.getIntersections(element, container)
-            if (intersections) {
-                const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
-                elementsInContainer = elementsInContainer.concat(elementsToAdd)
+            let elementsInContainer = []
+            for (const elementId of elementIds) {
+                const element = getElementById(elementId)
+
+                const boundingBox = element.getBoundingBox()
+
+                const isLeftInContainer = boundingBox.left >= startPoint.x
+                const isTopInContainer = boundingBox.top >= startPoint.y
+                const isRightInContainer = boundingBox.right <= endPoint.x
+                const isBottomInContainer = boundingBox.bottom <= endPoint.y
+
+                if (isLeftInContainer && isTopInContainer && isRightInContainer && isBottomInContainer) {
+                    const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
+                    elementsInContainer = elementsInContainer.concat(elementsToAdd)
+                    continue
+                }
+
+                if (shouldSkipPartial) continue
+
+                const container = createElement('rectangle', startPoint.x, startPoint.y)
+                container.setLastAttribute(endPoint.x, endPoint.y)
+                const intersections = ElementIntersector.getIntersections(element, container)
+                if (intersections) {
+                    const elementsToAdd = getElementsFromReturnGroupOptions(element, returnGroup)
+                    elementsInContainer = elementsInContainer.concat(elementsToAdd)
+                }
             }
-        }
 
-        return elementsInContainer.length > 0 ? elementsInContainer : null
-    }, [elementsContainer, getElementById, getElementsFromReturnGroupOptions])
+            return elementsInContainer.length > 0 ? elementsInContainer : null
+        },
+        [elementsContainer, getElementById, getElementsFromReturnGroupOptions]
+    )
 
-    const getElementsNearElement = useCallback((
-        element, 
-        { skipSiblings = true, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}) => {
-        const nearbyElementIds = elementsContainer.getElementIdsNearElement(element)
+    const getElementsNearElement = useCallback(
+        (element, { skipSiblings = true, returnGroup = RETURN_GROUP_OPTS.OWNER } = {}) => {
+            const nearbyElementIds = elementsContainer.getElementIdsNearElement(element)
 
-        let elements = []
-        for (const elementId of nearbyElementIds) {
-            const nearbyElement = elementsState.elements[elementId] || elementsState.groupedElements[elementId]
-            if (
-                skipSiblings && 
-                nearbyElement.groupId && 
-                nearbyElement.groupId === element.groupId
-            ) {
-                continue
+            let elements = []
+            for (const elementId of nearbyElementIds) {
+                const nearbyElement =
+                    elementsState.elements[elementId] || elementsState.groupedElements[elementId]
+
+                const isSibling = nearbyElement.groupId && nearbyElement.groupId === element.groupId
+                if (skipSiblings && isSibling) {
+                    continue
+                }
+
+                const elementsToAdd = getElementsFromReturnGroupOptions(nearbyElement, returnGroup)
+
+                elements = elements.concat(elementsToAdd)
             }
 
-            const elementsToAdd = getElementsFromReturnGroupOptions(nearbyElement, returnGroup)
+            return elements
+        },
+        [
+            elementsContainer,
+            elementsState.elements,
+            elementsState.groupedElements,
+            getElementsFromReturnGroupOptions
+        ]
+    )
 
-            elements = elements.concat(elementsToAdd)
-        }
-
-        return elements
-    }, [elementsContainer, elementsState.elements, elementsState.groupedElements, getElementsFromReturnGroupOptions])
-
-    const addCurrentlyCreatedElement = (createdElement) =>
-            elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
+    const addCurrentlyCreatedElement = createdElement =>
+        elementsDispatch({ type: 'addCurrentlyCreated', value: createdElement })
     const removeCurrentlyCreatedElement = () => elementsDispatch({ type: 'removeCurrentlyCreated' })
     const startEditingElements = (editedElements, shouldHideOriginal = true, shouldCopyElements = true) =>
-            elementsDispatch({ type: 'startEditingElements', editedElements, shouldHideOriginal, shouldCopyElements })
-    const changeEditingElements = (newEditingElements) =>
-            elementsDispatch({ type: 'changeEditingElements', newEditingElements })
+        elementsDispatch({
+            type: 'startEditingElements',
+            editedElements,
+            shouldHideOriginal,
+            shouldCopyElements
+        })
+    const changeEditingElements = newEditingElements =>
+        elementsDispatch({ type: 'changeEditingElements', newEditingElements })
     const stopEditingElements = () => elementsDispatch({ type: 'stopEditingElements' })
-    const isEditingElement = (element) => {
+    const isEditingElement = element => {
         const { currentlyEditedElements } = elementsState
 
         if (!currentlyEditedElements) return false
 
         return element.id in currentlyEditedElements
     }
-    
-    const startCopyingElements = (elementsToCopy) => elementsDispatch({ type: 'startCopyingElements', elementsToCopy })
+
+    const startCopyingElements = elementsToCopy =>
+        elementsDispatch({ type: 'startCopyingElements', elementsToCopy })
     const moveCopyingElements = (dX, dY) => {
         const newCurrentElements = [...elementsState.currentlyCopiedElements.current]
         for (const currentElement of newCurrentElements) {
@@ -659,13 +682,17 @@ const useElements = (elementsContainer) => {
         return editedElements
     }
 
-    const startReplacingElements = (replacements) => 
-                    elementsDispatch({ type: 'startReplacingElements', replacements })
-    const pruneReplacingElements = (elementsToKeep) => 
-                    elementsDispatch({ type: 'clearReplacingElements', elementsToKeep })
-                    
+    const startReplacingElements = replacements =>
+        elementsDispatch({ type: 'startReplacingElements', replacements })
+    const pruneReplacingElements = elementsToKeep =>
+        elementsDispatch({ type: 'clearReplacingElements', elementsToKeep })
+
     const clearReplacingElements = () => {
-        if (!elementsState.currentlyReplacedElements || !elementsState.currentlyReplacedElements.currentReplacements) return
+        if (
+            !elementsState.currentlyReplacedElements ||
+            !elementsState.currentlyReplacedElements.currentReplacements
+        )
+            return
 
         elementsDispatch({ type: 'clearReplacingElements' })
     }
@@ -675,19 +702,20 @@ const useElements = (elementsContainer) => {
         if (!currentlyReplacedElements) return
 
         const { completed } = currentlyReplacedElements
-        
+
         elementsDispatch({ type: 'completeReplacingElements' })
 
         return completed
     }
 
-    const updateReplacementSteps = (undo) => {
+    const updateReplacementSteps = undo => {
         if (!elementsState.currentlyReplacedElements?.completed) return
 
-        const { currentlyReplacedElements: { completed } } = elementsState
+        const {
+            currentlyReplacedElements: { completed }
+        } = elementsState
 
-        let elementsToAdd,
-            elementsToRemove
+        let elementsToAdd, elementsToRemove
         if (undo) {
             if (!completed.current) return
 
@@ -699,7 +727,7 @@ const useElements = (elementsContainer) => {
             elementsToAdd = removed
         } else {
             // for redo, must take next step and redo its changes
-            // (i.e. need step AFTER redo) 
+            // (i.e. need step AFTER redo)
             if (!completed.next) return
 
             const { added, removed } = completed.next
@@ -726,15 +754,15 @@ const useElements = (elementsContainer) => {
         // const replacedIds = Object.keys(currentReplacements)
         const { elements, groupedElements } = elementsState
         const replacements = {}
-        
+
         // needed since with extend we might be extending the same element twice in the same command
-        const allReplacedElementsKvp = {} 
+        const allReplacedElementsKvp = {}
         const allReplacingElementsKvp = {}
         for (const [replacedId, { replacingElements }] of Object.entries(currentReplacements)) {
             const replacedElement = elements[replacedId] || groupedElements[replacedId]
             // always take the parent element at this stage, in case we are replacing a subElement of a polyline
-            const parentReplacedElement = replacedElement.groupId 
-                ? elements[replacedElement.groupId] 
+            const parentReplacedElement = replacedElement.groupId
+                ? elements[replacedElement.groupId]
                 : replacedElement
 
             const currentElementReplacingElements = []
@@ -742,8 +770,8 @@ const useElements = (elementsContainer) => {
                 if (replacingElement.groupId) {
                     const polylineId = replacingElement.groupId
 
-                    // we are replacing the subElement of a polyline - this polyline is the 
-                    // "parentReplacedElement"; we need to substitute the old subElement 
+                    // we are replacing the subElement of a polyline - this polyline is the
+                    // "parentReplacedElement"; we need to substitute the old subElement
                     // with the new one to get the new polyline state
                     let polylineCopy
                     if (allReplacingElementsKvp[polylineId]) {
@@ -755,7 +783,7 @@ const useElements = (elementsContainer) => {
                     // TODO: need to make sure all subElements are replaced with copies, with new IDs
                     // or that somehow we keep information about which subElement was replaced
                     polylineCopy.replaceElement(replacingElement, replacedId)
-                    
+
                     currentElementReplacingElements.push(polylineCopy)
                     continue
                 }
@@ -763,29 +791,32 @@ const useElements = (elementsContainer) => {
                 allReplacingElementsKvp[replacingElement.id] = replacingElement
                 currentElementReplacingElements.push(replacingElement)
             }
-            
+
             allReplacedElementsKvp[parentReplacedElement.id] = parentReplacedElement
-            
+
             replacements[replacedId] = {
                 replacedElement: parentReplacedElement,
                 replacingElements: currentElementReplacingElements
             }
         }
-        
+
         elementsContainer.addElements(Object.values(allReplacingElementsKvp))
         elementsContainer.removeElements(Object.values(allReplacedElementsKvp))
         elementsDispatch({ type: 'continueReplacingElements', replacements })
     }
 
-    const isReplacingElement = (element) => {
+    const isReplacingElement = element => {
         const { currentlyReplacedElements } = elementsState
         if (!currentlyReplacedElements) return false
 
         const { currentReplacements, completed } = currentlyReplacedElements
 
         // TODO: Change replacement logic to avoid nested looping
-        const isInCurrentReplacements = currentReplacements &&
-                Object.values(currentReplacements).some(cr => cr.replacingElements.some(re => re.id === element.id))
+        const isInCurrentReplacements =
+            currentReplacements &&
+            Object.values(currentReplacements).some(cr =>
+                cr.replacingElements.some(re => re.id === element.id)
+            )
 
         if (isInCurrentReplacements) return true
 
@@ -793,7 +824,7 @@ const useElements = (elementsContainer) => {
         return !!completed?.current?.removed && completed.current.removed[element.id]
     }
 
-    const setSnappedPoint = (snappedPoint) => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
+    const setSnappedPoint = snappedPoint => elementsDispatch({ type: 'setSnappedPoint', value: snappedPoint })
     const clearSnappedPoint = () => elementsDispatch({ type: 'clearSnappedPoint' })
 
     return {
@@ -803,9 +834,9 @@ const useElements = (elementsContainer) => {
             ? Object.values(elementsState.currentlyEditedElements)
             : null,
         currentlyCopiedElements: elementsState.currentlyCopiedElements
-            ? elementsState.currentlyCopiedElements
-                .current
-                .concat(elementsState.currentlyCopiedElements.positioned)
+            ? elementsState.currentlyCopiedElements.current.concat(
+                  elementsState.currentlyCopiedElements.positioned
+              )
             : null,
         currentlyReplacedElements: elementsState.currentlyReplacedElements,
         snappedPoint: elementsState.snappedPoint,

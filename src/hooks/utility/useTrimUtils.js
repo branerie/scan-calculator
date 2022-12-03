@@ -4,6 +4,8 @@ import ElementIntersector from '../../utils/elementIntersector'
 import ElementTrimmer from '../../utils/elementTrimmer'
 import { pointsMatch } from '../../utils/point'
 
+const getPointCoordinatesKey = point => `${point.x};${point.y}`
+
 const useTrimUtils = () => {
     const {
         elements: {
@@ -18,16 +20,16 @@ const useTrimUtils = () => {
             // if (elementToTrim.baseType === 'polyline') {
             //     return elementToTrim.elements.map(se => getElementTrimPoints(se, includeEndPoints))
             // }
-
+            debugger
             const nearbyElements = getElementsNearElement(elementToTrim, {
                 returnGroup: 0,
-                skipSiblings: true
+                skipSiblings: false
             })
-
+            debugger
             const checkShouldTrimByElement = elementToCheck => {
                 return (
                     elementToCheck.id !== elementToTrim.id &&
-                    ((selectedElements && hasSelectedElement(elementToCheck)) || !selectedElements)
+                    (!selectedElements || hasSelectedElement(elementToCheck))
                 )
             }
 
@@ -37,7 +39,7 @@ const useTrimUtils = () => {
                     return acc
                 }
 
-                let intersections = ElementIntersector.getIntersections(elementToTrim, etb)
+                let intersections = ElementIntersector.getIntersections(elementToTrim, etb, 'yes')
                 if (intersections) {
                     const elementStartPoint = elementToTrim.startPoint
                     const isInSamePolyline = elementToTrim.groupId && elementToTrim.groupId === etb.groupId
@@ -45,9 +47,9 @@ const useTrimUtils = () => {
                     // even if includeEndPoints is true
                     if (elementStartPoint && (!includeEndPoints || isInSamePolyline)) {
                         intersections = intersections.filter(
-                            int =>
-                                !pointsMatch(int, elementStartPoint) &&
-                                !pointsMatch(int, elementToTrim.endPoint)
+                            intersection =>
+                                !pointsMatch(intersection, elementStartPoint) &&
+                                !pointsMatch(intersection, elementToTrim.endPoint)
                         )
                     }
 
@@ -81,7 +83,7 @@ const useTrimUtils = () => {
                 //     continue
                 // }
 
-                const pointsOfTrim = getElementTrimPoints(elementToTrim, elementToTrim.groupId)
+                const pointsOfTrim = getElementTrimPoints(elementToTrim, !!elementToTrim.groupId)
                 if (pointsOfTrim.length === 0) continue
 
                 const resultElements = ElementTrimmer.trimElement(
@@ -89,6 +91,7 @@ const useTrimUtils = () => {
                     pointsOfTrim,
                     pointsOfSelection
                 )
+
                 if (resultElements) {
                     commandResult[elementToTrim.id] = {
                         replacingElements: resultElements.remaining,
@@ -102,38 +105,94 @@ const useTrimUtils = () => {
         [getElementTrimPoints]
     )
 
-    const getPolylineTrimResults = useCallback((polylines, pointsOfSelection) => {
+    const getPolylineTrimResults = useCallback(
+        (polylines, pointsOfSelection) => {
             const commandResult = {}
 
-            for (const [polylineId, trimPoints] of Object.entries(polylines)) {
+            const filterTrimPoints = (
+                trimPointsBySubElementId,
+                currentSubElementTrimPoints,
+                elementsByTrimPoint,
+                selectedSubElementIds
+            ) => {
+                const newTrimPointsBySubElementId = { ...trimPointsBySubElementId }
+
+                // here, an element is called "selected" if there is a pointOfSelection on it
+                // or the selection box crosses it
+                for (const suTrimPoint of currentSubElementTrimPoints) {
+                    const pointKey = getPointCoordinatesKey(suTrimPoint)
+                    const selectedSuIdsWithPoint = elementsByTrimPoint[pointKey].filter(subElementId =>
+                        selectedSubElementIds.has(subElementId)
+                    )
+                    for (const selectedSuId of selectedSuIdsWithPoint) {
+                        newTrimPointsBySubElementId[selectedSuId] = newTrimPointsBySubElementId[
+                            selectedSuId
+                        ].filter(p => p.x !== suTrimPoint.x && p.y !== suTrimPoint.y)
+                    }
+                }
+
+                return newTrimPointsBySubElementId
+            }
+
+            for (const polylineId of Object.keys(polylines)) {
+                let trimPointsBySubElementId = polylines[polylineId]
+
+                const elementsByTrimPoint = {}
+                const selectedSubElementIds = new Set()
                 const elementToTrim = getElementById(polylineId)
-                const polylineStartPoint = elementToTrim.startPoint
-                const polylineEndPoint = elementToTrim.endPoint
+                // const polylineStartPoint = elementToTrim.startPoint
+                // const polylineEndPoint = elementToTrim.endPoint
 
                 const subElements = elementToTrim.elements
                 let hasAnyTrimPoints = false
                 for (let subElementIndex = 1; subElementIndex < subElements.length - 1; subElementIndex++) {
                     const subElement = subElements[subElementIndex]
+                    if (pointsOfSelection.some(p => subElement.checkIfPointOnElement(p))) {
+                        // TODO: what if selection is a box? need to check if box crosses element
+                        selectedSubElementIds.add(subElement.id)
+                    }
+
                     const newTrimPoints = getElementTrimPoints(subElement, true)
-                    trimPoints[subElement.id] = newTrimPoints
+                    trimPointsBySubElementId[subElement.id] = newTrimPoints
+
+                    for (const trimPoint of newTrimPoints) {
+                        const pointKey = getPointCoordinatesKey(trimPoint)
+                        if (!elementsByTrimPoint[pointKey]) {
+                            elementsByTrimPoint[pointKey] = []
+                        }
+
+                        elementsByTrimPoint[pointKey].push(subElement)
+                    }
+
+                    trimPointsBySubElementId = filterTrimPoints(
+                        trimPointsBySubElementId,
+                        newTrimPoints,
+                        elementsByTrimPoint,
+                        selectedSubElementIds
+                    )
+
+                    polylines[polylineId] = trimPointsBySubElementId
+
                     hasAnyTrimPoints = hasAnyTrimPoints || newTrimPoints.length > 0
                 }
 
                 const firstSubElement = subElements[0]
-                const firstElementTrimPoints = getElementTrimPoints(firstSubElement)
-                trimPoints[firstSubElement.id] = firstElementTrimPoints.filter(
-                    tp => !pointsMatch(tp, polylineStartPoint) && !pointsMatch(tp, polylineEndPoint)
-                )
+                const firstElementTrimPoints = getElementTrimPoints(firstSubElement, false)
+                trimPointsBySubElementId[firstSubElement.id] = firstElementTrimPoints
+                // trimPointsBySubElementId[firstSubElement.id] = firstElementTrimPoints.filter(
+                //     tp => !pointsMatch(tp, polylineStartPoint) && !pointsMatch(tp, polylineEndPoint)
+                // )
 
-                hasAnyTrimPoints = hasAnyTrimPoints || trimPoints[firstSubElement.id].length > 0
+                hasAnyTrimPoints = hasAnyTrimPoints || trimPointsBySubElementId[firstSubElement.id].length > 0
 
                 const lastSubElement = subElements[subElements.length - 1]
-                const lastElementTrimPoints = getElementTrimPoints(lastSubElement)
-                trimPoints[lastSubElement.id] = lastElementTrimPoints.filter(
-                    tp => !pointsMatch(tp, polylineStartPoint) && !pointsMatch(tp, polylineEndPoint)
-                )
+                const lastElementTrimPoints = getElementTrimPoints(lastSubElement, false)
+                trimPointsBySubElementId[lastSubElement.id] = lastElementTrimPoints
+                // trimPointsBySubElementId[lastSubElement.id] = lastElementTrimPoints.filter(
+                //     tp => !pointsMatch(tp, polylineStartPoint) && !pointsMatch(tp, polylineEndPoint)
+                // )
 
-                hasAnyTrimPoints = hasAnyTrimPoints || trimPoints[lastSubElement.id].length > 0
+                hasAnyTrimPoints = hasAnyTrimPoints || trimPointsBySubElementId[lastSubElement.id].length > 0
 
                 if (!hasAnyTrimPoints) {
                     return commandResult
@@ -141,7 +200,7 @@ const useTrimUtils = () => {
 
                 const resultElements = ElementTrimmer.trimElement(
                     elementToTrim,
-                    trimPoints,
+                    trimPointsBySubElementId,
                     pointsOfSelection
                 )
                 if (resultElements) {

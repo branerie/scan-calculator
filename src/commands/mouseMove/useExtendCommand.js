@@ -3,9 +3,130 @@ import { useAppContext } from '../../contexts/AppContext'
 import useExtendUtils from '../../hooks/utility/useExtendUtils'
 import { SELECT_DELTA } from '../../utils/constants'
 import { checkIsElementStartCloserThanEnd } from '../../utils/element'
-import { createElement } from '../../utils/elementFactory'
+import { createArc, createElement, createLine } from '../../utils/elementFactory'
 import ElementIntersector from '../../utils/elementIntersector'
 import ElementManipulator from '../../utils/elementManipulator'
+import { pointsMatch } from '../../utils/point'
+
+const getArcFromExtendedPoint = (original, result, stationary, center) => {
+    const extensionArc = createArc(center, original, result)
+    if (extensionArc.checkIfPointOnElement(stationary)) {
+        // extension arc should not contain the other point of the arc
+        extensionArc.startPoint = result
+        extensionArc.endPoint = original
+    }
+
+    return extensionArc
+}
+
+const getExtensionDifference = (original, result) => {
+    if (original.baseType !== result.baseType) {
+        return null
+    }
+
+    switch (original.type) {
+        case 'line': {
+            const isStartSame = pointsMatch(original.startPoint, result.startPoint)
+            const isEndSame = pointsMatch(original.endPoint, result.endPoint)
+
+            const extensionLines = []
+            if (!isStartSame) {
+                const extensionLine = createLine(
+                    original.startPoint.x,
+                    original.startPoint.y,
+                    result.startPoint.x,
+                    result.startPoint.y,
+                    { assignId: false }
+                )
+
+                extensionLines.push(extensionLine)
+            }
+
+            if (!isEndSame) {
+                const extensionLine = createLine(
+                    original.endPoint.x,
+                    original.endPoint.y,
+                    result.endPoint.x,
+                    result.endPoint.y,
+                    { assignId: false }
+                )
+
+                extensionLines.push(extensionLine)
+            }
+
+            return extensionLines
+        }
+        case 'arc': {
+            const isCenterSame = pointsMatch(original.centerPoint, result.centerPoint)
+            if (!isCenterSame) {
+                return null
+            }
+
+            if (result.type === 'circle') {
+                // the arc has been closed, extension difference is just the original arc
+                // with start and end points switched
+                const extensionArc = ElementManipulator.copyArc(original, false, false)
+                extensionArc.startPoint = original.endPoint
+                extensionArc.endPoint = original.startPoint
+                return [extensionArc]
+            }
+
+            const isStartSame = pointsMatch(original.startPoint, result.startPoint)
+            const isEndSame = pointsMatch(original.endPoint, result.endPoint)
+
+            const extensionElements = []
+            let staticPoint, originalPoint, resultPoint
+            if (!isStartSame) {
+                staticPoint = original.endPoint
+                originalPoint = original.startPoint
+                resultPoint = result.startPoint
+
+                const extensionElement = getArcFromExtendedPoint(
+                    originalPoint,
+                    resultPoint,
+                    staticPoint,
+                    original.centerPoint
+                )
+                if (extensionElement) {
+                    extensionElements.push(extensionElement)
+                }
+            }
+
+            if (!isEndSame) {
+                staticPoint = original.startPoint
+                originalPoint = original.endPoint
+                resultPoint = result.endPoint
+
+                const extensionElement = getArcFromExtendedPoint(
+                    originalPoint,
+                    resultPoint,
+                    staticPoint,
+                    original.centerPoint
+                )
+                if (extensionElement) {
+                    extensionElements.push(extensionElement)
+                }
+            }
+
+            return extensionElements
+        }
+        // eslint-disable-next-line no-fallthrough
+        case 'polyline':
+        case 'rectangle':
+            let extensionElements = getExtensionDifference(original.elements[0], result.elements[0])
+
+            extensionElements = extensionElements.concat(
+                getExtensionDifference(
+                    original.elements[original.elements.length - 1],
+                    result.elements[result.elements.length - 1]
+                )
+            )
+
+            return extensionElements
+        default:
+            return null
+    }
+}
 
 const useExtendCommand = () => {
     const {
@@ -44,8 +165,8 @@ const useExtendCommand = () => {
 
             const commandResult = {}
             const retrieveElementExtensionEnds = (element, elementToExtend, extendPoints) => {
-                const filteredExtendPoints = elementToExtend.groupId 
-                    ? extendPoints.filter(ep => elementToExtend.checkIfPointOnElement(ep, SELECT_DELTA)) 
+                const filteredExtendPoints = elementToExtend.groupId
+                    ? extendPoints.filter(ep => elementToExtend.checkIfPointOnElement(ep, SELECT_DELTA))
                     : extendPoints
 
                 const nearestEndPoints = checkIsElementStartCloserThanEnd(
@@ -146,7 +267,7 @@ const useExtendCommand = () => {
             }
 
             const filteredElementsToExtend = Object.values(filteredElementsToExtendById)
-            for(const filteredElement of filteredElementsToExtend) {
+            for (const filteredElement of filteredElementsToExtend) {
                 const result = retrieveElementCommandResult(
                     filteredElement.element,
                     filteredElement.shouldExtendStart,
@@ -154,7 +275,12 @@ const useExtendCommand = () => {
                 )
 
                 if (result) {
-                    commandResult[filteredElement.element.id] = result
+                    const elementId = filteredElement.element.id
+                    commandResult[elementId] = result
+                    commandResult[elementId].diffElements = getExtensionDifference(
+                        result.removedSections[0],
+                        result.replacingElements[0]
+                    )
                 }
             }
 

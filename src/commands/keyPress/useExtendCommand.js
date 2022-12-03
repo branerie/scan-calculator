@@ -7,7 +7,6 @@ const useExtendCommand = () => {
     const {
         elements: {
             currentlyReplacedElements,
-            resetCurrentModifications,
             updateReplacementSteps,
             history: { replaceElements }
         },

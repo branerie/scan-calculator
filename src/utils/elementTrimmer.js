@@ -122,6 +122,7 @@ class ElementTrimmer {
             endPoint = element.endPoint
         }
 
+        debugger
         const trimSections = getTrimSections(
             element,
             trimPoints,

@@ -45,11 +45,11 @@ const useTrimCommand = () => {
 
             const pointsOfSelection = lastClick ? [lastClick, mousePoint] : [mousePoint]
 
-            const { 
-                singleElementCmdResult, 
-                polylines 
-            } = getSingleElementTrimResults(elementsToTrim, pointsOfSelection)
-            
+            const { singleElementCmdResult, polylines } = getSingleElementTrimResults(
+                elementsToTrim,
+                pointsOfSelection
+            )
+
             const polylineCmdResult = getPolylineTrimResults(polylines, pointsOfSelection)
             const commandResult = { ...singleElementCmdResult, ...polylineCmdResult }
 
