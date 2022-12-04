@@ -23,6 +23,9 @@ const useKeyPressCommands = () => {
     }
 
     const {
+        elements: {
+            currentlyCreatedElement
+        },
         tools: { 
             tool,
             isToolBeingUsed
@@ -36,7 +39,7 @@ const useKeyPressCommands = () => {
 
     const executeKeyPressCommand = useCallback((event) => {
         if ((undoIsPressed(event) || redoIsPressed(event)) &&
-            !isToolBeingUsed()
+            (!isToolBeingUsed() || (tool.type === 'draw' && currentlyCreatedElement.type === 'polyline'))
         ) {
             commands.undoRedo(event)
             return

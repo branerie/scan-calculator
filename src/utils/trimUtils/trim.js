@@ -221,7 +221,6 @@ const assemblePointDistancesAndSubsections = (element, trimPointsByElement, sele
     let distanceFromStart = 0
 
     let lastEndPoint = element.startPoint
-    debugger
     for (const subElement of element.elements) {
         const isInPolylineDirection = pointsMatch(subElement.startPoint, lastEndPoint)
         const subElementEndPoint = isInPolylineDirection ? subElement.endPoint : subElement.startPoint

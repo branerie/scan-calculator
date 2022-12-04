@@ -3,6 +3,7 @@ import { useAppContext } from '../../contexts/AppContext'
 import ElementIntersector from '../../utils/elementIntersector'
 import ElementTrimmer from '../../utils/elementTrimmer'
 import { pointsMatch } from '../../utils/point'
+import UserSelection from '../../utils/userSelection'
 
 const getPointCoordinatesKey = point => `${point.x};${point.y}`
 
@@ -20,12 +21,11 @@ const useTrimUtils = () => {
             // if (elementToTrim.baseType === 'polyline') {
             //     return elementToTrim.elements.map(se => getElementTrimPoints(se, includeEndPoints))
             // }
-            debugger
             const nearbyElements = getElementsNearElement(elementToTrim, {
                 returnGroup: 0,
-                skipSiblings: false
+                skipSiblings: true
             })
-            debugger
+            
             const checkShouldTrimByElement = elementToCheck => {
                 return (
                     elementToCheck.id !== elementToTrim.id &&
@@ -134,6 +134,7 @@ const useTrimUtils = () => {
                 return newTrimPointsBySubElementId
             }
 
+            const userSelection = new UserSelection(pointsOfSelection)
             for (const polylineId of Object.keys(polylines)) {
                 let trimPointsBySubElementId = polylines[polylineId]
 
@@ -147,11 +148,14 @@ const useTrimUtils = () => {
                 let hasAnyTrimPoints = false
                 for (let subElementIndex = 1; subElementIndex < subElements.length - 1; subElementIndex++) {
                     const subElement = subElements[subElementIndex]
-                    if (pointsOfSelection.some(p => subElement.checkIfPointOnElement(p))) {
+                    if (userSelection.isElementSelected(subElement, 'crossing')) {
                         // TODO: what if selection is a box? need to check if box crosses element
                         selectedSubElementIds.add(subElement.id)
                     }
-
+                    /**
+                     * 1. Do we need to continue in loop if subElement has no selection points? 
+                     * 2. Do we need to includeEndPoints in getElementTrimPoints here?
+                     */
                     const newTrimPoints = getElementTrimPoints(subElement, true)
                     trimPointsBySubElementId[subElement.id] = newTrimPoints
 

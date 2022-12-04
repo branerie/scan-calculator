@@ -276,8 +276,9 @@ const elementsReducer = (state, action) => {
             }
         }
         case 'clearReplacingElements': {
-            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements)
+            if (!state.currentlyReplacedElements || !state.currentlyReplacedElements.currentReplacements) {
                 return state
+            }
 
             const {
                 currentlyReplacedElements: { currentReplacements, completed }
@@ -286,7 +287,7 @@ const elementsReducer = (state, action) => {
             const newElements = { ...state.elements }
             const newGroupedElements = { ...state.groupedElements }
             for (const replacedId of Object.keys(currentReplacements)) {
-                ;(newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
+                (newElements[replacedId] || newGroupedElements[replacedId]).isShown = true
 
                 const replacingElements = currentReplacements[replacedId].replacingElements
                 for (const replacingElement of replacingElements) {
