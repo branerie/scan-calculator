@@ -16,6 +16,7 @@ class Arc extends BaseArc {
     #midLine
     #boundingBox
     #isJoined
+    #isChanged
 
     constructor(
         centerPoint,
@@ -101,6 +102,7 @@ class Arc extends BaseArc {
         const isConsistent = this.__checkNewInnerLineConsistency(newLine)
         if (isConsistent) {
             this.#startLine = newLine
+            this.#isChanged = true
             return
         }
 
@@ -116,6 +118,8 @@ class Arc extends BaseArc {
         const isConsistent = this.__checkNewInnerLineConsistency(newLine)
         if (isConsistent) {
             this.#endLine = newLine
+            this.#isChanged = true
+
             return
         }
 
@@ -140,11 +144,13 @@ class Arc extends BaseArc {
     get radius() {
         return super.radius
     }
+    
     set radius(value) {
         this._setRadius(value)
         this.#startLine.setLength(value, false)
         this.#endLine.setLength(value, false)
         this.#midLine.setLength(value, false)
+        this.#isChanged = true
 
         this.__updateBoundingBox()
     }
@@ -164,6 +170,10 @@ class Arc extends BaseArc {
     }
 
     get isJoined() {
+        if (this.#isChanged) {
+            this.__updateDetails()
+        }
+
         return this.#isJoined
     }
 
@@ -309,10 +319,18 @@ class Arc extends BaseArc {
     }
 
     getBoundingBox() {
+        if (this.#isChanged) {
+            this.__updateDetails()
+        }
+
         return { ...this.#boundingBox }
     }
 
     move(dX, dY) {
+        if (this.#isChanged) {
+            this.__updateDetails()
+        }
+
         const centerCopy = ElementManipulator.copyPoint(this.centerPoint, true)
         centerCopy.x += dX
         centerCopy.y += dY
@@ -383,6 +401,7 @@ class Arc extends BaseArc {
         this.__updateBoundingBox()
 
         this.#isJoined = Math.abs(this.#startLine.angle - this.#endLine.angle) < MAX_NUM_ERROR
+        this.#isChanged = false
     }
 
     __updateBoundingBox() {

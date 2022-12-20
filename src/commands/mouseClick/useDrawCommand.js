@@ -21,7 +21,7 @@ const useDrawCommand = () => {
         (event, clickedPoint) => {
             if (!currentlyCreatedElement) {
                 const newGroupId = tool.name === 'polyline' || tool.name === 'rectangle' ? uuidv4() : null
-                const newElement = createElement(tool.name, clickedPoint.x, clickedPoint.y, {
+                const newElement = createElement(tool.name, createPoint(clickedPoint.x, clickedPoint.y), {
                     groupId: newGroupId
                 })
 

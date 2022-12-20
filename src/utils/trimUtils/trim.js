@@ -103,7 +103,7 @@ const trimWithSelectBox = (
     subsections,
     trimPointsQueue
 ) => {
-    const selectRect = createElement('rectangle', selectPoints[0].x, selectPoints[0].y)
+    const selectRect = createElement('rectangle', { ...selectPoints[0] })
     selectRect.setLastAttribute(selectPoints[1].x, selectPoints[1].y)
 
     let selectIntersections = ElementIntersector.getIntersections(selectRect, element)
@@ -167,7 +167,7 @@ const createSubsection = (element, sectionStart, sectionEnd, subsections) => {
         // eslint-disable-next-line no-fallthrough
         case 'circle': {
             const centerPoint = element.centerPoint
-            const subsection = createElement('arc', centerPoint.x, centerPoint.y, { assignId: true })
+            const subsection = createElement('arc', createPoint(centerPoint), { assignId: true })
             subsection.defineNextAttribute(sectionStart)
             subsection.setLastAttribute(sectionEnd.x, sectionEnd.y)
             return subsection
@@ -176,7 +176,7 @@ const createSubsection = (element, sectionStart, sectionEnd, subsections) => {
             const subsectionElements = getSubsectionElements(sectionStart, sectionEnd, subsections)
             const subElements = trimSubsectionElements(subsectionElements, sectionStart, sectionEnd)
 
-            const newSubsection = createElement('polyline', sectionStart.x, sectionStart.y, {
+            const newSubsection = createElement('polyline', createPoint(sectionStart), {
                 assignId: true
             })
             newSubsection.elements = subElements

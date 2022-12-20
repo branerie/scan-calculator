@@ -589,7 +589,7 @@ const useElements = elementsContainer => {
 
                 if (shouldSkipPartial) continue
 
-                const container = createElement('rectangle', startPoint.x, startPoint.y)
+                const container = createElement('rectangle', createPoint(startPoint.x, startPoint.y, { assignId: false }))
                 container.setLastAttribute(endPoint.x, endPoint.y)
                 const intersections = ElementIntersector.getIntersections(element, container)
                 if (intersections) {

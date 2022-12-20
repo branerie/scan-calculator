@@ -8,7 +8,7 @@ const SCALE_SMOOTHING_FACTOR = 0.05
 
 const useTransformCommand = () => {
     const {
-        elements: { currentlyEditedElements, changeEditingElements, getElementById },
+        elements: { currentlyEditedElements, changeEditingElements, getElementById, elements },
         tools: { tool, currentScale }
     } = useAppContext()
 

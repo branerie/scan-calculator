@@ -42,7 +42,11 @@ class ElementManipulator {
             return newLine
         }
     
-        const newLine = createElement('line', line.pointA.x, line.pointA.y, { groupId: line.groupId, assignId })
+        const newLine = createElement(
+            'line', 
+            ElementManipulator.copyPoint(line.pointA, keepIds),
+            { groupId: line.groupId, assignId }
+        )
 
         if (line.pointB) {
             newLine.setLastAttribute(line.pointB.x, line.pointB.y)
@@ -63,7 +67,12 @@ class ElementManipulator {
             return newPolyline
         }
         
-        const newPolyline = createElement('polyline', polyline.basePoint.x, polyline.basePoint.y, { assignId })
+        const newPolyline = createElement(
+            'polyline', 
+            ElementManipulator.copyPoint(polyline.basePoint,  keepIds),
+            { assignId }
+        )
+
         newPolyline.elements = copiedElements
     
         return newPolyline
@@ -77,7 +86,11 @@ class ElementManipulator {
             const newInitialPoint = ElementManipulator.copyPoint(initialPoint, keepIds)
             newRectangle = new Rectangle(newInitialPoint, { id: rectangle.id, groupId: rectangle.groupId }) 
         } else {
-            newRectangle = createElement('rectangle', initialPoint.x, initialPoint.y, { assignId })
+            newRectangle = createElement(
+                'rectangle', 
+                ElementManipulator.copyPoint(initialPoint, keepIds), 
+                { assignId }
+            )
         }
 
         if (assignId) {
@@ -98,7 +111,7 @@ class ElementManipulator {
         //     newCenterPoint = new Point(arc.centerPoint.x, arc.centerPoint.y)
         //     newCenterPoint.pointId = arc.centerPoint.pointId
         // } else {
-        //     newCenterPoint = createElement('point', arc.centerPoint.x, arc.centerPoint.y)
+        //     newCenterPoint = createElement('point', ElementManipulator.copyPoint(arc.centerPoint, keepIds))
         // }
     
         // const newArc = new Arc(
@@ -119,7 +132,8 @@ class ElementManipulator {
         
         // const newCenterPoint = ElementManipulator.copyPoint(arc.centerPoint, keepIds)
     
-        const newArc = createElement('arc', arc.centerPoint.x, arc.centerPoint.y, { 
+        const newArc = createElement('arc',
+            ElementManipulator.copyPoint(arc.centerPoint, keepIds), { 
             groupId: arc.groupId, 
             assignId,
             ...(keepIds && { pointsElementId: arc.id }) 
@@ -150,7 +164,9 @@ class ElementManipulator {
 
     static copyCircle(circle, keepIds = false, assignId = false) {
         
-        const newCircle = createElement('circle', circle.centerPoint.x, circle.centerPoint.y, {
+        const newCircle = createElement(
+            'circle', 
+            ElementManipulator.copyPoint(circle.centerPoint, keepIds, assignId), {
             assignId,
             ...(keepIds && { pointsElementId: circle.id }) 
         })
@@ -160,16 +176,25 @@ class ElementManipulator {
                                 ? circle.endPoints.map(ep => ElementManipulator.copyPoint(ep, keepIds))
                                 : null
         newCircle.endPoints = newEndPoints
+        if (keepIds) {
+            if (!assignId) {
+                newCircle.id = circle.id
+            }
+        }
             
         // const newCircle = new Circle(newCenterPoint, { radius: circle.radius, endPoints: newEndPoints, id: circle.id })
         return newCircle
     }
 
-    static copyPoint(point, keepIds = false) {
+    static copyPoint(point, keepIds = false, assignId = false) {
         const newPoint = new Point(point.x, point.y)
         if (keepIds) {
             newPoint.pointId = point.pointId
             newPoint.elementId = point.elementId
+        }
+
+        if (assignId) {
+            newPoint.pointId = uuidv4()
         }
 
         return newPoint

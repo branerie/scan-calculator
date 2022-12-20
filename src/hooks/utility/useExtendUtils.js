@@ -1,6 +1,6 @@
 /* eslint-disable no-loop-func */
 import { useAppContext } from '../../contexts/AppContext'
-import { createElement } from '../../utils/elementFactory'
+import { createElement, createPoint } from '../../utils/elementFactory'
 import { pointsMatch } from '../../utils/point'
 
 const useExtendUtils = () => {
@@ -14,7 +14,7 @@ const useExtendUtils = () => {
                 // Introduce a prompt to ask user whether to join arc into a circle
 
                 const centerPoint = element.centerPoint
-                const replacingCircle = createElement('circle', centerPoint.x, centerPoint.y)
+                const replacingCircle = createElement('circle', createPoint(centerPoint.x, centerPoint.y))
                 replacingCircle.radius = element.radius
                 replacingCircle.id = element.id
 

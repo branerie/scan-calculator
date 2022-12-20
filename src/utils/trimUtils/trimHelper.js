@@ -141,7 +141,7 @@ const getSectionFate = (
 const getSelectRect = (selectPoints) => {
     if (selectPoints.length !== 2) return null
 
-    const selectRect = createElement('rectangle', selectPoints[0].x, selectPoints[0].y)
+    const selectRect = createElement('rectangle', { ...selectPoints[0] })
     selectRect.setLastAttribute(selectPoints[1].x, selectPoints[1].y)
 
     return selectRect

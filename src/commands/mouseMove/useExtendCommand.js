@@ -3,7 +3,7 @@ import { useAppContext } from '../../contexts/AppContext'
 import useExtendUtils from '../../hooks/utility/useExtendUtils'
 import { SELECT_DELTA } from '../../utils/constants'
 import { checkIsElementStartCloserThanEnd } from '../../utils/element'
-import { createArc, createElement, createLine } from '../../utils/elementFactory'
+import { createArc, createElement, createLine, createPoint } from '../../utils/elementFactory'
 import ElementIntersector from '../../utils/elementIntersector'
 import ElementManipulator from '../../utils/elementManipulator'
 import { pointsMatch } from '../../utils/point'
@@ -233,7 +233,7 @@ const useExtendCommand = () => {
 
                 let extendPoints = null
                 if (lastClick) {
-                    const selectRect = createElement('rectangle', lastClick.x, lastClick.y)
+                    const selectRect = createElement('rectangle', createPoint(lastClick.x, lastClick.y, { assignId: false }))
                     selectRect.setLastAttribute(mousePoint.x, mousePoint.y)
 
                     extendPoints = ElementIntersector.getIntersections(element, selectRect)

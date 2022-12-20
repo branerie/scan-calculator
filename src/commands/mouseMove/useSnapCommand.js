@@ -25,17 +25,12 @@ const useSnapCommand = () => {
             if (
                 currentlyCreatedElement &&
                 currentlyCreatedElement.isFullyDefined &&
-                (currentlyCreatedElement.type === 'polyline' || currentlyCreatedElement.type === 'arc')
+                (currentlyCreatedElement.type === 'polyline')
             ) {
-                let snappingPoints
-                if (currentlyCreatedElement.type === 'polyline') {
-                    snappingPoints = []
-                    for (let i = 0; i < currentlyCreatedElement.elements.length - 1; i++) {
-                        const element = currentlyCreatedElement.elements[i]
-                        snappingPoints = snappingPoints.concat(element.getSelectionPoints())
-                    }
-                } else {
-                    snappingPoints = currentlyCreatedElement.getSelectionPoints()
+                let snappingPoints = []
+                for (let i = 0; i < currentlyCreatedElement.elements.length - 1; i++) {
+                    const element = currentlyCreatedElement.elements[i]
+                    snappingPoints = snappingPoints.concat(element.getSelectionPoints())
                 }
 
                 const newNearbyPoints = snappingPoints.filter(

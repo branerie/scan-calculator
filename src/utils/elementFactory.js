@@ -8,16 +8,12 @@ import Rectangle from '../drawingElements/rectangle'
 
 const createElement = (
     type, 
-    initialX, 
-    initialY, 
+    initialPoint,
     { groupId = null, assignId = false, pointsElementId = null } = {}
 ) => {
-    if ((!initialX && initialX !== 0) || (!initialY && initialY !== 0)) {
+    if ((!initialPoint.x && initialPoint.x !== 0) || (!initialPoint.y && initialPoint.y !== 0)) {
         throw new Error('Cannot create element with undefined initial point coordinates.')
     }
-
-    const initialPoint = new Point(initialX, initialY)
-    initialPoint.pointId = uuidv4()
 
     if (assignId) {
         const newElementId = uuidv4()
@@ -78,8 +74,7 @@ const createLine = (
 ) => {
     const line = createElement(
         'line', 
-        initialPointX, 
-        initialPointY, 
+        { x: initialPointX, y: initialPointY },
         { groupId, assignId, pointsElementId }
     )
 
