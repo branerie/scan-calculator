@@ -6,10 +6,16 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
+    "@types/react": "^18.0.26",
+    "@types/react-dom": "^18.0.9",
+    "@types/uuid": "^9.0.0",
+    "immer": "^9.0.16",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "react-scripts": "3.4.1",
-    "uuid": "^8.3.2"
+    "react-scripts": "^5.0.1",
+    "uuid": "^8.3.2",
+    "zod": "^3.20.2",
+    "zustand": "^4.1.5"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -38,6 +44,9 @@
   },
   "devDependencies": {
     "cypress": "^7.1.0",
-    "cypress-plugin-snapshots": "^1.4.4"
+    "cypress-plugin-snapshots": "^1.4.4",
+    "source-map-loader": "^4.0.1",
+    "ts-loader": "^9.4.2",
+    "typescript": "^4.9.4"
   }
 }

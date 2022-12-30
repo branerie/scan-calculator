@@ -1,27 +1,27 @@
 const top = 0
-const getParentIndex = i => ((i + 1) >>> 1) - 1
-const getLeftIndex = i => (i << 1) + 1
-const getRightIndex = i => (i + 1) << 1
+const getParentIndex = (i: number) => ((i + 1) >>> 1) - 1
+const getLeftIndex = (i: number) => (i << 1) + 1
+const getRightIndex = (i: number) => (i + 1) << 1
 
-class PriorityQueue {
-    #heap
-    #comparator
+export default class PriorityQueue<TType> {
+    private _heap: TType[]
+    private _comparator: (a: TType, b: TType) => boolean
 
-    constructor(comparator = (a, b) => a > b) {
-        this.#heap = []
-        this.#comparator = comparator
+    constructor(comparator = (a: TType, b: TType) => a > b) {
+        this._heap = []
+        this._comparator = comparator
     }
 
-    get size() { return this.#heap.length }
+    get size() { return this._heap.length }
     get isEmpty() { return this.size === 0 }
 
     peek() {
-        return this.#heap[top] || null
+        return this._heap[top] || null
     }
 
-    push(...values) {
+    push(...values: TType[]) {
         values.forEach(value => {
-            this.#heap.push(value)
+            this._heap.push(value)
             this._siftUp()
         })
 
@@ -39,14 +39,14 @@ class PriorityQueue {
             this._swap(top, bottom)
         }
 
-        this.#heap.pop()
+        this._heap.pop()
         this._siftDown()
         return poppedValue
     }
 
-    replace(value) {
+    replace(value: TType) {
         const replacedValue = this.peek()
-        this.#heap[top] = value
+        this._heap[top] = value
         this._siftDown()
 
         return replacedValue
@@ -81,13 +81,11 @@ class PriorityQueue {
         }
     }
 
-    _checkIfGreater(i, j) {
-        return this.#comparator(this.#heap[i], this.#heap[j])
+    _checkIfGreater(i: number, j: number) {
+        return this._comparator(this._heap[i], this._heap[j])
     }
 
-    _swap(i, j) {
-        [this.#heap[i], this.#heap[j]] = [this.#heap[j], this.#heap[i]]
+    _swap(i: number, j: number) {
+        [this._heap[i], this._heap[j]] = [this._heap[j], this._heap[i]]
     }
 }
-
-export default PriorityQueue

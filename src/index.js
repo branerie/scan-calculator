@@ -1,8 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import { enableMapAndSet } from 'immer'
 import './index.css'
 import App from './App'
 import * as serviceWorker from './serviceWorker'
+
+enableMapAndSet()
 
 ReactDOM.render(
     <React.StrictMode>

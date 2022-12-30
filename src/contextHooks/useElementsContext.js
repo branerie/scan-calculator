@@ -4,9 +4,9 @@ import { v4 as uuidv4 } from 'uuid'
 import useElements from '../hooks/useElements'
 import useSelectionPoints from '../hooks/useSelectionPoints'
 import useSelection from '../hooks/useSelection'
-import HashGrid from '../utils/hashGrid'
+import HashGrid from '../utils/hashGrid/index'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/constants'
-import HashGridElementContainer from '../utils/elementContainers/hashGrid'
+import HashGridElementContainer from '../utils/elementContainers/hashGrid.ts/index'
 import { findClosestIntersectPoint } from '../utils/intersections'
 
 const HASH_GRID_DIV_SIZE_X = 80
@@ -61,50 +61,62 @@ export default function useElementsContext() {
         findNearbyPoints
     } = useSelectionPoints()
 
-    const updateHistoryEvents = useCallback((newEvent) => {
-        let newActionHistory = actionHistory
-        if (historyPointer !== null) {
-            newActionHistory = actionHistory.slice(0, historyPointer)
-            setHistoryPointer(null)
-        }
+    const updateHistoryEvents = useCallback(
+        newEvent => {
+            let newActionHistory = actionHistory
+            if (historyPointer !== null) {
+                newActionHistory = actionHistory.slice(0, historyPointer)
+                setHistoryPointer(null)
+            }
 
-        setActionHistory([...newActionHistory, newEvent])
-    }, [actionHistory, historyPointer])
+            setActionHistory([...newActionHistory, newEvent])
+        },
+        [actionHistory, historyPointer]
+    )
 
-    const addElementsFromHistory = useCallback((elementsToAdd) => {
-        let pointsToAdd = []
-        for (const element of elementsToAdd) {
-            pointsToAdd = pointsToAdd.concat(element.getSelectionPoints())
-        }
+    const addElementsFromHistory = useCallback(
+        elementsToAdd => {
+            let pointsToAdd = []
+            for (const element of elementsToAdd) {
+                pointsToAdd = pointsToAdd.concat(element.getSelectionPoints())
+            }
 
-        addSelectionPoints(pointsToAdd)
-        addElementsToState(elementsToAdd)
-    }, [addElementsToState, addSelectionPoints])
+            addSelectionPoints(pointsToAdd)
+            addElementsToState(elementsToAdd)
+        },
+        [addElementsToState, addSelectionPoints]
+    )
 
-    const removeElementsFromHistory = useCallback((elementsToRemove) => {
-        // remove selection points of deleted elements
-        for (const removedElement of elementsToRemove) {
-            const selectionPoints = removedElement.getSelectionPoints()
-            removeSelectionPoints(selectionPoints)
-        }
+    const removeElementsFromHistory = useCallback(
+        elementsToRemove => {
+            // remove selection points of deleted elements
+            for (const removedElement of elementsToRemove) {
+                const selectionPoints = removedElement.getSelectionPoints()
+                removeSelectionPoints(selectionPoints)
+            }
 
-        removeElements(elementsToRemove)
-        removeSelectedElements(elementsToRemove)
-    }, [removeElements, removeSelectedElements, removeSelectionPoints])
+            removeElements(elementsToRemove)
+            removeSelectedElements(elementsToRemove)
+        },
+        [removeElements, removeSelectedElements, removeSelectionPoints]
+    )
 
-    const addElements = useCallback((newElements) => {
-        let newSelectionPoints = []
-        newElements.forEach(newElement => {
-            newElement.id = uuidv4()
+    const addElements = useCallback(
+        newElements => {
+            let newSelectionPoints = []
+            newElements.forEach(newElement => {
+                newElement.id = uuidv4()
 
-            newSelectionPoints = newSelectionPoints.concat(newElement.getSelectionPoints())
-        })
+                newSelectionPoints = newSelectionPoints.concat(newElement.getSelectionPoints())
+            })
 
-        addElementsToState(newElements)
-        addSelectionPoints(newSelectionPoints)
+            addElementsToState(newElements)
+            addSelectionPoints(newSelectionPoints)
 
-        updateHistoryEvents({ action: 'add', elements: newElements })
-    }, [addElementsToState, addSelectionPoints, updateHistoryEvents])
+            updateHistoryEvents({ action: 'add', elements: newElements })
+        },
+        [addElementsToState, addSelectionPoints, updateHistoryEvents]
+    )
 
     const editElements = useCallback(() => {
         const elementPointsBeforeEdit = {}
@@ -124,9 +136,13 @@ export default function useElementsContext() {
 
         // TODO: Maybe add elementId to selection points to make finding the element easier?
         pointsToReplace.forEach(pointToReplace => {
-            const elementOfPoint = currentlyEditedElements.find(cee => cee.getPointById(pointToReplace.pointId))
+            const elementOfPoint = currentlyEditedElements.find(cee =>
+                cee.getPointById(pointToReplace.pointId)
+            )
             if (!elementOfPoint) {
-                throw new Error('Trying to change a point which does not belong to a currently edited element')
+                throw new Error(
+                    'Trying to change a point which does not belong to a currently edited element'
+                )
             }
 
             const selectionPointsAfterEdit = elementOfPoint.getSelectionPoints()
@@ -151,16 +167,19 @@ export default function useElementsContext() {
         updateHistoryEvents
     ])
 
-    const deleteElements = useCallback((deletedElements) => {
-        // remove selection points of deleted elements
-        for (const deletedElement of deletedElements) {
-            const selectionPoints = deletedElement.getSelectionPoints()
-            removeSelectionPoints(selectionPoints)
-        }
+    const deleteElements = useCallback(
+        deletedElements => {
+            // remove selection points of deleted elements
+            for (const deletedElement of deletedElements) {
+                const selectionPoints = deletedElement.getSelectionPoints()
+                removeSelectionPoints(selectionPoints)
+            }
 
-        updateHistoryEvents({ action: 'delete', elements: deletedElements })
-        removeElements(deletedElements)
-    }, [removeElements, removeSelectionPoints, updateHistoryEvents])
+            updateHistoryEvents({ action: 'delete', elements: deletedElements })
+            removeElements(deletedElements)
+        },
+        [removeElements, removeSelectionPoints, updateHistoryEvents]
+    )
 
     const replaceElements = useCallback(() => {
         if (!currentlyReplacedElements) return
@@ -181,14 +200,14 @@ export default function useElementsContext() {
         const addedSelectionPoints = allAddedElements.reduce((acc, el) => {
             return acc.concat(el.getSelectionPoints())
         }, [])
-        
+
         removeSelectionPoints(removedSelectionPoints)
         addSelectionPoints(addedSelectionPoints)
 
-        updateHistoryEvents({ 
-            action: 'replace', 
-            removedElements: allRemovedElements, 
-            addedElements: allAddedElements 
+        updateHistoryEvents({
+            action: 'replace',
+            removedElements: allRemovedElements,
+            addedElements: allAddedElements
         })
 
         completeReplacingElements()
@@ -201,96 +220,99 @@ export default function useElementsContext() {
         clearReplacingElements
     ])
 
-    const updateElementsFromHistory = useCallback((lastEventIndex, isUndo) => {
-        const lastHistoryEvent = actionHistory[lastEventIndex]
-        if (!lastHistoryEvent) {
-            return
-        }
-
-        let updateOperation = lastHistoryEvent.action
-
-        // Undoing an added element means removing it, while undoing a delete command means adding an element.
-        // Therefore, we switch the actual update operations. Redo works normally
-        if (isUndo) {
-            if (updateOperation === 'add') {
-                updateOperation = 'delete'
-            } else if (updateOperation === 'delete') {
-                updateOperation = 'add'
-            }
-        }
-
-        if (updateOperation === 'add') {
-            addElementsFromHistory(lastHistoryEvent.elements)
-            return
-        }
-
-        if (updateOperation === 'delete') {
-            removeElementsFromHistory(lastHistoryEvent.elements)
-            return
-        }
-
-        if (updateOperation === 'edit') {
-            // save state of edited elements in elementsBeforeUndo in order to put it in history
-            // to be able to get the elements back to this state using redo/undo
-            const elementsBeforeUndo = []
-            const elementsAfterUndo = lastHistoryEvent.elements
-
-            for (const elementAfterUndo of elementsAfterUndo) {
-                const elementBeforeUndo = getElementById(elementAfterUndo.id)
-                elementsBeforeUndo.push(elementBeforeUndo)
-
-                const pointsAfterUndo = elementAfterUndo.getSelectionPoints()
-                const pointsBeforeUndo = elementBeforeUndo.getSelectionPoints()
-                replaceSelectionPoints(pointsAfterUndo, pointsBeforeUndo)
-            }
-
-            // if edited element is still selected, updates the selected element with the new element state
-            // after undo/redo
-            const updatedSelectedElements = []
-            for (const elementAfterUndo of elementsAfterUndo) {
-                if (hasSelectedElement(elementAfterUndo)) {
-                    updatedSelectedElements.push(elementAfterUndo)
-                }
-            }
-
-            if (updatedSelectedElements.length > 0) {
-                addSelectedElements(updatedSelectedElements)
-            }
-
-            // change actionHistory by adding elementsBeforeUndo so it can be accessed using undo/redo
-            const newActionHistory = [...actionHistory]
-            newActionHistory[lastEventIndex].elements = elementsBeforeUndo
-            setActionHistory(newActionHistory)
-
-            changeElements(elementsAfterUndo)
-            return
-        }
-
-        if (updateOperation === 'replace') {
-            const { addedElements, removedElements } = lastHistoryEvent
-
-            if (isUndo) {
-                addElementsFromHistory(removedElements)
-                removeElementsFromHistory(addedElements)
+    const updateElementsFromHistory = useCallback(
+        (lastEventIndex, isUndo) => {
+            const lastHistoryEvent = actionHistory[lastEventIndex]
+            if (!lastHistoryEvent) {
                 return
             }
 
-            addElementsFromHistory(addedElements)
-            removeElementsFromHistory(removedElements)
-            return
-        }
+            let updateOperation = lastHistoryEvent.action
 
-        throw new Error('Invalid event action')
-    }, [
-        actionHistory,
-        addSelectedElements,
-        changeElements,
-        getElementById,
-        hasSelectedElement,
-        replaceSelectionPoints,
-        addElementsFromHistory,
-        removeElementsFromHistory
-    ])
+            // Undoing an added element means removing it, while undoing a delete command means adding an element.
+            // Therefore, we switch the actual update operations. Redo works normally
+            if (isUndo) {
+                if (updateOperation === 'add') {
+                    updateOperation = 'delete'
+                } else if (updateOperation === 'delete') {
+                    updateOperation = 'add'
+                }
+            }
+
+            if (updateOperation === 'add') {
+                addElementsFromHistory(lastHistoryEvent.elements)
+                return
+            }
+
+            if (updateOperation === 'delete') {
+                removeElementsFromHistory(lastHistoryEvent.elements)
+                return
+            }
+
+            if (updateOperation === 'edit') {
+                // save state of edited elements in elementsBeforeUndo in order to put it in history
+                // to be able to get the elements back to this state using redo/undo
+                const elementsBeforeUndo = []
+                const elementsAfterUndo = lastHistoryEvent.elements
+
+                for (const elementAfterUndo of elementsAfterUndo) {
+                    const elementBeforeUndo = getElementById(elementAfterUndo.id)
+                    elementsBeforeUndo.push(elementBeforeUndo)
+
+                    const pointsAfterUndo = elementAfterUndo.getSelectionPoints()
+                    const pointsBeforeUndo = elementBeforeUndo.getSelectionPoints()
+                    replaceSelectionPoints(pointsAfterUndo, pointsBeforeUndo)
+                }
+
+                // if edited element is still selected, updates the selected element with the new element state
+                // after undo/redo
+                const updatedSelectedElements = []
+                for (const elementAfterUndo of elementsAfterUndo) {
+                    if (hasSelectedElement(elementAfterUndo)) {
+                        updatedSelectedElements.push(elementAfterUndo)
+                    }
+                }
+
+                if (updatedSelectedElements.length > 0) {
+                    addSelectedElements(updatedSelectedElements)
+                }
+
+                // change actionHistory by adding elementsBeforeUndo so it can be accessed using undo/redo
+                const newActionHistory = [...actionHistory]
+                newActionHistory[lastEventIndex].elements = elementsBeforeUndo
+                setActionHistory(newActionHistory)
+
+                changeElements(elementsAfterUndo)
+                return
+            }
+
+            if (updateOperation === 'replace') {
+                const { addedElements, removedElements } = lastHistoryEvent
+
+                if (isUndo) {
+                    addElementsFromHistory(removedElements)
+                    removeElementsFromHistory(addedElements)
+                    return
+                }
+
+                addElementsFromHistory(addedElements)
+                removeElementsFromHistory(removedElements)
+                return
+            }
+
+            throw new Error('Invalid event action')
+        },
+        [
+            actionHistory,
+            addSelectedElements,
+            changeElements,
+            getElementById,
+            hasSelectedElement,
+            replaceSelectionPoints,
+            addElementsFromHistory,
+            removeElementsFromHistory
+        ]
+    )
 
     const undo = useCallback(() => {
         if (historyPointer === 0) {
@@ -341,94 +363,97 @@ export default function useElementsContext() {
         }
     }, [
         addElements,
-        completeCopyingElements, 
-        replaceElements, 
-        removeCurrentlyCreatedElement, 
+        completeCopyingElements,
+        replaceElements,
+        removeCurrentlyCreatedElement,
         stopEditingElements,
         setSelectedElements,
-        currentlyCopiedElements, 
-        currentlyCreatedElement, 
-        currentlyEditedElements,  
+        currentlyCopiedElements,
+        currentlyCreatedElement,
+        currentlyEditedElements,
         currentlyReplacedElements,
-        selectedElements,
+        selectedElements
     ])
 
-    const getNextElementIntersection = useCallback((
-        element,
-        nextElementsGen,
-        { shouldExtendFromStart, shouldCheckPointsLocality }
-    ) => {
-        for (const nextResults of nextElementsGen) {
-            if (!nextResults || nextResults.divContents.length === 0) continue
+    const getNextElementIntersection = useCallback(
+        (element, nextElementsGen, { shouldExtendFromStart, shouldCheckPointsLocality }) => {
+            for (const nextResults of nextElementsGen) {
+                if (!nextResults || nextResults.divContents.length === 0) continue
 
-            const { divContents: nearbyElementIds, checkIfPointInSameDiv } = nextResults
-    
-            const filteredNearbyElements = []
-            for (const nearbyElementId of nearbyElementIds) {
-                const nearbyElement = getElementById(nearbyElementId)
-                if (selectUtils.selectedElements && !hasSelectedElement(nearbyElement)) {
+                const { divContents: nearbyElementIds, checkIfPointInSameDiv } = nextResults
+
+                const filteredNearbyElements = []
+                for (const nearbyElementId of nearbyElementIds) {
+                    const nearbyElement = getElementById(nearbyElementId)
+                    if (selectUtils.selectedElements && !hasSelectedElement(nearbyElement)) {
+                        continue
+                    }
+
+                    filteredNearbyElements.push(nearbyElement)
+                }
+
+                const nextIntersectPoint = findClosestIntersectPoint({
+                    element,
+                    elementsToIntersect: filteredNearbyElements,
+                    fromStart: shouldExtendFromStart,
+                    checkIntersectionLocality: shouldCheckPointsLocality
+                        ? elementsContainer.checkPointsLocality.bind(elementsContainer)
+                        : null,
+                    excludeExistingIntersections: true
+                })
+
+                if (!nextIntersectPoint || !checkIfPointInSameDiv(nextIntersectPoint)) {
                     continue
                 }
-    
-                filteredNearbyElements.push(nearbyElement)
+
+                return nextIntersectPoint
             }
-    
-            const nextIntersectPoint = findClosestIntersectPoint({
-                element, 
-                elementsToIntersect: filteredNearbyElements,
-                fromStart: shouldExtendFromStart,
-                checkIntersectionLocality: shouldCheckPointsLocality 
-                                            ? elementsContainer.checkPointsLocality.bind(elementsContainer)
-                                            : null,
-                excludeExistingIntersections: true
+
+            return null
+        },
+        [getElementById, hasSelectedElement, selectUtils.selectedElements]
+    )
+
+    const getNextLineIntersection = useCallback(
+        (line, { shouldExtendFromStart, shouldCheckPointsLocality }) => {
+            const nextElementsGen = elementsContainer.getNextElementsInLineDirection(
+                line,
+                shouldExtendFromStart
+            )
+
+            return getNextElementIntersection(line, nextElementsGen, {
+                shouldExtendFromStart,
+                shouldCheckPointsLocality
             })
+        },
+        [getNextElementIntersection]
+    )
 
-            if (!nextIntersectPoint || !checkIfPointInSameDiv(nextIntersectPoint)) {
-                continue
-            }
+    const getNextArcIntersection = useCallback(
+        (arc, { shouldExtendFromStart, shouldCheckPointsLocality }) => {
+            const nextElementsGen = elementsContainer.getNextElementsInArcDirection(
+                arc,
+                shouldExtendFromStart
+            )
 
-            return nextIntersectPoint
-        }
-
-        return null
-    }, [getElementById, hasSelectedElement, selectUtils.selectedElements])
-
-    const getNextLineIntersection = useCallback((
-        line, 
-        { shouldExtendFromStart, shouldCheckPointsLocality }
-    ) => {
-        const nextElementsGen = elementsContainer.getNextElementsInLineDirection(line, shouldExtendFromStart)
-
-        return getNextElementIntersection(
-            line, 
-            nextElementsGen, 
-            { shouldExtendFromStart, shouldCheckPointsLocality }
-        )
-    }, [getNextElementIntersection])
-
-    const getNextArcIntersection = useCallback((
-        arc,
-        { shouldExtendFromStart, shouldCheckPointsLocality }
-    ) => {
-        const nextElementsGen = elementsContainer.getNextElementsInArcDirection(arc, shouldExtendFromStart)
-
-        return getNextElementIntersection(
-            arc,
-            nextElementsGen, 
-            { shouldExtendFromStart, shouldCheckPointsLocality }
-        )
-    }, [getNextElementIntersection])
+            return getNextElementIntersection(arc, nextElementsGen, {
+                shouldExtendFromStart,
+                shouldCheckPointsLocality
+            })
+        },
+        [getNextElementIntersection]
+    )
 
     return {
         // TODO: which of the methods of the two states below do we need further down?
         // some names clash, such as elementsState.addElements with addElements here
 
-        ...elementsUtils, 
+        ...elementsUtils,
         getNextArcIntersection,
         getNextLineIntersection,
         resetCurrentModifications,
         points: {
-            findNearbyPoints,
+            findNearbyPoints
         },
         selection: selectUtils,
         history: {
@@ -437,7 +462,7 @@ export default function useElementsContext() {
             deleteElements,
             replaceElements,
             undo,
-            redo,
+            redo
         },
         hashGrid
     }

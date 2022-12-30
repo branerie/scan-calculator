@@ -9,7 +9,6 @@ const useTrimCommand = () => {
             getElementsInContainer,
             startReplacingElements,
             clearReplacingElements,
-            pruneReplacingElements,
             isReplacingElement,
             selection: { hasSelectedElement }
         },
@@ -41,7 +40,7 @@ const useTrimCommand = () => {
                 ett => !hasSelectedElement(ett) && !isReplacingElement(ett)
             )
 
-            pruneReplacingElements(elementsToTrim)
+            clearReplacingElements(elementsToTrim)
 
             const pointsOfSelection = lastClick ? [lastClick, mousePoint] : [mousePoint]
 
@@ -62,7 +61,6 @@ const useTrimCommand = () => {
         [
             addToolProp,
             clearReplacingElements,
-            pruneReplacingElements,
             getElementsContainingPoint,
             getElementsInContainer,
             getLastReferenceClick,

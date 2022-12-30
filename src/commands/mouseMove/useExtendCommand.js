@@ -136,7 +136,6 @@ const useExtendCommand = () => {
             getElementById,
             clearReplacingElements,
             startReplacingElements,
-            pruneReplacingElements,
             selection: { hasSelectedElement }
         },
         tools: { tool, addToolProp, getLastReferenceClick, selectDelta }
@@ -284,7 +283,7 @@ const useExtendCommand = () => {
                 }
             }
 
-            pruneReplacingElements(filteredElementsToExtend.map(fe => fe.element))
+            clearReplacingElements(filteredElementsToExtend.map(fe => fe.element))
 
             // TODO: For trim/extend and possibly other commands: what if first and second click are the same point?
 
@@ -301,7 +300,6 @@ const useExtendCommand = () => {
             hasSelectedElement,
             selectDelta,
             clearReplacingElements,
-            pruneReplacingElements,
             startReplacingElements,
             tryExtendElementEnd,
             tool.isStarted,
