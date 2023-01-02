@@ -8,6 +8,7 @@ import Element from '../drawingElements/element'
 import { Ensure } from './types/generics'
 import Arc from '../drawingElements/arc'
 import Circle from '../drawingElements/circle'
+import { FullyDefinedLine } from './types/index'
 
 class ElementManipulator {
   static copyElement(element: Element, { keepIds = false, assignId = false }): Element {
@@ -195,9 +196,9 @@ class ElementManipulator {
       newArc.id = arc.id
     }
 
-    newArc.startLine = arc.startLine ? ElementManipulator.copyLine(arc.startLine, keepIds) : undefined
-    newArc.endLine = arc.endLine ? ElementManipulator.copyLine(arc.endLine, keepIds) : undefined
-    newArc.midLine = arc.midLine ? ElementManipulator.copyLine(arc.midLine, keepIds) : undefined
+    newArc.startLine = arc.startLine ? ElementManipulator.copyLine(arc.startLine, keepIds) as FullyDefinedLine : undefined
+    newArc.endLine = arc.endLine ? ElementManipulator.copyLine(arc.endLine, keepIds) as FullyDefinedLine : undefined
+    newArc.midLine = arc.midLine ? ElementManipulator.copyLine(arc.midLine, keepIds) as FullyDefinedLine : undefined
 
     // const newArc = new Arc(
     //     newCenterPoint, 

@@ -8,6 +8,7 @@ import Point from './point'
 import Line from './line'
 import { SelectionPointType } from '../utils/enums/index'
 import Arc from './arc'
+import { Ensure } from '../utils/types/generics'
 
 export default class Polyline extends Element {
   private _isFullyDefined: boolean = false
@@ -147,12 +148,16 @@ export default class Polyline extends Element {
   }
 
   set startPoint(value: Point | null) {
+    if (!value) {
+      return
+    }
+
     if (!this._elements.length) {
       throw new Error('Cannot set startPoint of polyline with no elements')
     }
 
     const startElement = this._elements[0]
-    const isStartInPolyDirection = pointsMatch(startElement.startPoint, this._startPoint)
+    const isStartInPolyDirection = pointsMatch(startElement.startPoint!, this._startPoint!)
     if (isStartInPolyDirection) {
       // if (!pointsMatch(value, this._startPoint)) {
       //     throw new Error(END_POINT_ERROR)
@@ -174,26 +179,30 @@ export default class Polyline extends Element {
   }
 
   set endPoint(value) {
-      const endElement = this._elements[this._elements.length - 1]
-      const isEndInPolyDirection = pointsMatch(endElement.endPoint, this._endPoint)
-      if (isEndInPolyDirection) {
-          // if (!pointsMatch(value, this._startPoint)) {
-          //     throw new Error(END_POINT_ERROR)
-          // }
+    if (!value) {
+      return
+    }
 
-          endElement.endPoint = value
-      } else {
-          endElement.startPoint = value
-      }
+    const endElement = this._elements[this._elements.length - 1]
+    const isEndInPolyDirection = pointsMatch(endElement.endPoint!, this._endPoint!)
+    if (isEndInPolyDirection) {
+        // if (!pointsMatch(value, this._startPoint)) {
+        //     throw new Error(END_POINT_ERROR)
+        // }
 
-      // if (!pointsMatch(value, this._endPoint)) {
-      //     throw new Error(END_POINT_ERROR)
-      // }
+        endElement.endPoint = value
+    } else {
+        endElement.startPoint = value
+    }
 
-      this._endPoint = ElementManipulator.copyPoint(value, true, true)
-      if (this.id) {
-        this._endPoint.elementId = this.id
-      }
+    // if (!pointsMatch(value, this._endPoint)) {
+    //     throw new Error(END_POINT_ERROR)
+    // }
+
+    this._endPoint = ElementManipulator.copyPoint(value, true, true)
+    if (this.id) {
+      this._endPoint.elementId = this.id
+    }
   }
 
   checkIfPointOnElement(point: Point, maxDiff: number = SELECT_DELTA) {
@@ -353,15 +362,15 @@ export default class Polyline extends Element {
   }
 
   completeDefinition() {
-      this._isFullyDefined = true
-      this._elements.pop()
-      this._elements.forEach(e => (e.groupId = this.id))
+    this._isFullyDefined = true
+    this._elements.pop()
+    this._elements.forEach(e => (e.groupId = this.id))
 
-      this._updateBoundingBox()
-      this._updateEndPoints()
+    this._updateBoundingBox()
+    this._updateEndPoints()
   }
 
-  replaceElement(newElement: SubElement, elementId?: string) {
+  replaceElement(newElement: Ensure<SubElement, 'startPoint' | 'endPoint'>, elementId?: string) {
     const replacedElementId = elementId || newElement.id
     if (!replacedElementId) {
       throw new Error('Cannot replace polyline element with no provided target id')
@@ -380,7 +389,7 @@ export default class Polyline extends Element {
         newElement = ElementManipulator.copyElement(newElement, {
           keepIds: true,
           assignId: false
-        })
+        }) as Ensure<SubElement, 'startPoint' | 'endPoint'>
         newElement.groupId = this.id
       }
 
@@ -429,21 +438,21 @@ export default class Polyline extends Element {
       ? this._elements[this._elements.length - 1].endPoint
       : this._elements[this._elements.length - 1].startPoint
 
-    this._startPoint = ElementManipulator.copyPoint(startPoint, true, false)
+    this._startPoint = ElementManipulator.copyPoint(startPoint!, true, false)
     if (this.id) {
       this._startPoint.elementId = this.id
     }
     
-    this._endPoint = ElementManipulator.copyPoint(endPoint, true, false)
+    this._endPoint = ElementManipulator.copyPoint(endPoint!, true, false)
     if (this.id) {
       this._endPoint.elementId = this.id
     }
   }
 
-  _validateElementReplacement(elementIndex: number, newElement: SubElement) {
+  _validateElementReplacement(elementIndex: number, newElement: Ensure<SubElement, 'startPoint' | 'endPoint'>) {
     let isStartValid = true
     if (elementIndex > 0) {
-      const previousElement = this._elements[elementIndex - 1]
+      const previousElement = this._elements[elementIndex - 1] as Ensure<SubElement, 'startPoint' | 'endPoint'>
       isStartValid =
         pointsMatch(previousElement.endPoint, newElement.startPoint) ||
         pointsMatch(previousElement.startPoint, newElement.startPoint) ||
@@ -453,7 +462,7 @@ export default class Polyline extends Element {
 
     let isEndValid = true
     if (elementIndex < this._elements.length - 1) {
-      const nextElement = this._elements[elementIndex + 1]
+      const nextElement = this._elements[elementIndex + 1] as Ensure<SubElement, 'startPoint' | 'endPoint'>
       isEndValid =
         pointsMatch(nextElement.startPoint, newElement.endPoint) ||
         pointsMatch(nextElement.endPoint, newElement.endPoint) ||

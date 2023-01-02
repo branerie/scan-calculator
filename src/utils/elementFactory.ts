@@ -5,6 +5,8 @@ import Element from '../drawingElements/element'
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import ElementManipulator from './elementManipulator'
+import { Ensure } from './types/generics'
+import { FullyDefinedArc, FullyDefinedElement, FullyDefinedLine } from './types/index'
 
 function createElement<TType extends Element> (
   type: {new(...args : any[]): TType ;},
@@ -18,7 +20,7 @@ function createElement<TType extends Element> (
     assignId: false,
     pointsElementId: null
   },
-): TType {
+): Ensure<TType, 'startPoint' | 'endPoint'> {
   if (
     (!initialPoint.x && initialPoint.x !== 0) || 
     (!initialPoint.y && initialPoint.y !== 0)
@@ -59,7 +61,7 @@ function createElement<TType extends Element> (
     initialPoint.elementId = pointsElementId
   }
   
-  return createdElement
+  return createdElement as Ensure<TType, 'startPoint' | 'endPoint'>
 }
 
 const createPoint = (
@@ -93,8 +95,8 @@ const createLine = (
     groupId?: string, 
     assignId?: boolean, 
     pointsElementId?: string 
-  }
-) => {
+  } = {}
+): FullyDefinedLine => {
   const { groupId, assignId, pointsElementId } = options 
   const line = createElement(
     Line,
@@ -106,18 +108,18 @@ const createLine = (
       line.setPointB(lastPointX, lastPointY)
   }
 
-  return line
+  return line as FullyDefinedLine
 }
 
 const createArc = (
   centerPoint: Point, 
   startPoint: Point, 
   endPoint: Point
-) => {
+): FullyDefinedArc => {
   return new Arc(centerPoint, {
-    startLine: new Line(centerPoint, { pointB: startPoint }),
-    endLine: new Line(centerPoint, { pointB: endPoint })
-  })
+    startLine: new Line(centerPoint, { pointB: startPoint }) as FullyDefinedLine,
+    endLine: new Line(centerPoint, { pointB: endPoint }) as FullyDefinedLine
+  }) as FullyDefinedArc
 }
 
 export {

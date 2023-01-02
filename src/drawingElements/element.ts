@@ -1,9 +1,11 @@
+import { immerable } from 'immer'
 import { SelectionPointType } from '../utils/enums/index'
 import { BoundingBox } from '../utils/types/index'
 import Point from './point'
 import { SelectionPoint } from '../utils/types'
 
 abstract class Element {
+    [immerable] = true
     private _id: string | null = null
     groupId: string | null = null
     isShown: boolean

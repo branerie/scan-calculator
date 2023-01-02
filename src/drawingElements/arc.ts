@@ -3,7 +3,7 @@ import { createLine } from '../utils/elementFactory'
 import ElementManipulator from '../utils/elementManipulator'
 import { SelectionPointType } from '../utils/enums/index'
 import { getPointDistance, getRotatedPointAroundPivot, pointsMatch } from '../utils/point'
-import { BoundingBox, SelectionPoint } from '../utils/types/index'
+import { BoundingBox, FullyDefinedLine, SelectionPoint } from '../utils/types/index'
 import BaseArc from './baseArc'
 import { NOT_DEFINED_ERROR, NO_ID_ERROR } from './element'
 import Line from './line'
@@ -13,9 +13,9 @@ const INCONSISTENT_LINE_ERROR =
     'Inconsistent inner line of arc - either line length does not equal arc radius or its startPoint does not coincide with arc center'
 
 class Arc extends BaseArc {
-    private _startLine?: Line
-    private _endLine?: Line
-    private _midLine?: Line
+    private _startLine?: FullyDefinedLine
+    private _endLine?: FullyDefinedLine
+    private _midLine?: FullyDefinedLine
     private _boundingBox?: BoundingBox
     private _isJoined: boolean = false
     private _isChanged: boolean = false
@@ -25,9 +25,9 @@ class Arc extends BaseArc {
       options: { 
         radius?: number, 
         groupId?: string,
-        startLine?: Line, 
-        endLine?: Line, 
-        midLine?: Line, 
+        startLine?: FullyDefinedLine, 
+        endLine?: FullyDefinedLine, 
+        midLine?: FullyDefinedLine, 
         id?: string
       }
     ) {
@@ -198,21 +198,26 @@ class Arc extends BaseArc {
       if (!this.isFullyDefined) {
         return []
       }
+
+      const centerPoint = this.centerPoint as Required<Point>
+      const startLineEnd = this._startLine!.pointB! as Required<Point>
+      const endLineEnd = this._endLine!.pointB! as Required<Point>
+      const midLineEnd = this._midLine!.pointB! as Required<Point>
  
       return [
         ...(!pointType || pointType === SelectionPointType.CenterPoint 
-          ? [{ ...this.centerPoint, pointType: SelectionPointType.CenterPoint }] 
+          ? [{ ...centerPoint, pointType: SelectionPointType.CenterPoint }] 
           : []
         ),
         ...(!pointType || pointType === SelectionPointType.EndPoint
           ? [
-            { ...this._startLine!.pointB!, pointType: SelectionPointType.EndPoint },
-            { ...this._endLine!.pointB!, pointType: SelectionPointType.EndPoint }
+            { ...startLineEnd, pointType: SelectionPointType.EndPoint },
+            { ...endLineEnd, pointType: SelectionPointType.EndPoint }
             ]
           : []
         ),
         ...(!pointType || pointType === SelectionPointType.MidPoint
-          ? [{ ...this._midLine!.pointB!, pointType: SelectionPointType.MidPoint }]
+          ? [{ ...midLineEnd, pointType: SelectionPointType.MidPoint }]
           : []
         )
       ]
@@ -513,7 +518,7 @@ class Arc extends BaseArc {
 
         if (Math.abs(angleStartToEnd - 180) <= MAX_NUM_ERROR) {
           const midLineEndPoint = getRotatedPointAroundPivot(
-            this._startLine.pointB, 
+            this._startLine.pointB!, 
             centerPoint, 
             90
           )
@@ -534,7 +539,7 @@ class Arc extends BaseArc {
         this._midLine.setLength(newLength, false)
     }
 
-    __checkNewInnerLineConsistency(newLine: Line) {
+    __checkNewInnerLineConsistency(newLine: FullyDefinedLine) {
       if (!this.isFullyDefined) {
         return true
       }

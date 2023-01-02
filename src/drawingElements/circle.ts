@@ -104,13 +104,17 @@ class Circle extends BaseArc {
   }
 
   getSelectionPoints(pointType?: SelectionPointType) {
+    if (!this.isFullyDefined) {
+      return []
+    }
+
     return [
       ...(!pointType || pointType === SelectionPointType.CenterPoint 
-        ? [{ ...this.centerPoint, pointType: SelectionPointType.CenterPoint }] 
+        ? [{ ...(this.centerPoint as Required<Point>), pointType: SelectionPointType.CenterPoint }] 
         : []
       ),
       ...(this._endPoints && (!pointType || pointType === SelectionPointType.EndPoint)
-        ? this._endPoints.map(ep => ({ ...ep, pointType: SelectionPointType.EndPoint }))
+        ? this._endPoints.map(ep => ({ ...(ep as Required<Point>), pointType: SelectionPointType.EndPoint }))
         : [])
     ]
   }

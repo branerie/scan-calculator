@@ -1,3 +1,4 @@
+// TODO: Surely there is a better way to set the canvas size
 const CANVAS_WIDTH = window.innerWidth - 100
 const CANVAS_HEIGHT = window.innerHeight - 100
 
@@ -11,13 +12,13 @@ const ESCAPE_KEY_CODE = 27
 const DELETE_KEY_CODE = 46
 
 export {
-    CANVAS_HEIGHT,
-    CANVAS_WIDTH,
-    SELECT_DELTA,
-    SNAP_DELTA,
-    MAX_NUM_ERROR,
-    ENTER_KEY_CODE,
-    SPACE_KEY_CODE,
-    ESCAPE_KEY_CODE,
-    DELETE_KEY_CODE
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  SELECT_DELTA,
+  SNAP_DELTA,
+  MAX_NUM_ERROR,
+  ENTER_KEY_CODE,
+  SPACE_KEY_CODE,
+  ESCAPE_KEY_CODE,
+  DELETE_KEY_CODE
 }

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import useElements from '../hooks/useElements'
-import useSelectionPoints from '../hooks/useSelectionPoints'
+import useSelectionPoints from '../hooks/useIntersections'
 import useSelection from '../hooks/useSelection'
 import HashGrid from '../utils/hashGrid/index'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/constants'

@@ -205,17 +205,20 @@ class Line extends Element {
       }
 
       // this.__updateDetails()
+      const pointA = this._pointA as Required<Point>
+      const pointB = this._pointB! as Required<Point>
+      const midPoint = this._midPoint! as Required<Point>
 
       return [
         ...(!pointType || pointType === SelectionPointType.EndPoint
           ? [
-              { ...this._pointA, pointType: SelectionPointType.EndPoint },
-              { ...this._pointB!, pointType: SelectionPointType.EndPoint }
+              { ...pointA, pointType: SelectionPointType.EndPoint },
+              { ...pointB, pointType: SelectionPointType.EndPoint }
             ]
           : []
           ),
         ...(!pointType || pointType === SelectionPointType.MidPoint 
-          ? [{ ...this._midPoint!, pointType: SelectionPointType.MidPoint }] 
+          ? [{ ...midPoint, pointType: SelectionPointType.MidPoint }] 
           : []
         )
       ]
@@ -281,7 +284,7 @@ class Line extends Element {
         // is outside the line
 
         const distanceFromStart = getPointDistance(this._pointA, nearestPoint)
-        const distanceFromEnd = getPointDistance(this._pointB, nearestPoint)
+        const distanceFromEnd = getPointDistance(this._pointB!, nearestPoint)
 
         // TODO: does not check if point lies on extension of line or is just really far away
         if (distanceFromStart > this.length) {
