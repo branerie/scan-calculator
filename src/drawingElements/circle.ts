@@ -208,7 +208,7 @@ class Circle extends BaseArc {
     }
   }
 
-  containsAngle(angle: number) {
+  containsAngle(_: number) {
     return true
   }
 

@@ -1,36 +1,41 @@
+import Point from '../../drawingElements/point'
+import { SubElement } from '../../drawingElements/polyline'
 import { getAngleBetweenPoints } from '../angle'
 import { MAX_NUM_ERROR } from '../constants'
 import { createElement, createLine, createPoint } from '../elementFactory'
 import ElementIntersector from '../elementIntersector'
 import { getPointDistance, pointsMatch } from '../point'
 import PriorityQueue from '../priorityQueue'
+import { FullyDefinedArc, FullyDefinedElement, FullyDefinedPolyline } from '../types/index'
 import {
-    getSectionKey,
-    getSectionKeyStart,
-    getSelectionPointDistances,
-    getSubsectionElements,
-    splitIntoRemainingRemovedSections,
-    trimSubsectionElements
+  getSectionKey,
+  getSectionKeyStart,
+  getSelectionPointDistances,
+  getSubsectionElements,
+  splitIntoRemainingRemovedSections,
+  trimSubsectionElements
 } from './trimHelper'
 
-const joinTrimEndSubsections = (trimSections, element) => {
-    // joins subsections, in case the first subsection's startPoint coincides with the
-    // last subsection's endPoint
+const joinTrimEndSubsections = (trimSections, element: FullyDefinedElement) => {
+  // joins subsections, in case the first subsection's startPoint coincides with the
+  // last subsection's endPoint
 
-    if (!trimSections || trimSections.length < 2) return trimSections
+  if (!trimSections || trimSections.length < 2) {
+    return trimSections
+  }
 
-    let editedSections = trimSections
-    const firstSection = editedSections[0]
-    const lastSection = editedSections[editedSections.length - 1]
+  let editedSections = trimSections
+  const firstSection = editedSections[0]
+  const lastSection = editedSections[editedSections.length - 1]
 
-    if (pointsMatch(firstSection.startPoint, lastSection.endPoint)) {
-        editedSections = editedSections.slice(1, editedSections.length - 1)
-        const joinedSection = createSubsection(element, lastSection.startPoint, firstSection.endPoint)
+  if (pointsMatch(firstSection.startPoint, lastSection.endPoint)) {
+    editedSections = editedSections.slice(1, editedSections.length - 1)
+    const joinedSection = createSubsection(element, lastSection.startPoint, firstSection.endPoint)
 
-        editedSections.push(joinedSection)
-    }
+    editedSections.push(joinedSection)
+  }
 
-    return editedSections
+  return editedSections
 }
 
 const trimWithSingleClick = (
@@ -42,186 +47,200 @@ const trimWithSingleClick = (
     subsections,
     trimPointsQueue
 ) => {
-    const selectPointDistanceFromStart = distFunc(selectPoints[0])
+  const selectPointDistanceFromStart = distFunc(selectPoints[0])
 
-    let { point: trimSectionStartPoint, distanceFromStart: trimSectionDistance } = trimPointsQueue.pop()
-    if (selectPointDistanceFromStart < trimSectionDistance) {
-        // if | designates start of element, || end of element and x - intersections with elements we are trimming by:
-        // |----<trimmedSection>---x---x---...---||
-        const remainingSection = createSubsection(element, trimSectionStartPoint, endPoint, subsections)
-        const removedSection = createSubsection(element, startPoint, trimSectionStartPoint, subsections)
-        return { remaining: [remainingSection], removed: [removedSection] }
-    }
-
-    const nextValue = trimPointsQueue.peek()
-    let trimSectionEndPoint = nextValue ? nextValue.point : endPoint
-    while (
-        trimPointsQueue.size > 0 &&
-        selectPointDistanceFromStart > trimPointsQueue.peek().distanceFromStart
-    ) {
-        trimSectionStartPoint = trimPointsQueue.pop().point
-        const nextValue = trimPointsQueue.peek()
-
-        trimSectionEndPoint = nextValue ? trimPointsQueue.peek().point : null
-    }
-
-    if (trimPointsQueue.size === 0) {
-        // if | designates start of element, || end of element and x - intersections with elements we are trimming by:
-        // |---x---x---...--x---<trimmedSection>--||
-        const remainingSubsection = createSubsection(element, startPoint, trimSectionStartPoint, subsections)
-        const removedSubsection = createSubsection(element, trimSectionStartPoint, endPoint, subsections)
-        return { remaining: [remainingSubsection], removed: [removedSubsection] }
-    }
-
+  let { point: trimSectionStartPoint, distanceFromStart: trimSectionDistance } = trimPointsQueue.pop()
+  if (selectPointDistanceFromStart < trimSectionDistance) {
     // if | designates start of element, || end of element and x - intersections with elements we are trimming by:
-    // |---x---...---x---<trimmedSection>---x---...--x---||
-    // i.e. original element is split into two elements
-    let remaining = [
-        createSubsection(element, startPoint, trimSectionStartPoint, subsections),
-        createSubsection(element, trimSectionEndPoint, endPoint, subsections)
-    ]
+    // |----<trimmedSection>---x---x---...---||
+    const remainingSection = createSubsection(element, trimSectionStartPoint, endPoint, subsections)
+    const removedSection = createSubsection(element, startPoint, trimSectionStartPoint, subsections)
+    return { remaining: [remainingSection], removed: [removedSection] }
+  }
 
-    // currently not used - check is done separately for arc, circle and polyline
-    // remaining = joinTrimEndSubsections(remaining)
+  const nextValue = trimPointsQueue.peek()
+  let trimSectionEndPoint = nextValue ? nextValue.point : endPoint
+  while (
+    trimPointsQueue.size > 0 &&
+    selectPointDistanceFromStart > trimPointsQueue.peek().distanceFromStart
+  ) {
+    trimSectionStartPoint = trimPointsQueue.pop().point
+    const nextValue = trimPointsQueue.peek()
 
-    const removedSubsection = createSubsection(
-        element,
-        trimSectionStartPoint,
-        trimSectionEndPoint,
-        subsections
-    )
+    trimSectionEndPoint = nextValue ? trimPointsQueue.peek().point : null
+  }
 
-    return { remaining, removed: [removedSubsection] }
+  if (trimPointsQueue.size === 0) {
+    // if | designates start of element, || end of element and x - intersections with elements we are trimming by:
+    // |---x---x---...--x---<trimmedSection>--||
+    const remainingSubsection = createSubsection(element, startPoint, trimSectionStartPoint, subsections)
+    const removedSubsection = createSubsection(element, trimSectionStartPoint, endPoint, subsections)
+    return { remaining: [remainingSubsection], removed: [removedSubsection] }
+  }
+
+  // if | designates start of element, || end of element and x - intersections with elements we are trimming by:
+  // |---x---...---x---<trimmedSection>---x---...--x---||
+  // i.e. original element is split into two elements
+  let remaining = [
+    createSubsection(element, startPoint, trimSectionStartPoint, subsections),
+    createSubsection(element, trimSectionEndPoint, endPoint, subsections)
+  ]
+
+  // currently not used - check is done separately for arc, circle and polyline
+  // remaining = joinTrimEndSubsections(remaining)
+
+  const removedSubsection = createSubsection(
+    element,
+    trimSectionStartPoint,
+    trimSectionEndPoint,
+    subsections
+  )
+
+  return { remaining, removed: [removedSubsection] }
 }
 
 const trimWithSelectBox = (
-    element,
-    selectPoints,
-    distFunc,
-    startPoint,
-    endPoint,
-    subsections,
-    trimPointsQueue
+  element,
+  selectPoints,
+  distFunc,
+  startPoint,
+  endPoint,
+  subsections,
+  trimPointsQueue
 ) => {
-    const selectRect = createElement('rectangle', { ...selectPoints[0] })
-    selectRect.setLastAttribute(selectPoints[1].x, selectPoints[1].y)
+  const selectRect = createElement('rectangle', { ...selectPoints[0] })
+  selectRect.setLastAttribute(selectPoints[1].x, selectPoints[1].y)
 
-    let selectIntersections = ElementIntersector.getIntersections(selectRect, element)
+  let selectIntersections = ElementIntersector.getIntersections(selectRect, element)
 
-    // we shouldn't trim anything
-    if (!selectIntersections) return null
+  // we shouldn't trim anything
+  if (!selectIntersections) {
+    return null
+  }
 
-    // TODO: Is it worth moving to priority queue?
-    selectIntersections = selectIntersections
-        .map(si => ({ point: si, distanceFromStart: distFunc(si) }))
-        .sort((a, b) => (a.distanceFromStart < b.distanceFromStart ? 1 : -1))
+  // TODO: Is it worth moving to priority queue?
+  selectIntersections = selectIntersections
+      .map(si => ({ point: si, distanceFromStart: distFunc(si) }))
+      .sort((a, b) => (a.distanceFromStart < b.distanceFromStart ? 1 : -1))
 
-    let sectionStartPoint = startPoint
-    let sectionStartDistance = 0
-    let { point: sectionEndPoint, distanceFromStart: sectionEndDistance } = trimPointsQueue.peek()
-    const sectionsPostTrim = splitIntoRemainingRemovedSections(
-        sectionStartPoint,
-        sectionEndPoint,
-        sectionStartDistance,
-        sectionEndDistance,
-        selectIntersections,
-        selectRect,
-        trimPointsQueue,
-        distFunc,
-        endPoint
-    )
+  let sectionStartPoint = startPoint
+  let sectionStartDistance = 0
+  let { point: sectionEndPoint, distanceFromStart: sectionEndDistance } = trimPointsQueue.peek()
+  const sectionsPostTrim = splitIntoRemainingRemovedSections(
+      sectionStartPoint,
+      sectionEndPoint,
+      sectionStartDistance,
+      sectionEndDistance,
+      selectIntersections,
+      selectRect,
+      trimPointsQueue,
+      distFunc,
+      endPoint
+  )
 
-    if (!sectionsPostTrim.remaining || !sectionsPostTrim.removed) return null
+  if (!sectionsPostTrim.remaining || !sectionsPostTrim.removed) {
+    return null
+  }
 
-    // currently not used, check is done separately, at the end, for arc, circle and polyline
-    // const finalSectionsPostTrim = {
-    //     remaining: joinTrimEndSubsections(sectionsPostTrim.remaining, element),
-    //     removed: joinTrimEndSubsections(sectionsPostTrim.removed, element)
-    // }
+  // currently not used, check is done separately, at the end, for arc, circle and polyline
+  // const finalSectionsPostTrim = {
+  //     remaining: joinTrimEndSubsections(sectionsPostTrim.remaining, element),
+  //     removed: joinTrimEndSubsections(sectionsPostTrim.removed, element)
+  // }
 
-    const remaining = sectionsPostTrim.remaining.map(section =>
-        createSubsection(element, section.start, section.end, subsections)
-    )
+  const remaining = sectionsPostTrim.remaining.map(section =>
+    createSubsection(element, section.start, section.end, subsections)
+  )
 
-    const removed = sectionsPostTrim.removed.map(section =>
-        createSubsection(element, section.start, section.end, subsections)
-    )
+  const removed = sectionsPostTrim.removed.map(section =>
+    createSubsection(element, section.start, section.end, subsections)
+  )
 
-    return { remaining, removed }
+  return { remaining, removed }
 }
 
-const createSubsection = (element, sectionStart, sectionEnd, subsections) => {
-    switch (element.baseType) {
-        case 'line': {
-            return createLine(sectionStart.x, sectionStart.y, sectionEnd.x, sectionEnd.y, { assignId: true })
-        }
-        case 'arc':
-            const startPoint = element.startPoint
-            const endPoint = element.endPoint
-
-            if (pointsMatch(startPoint, sectionEnd) || pointsMatch(endPoint, sectionStart)) {
-                const temp = sectionStart
-                sectionStart = sectionEnd
-                sectionEnd = temp
-            }
-        // eslint-disable-next-line no-fallthrough
-        case 'circle': {
-            const centerPoint = element.centerPoint
-            const subsection = createElement('arc', createPoint(centerPoint), { assignId: true })
-            subsection.defineNextAttribute(sectionStart)
-            subsection.setLastAttribute(sectionEnd.x, sectionEnd.y)
-            return subsection
-        }
-        case 'polyline': {
-            const subsectionElements = getSubsectionElements(sectionStart, sectionEnd, subsections)
-            const subElements = trimSubsectionElements(subsectionElements, sectionStart, sectionEnd)
-
-            const newSubsection = createElement('polyline', createPoint(sectionStart), {
-                assignId: true
-            })
-            newSubsection.elements = subElements
-
-            if (!subsectionElements[0].isInPolylineDirection) {
-                newSubsection.startPoint = newSubsection.elements[0].endPoint
-            }
-
-            if (!subsectionElements[subsectionElements.length - 1].isInPolylineDirection) {
-                newSubsection.endPoint = newSubsection[newSubsection.elements.length - 1].startPoint
-            }
-
-            return newSubsection
-        }
-        default:
-            throw new Error('Invalid element baseType')
+const createSubsection = (element: FullyDefinedElement, sectionStart, sectionEnd, subsections) => {
+  switch (element.baseType) {
+    case 'line': {
+      return createLine(sectionStart.x, sectionStart.y, sectionEnd.x, sectionEnd.y, { assignId: true })
     }
+    case 'arc':
+      const startPoint = element.startPoint
+      const endPoint = element.endPoint
+
+      if (pointsMatch(startPoint, sectionEnd) || pointsMatch(endPoint, sectionStart)) {
+        const temp = sectionStart
+        sectionStart = sectionEnd
+        sectionEnd = temp
+      }
+    // eslint-disable-next-line no-fallthrough
+    case 'circle': {
+      const centerPoint = element.centerPoint
+      const subsection = createElement('arc', createPoint(centerPoint), { assignId: true })
+      subsection.defineNextAttribute(sectionStart)
+      subsection.setLastAttribute(sectionEnd.x, sectionEnd.y)
+      return subsection
+    }
+    case 'polyline': {
+      const subsectionElements = getSubsectionElements(sectionStart, sectionEnd, subsections)
+      const subElements = trimSubsectionElements(subsectionElements/*, sectionStart, sectionEnd*/)
+
+      const newSubsection = createElement('polyline', createPoint(sectionStart), {
+        assignId: true
+      })
+      newSubsection.elements = subElements
+
+      if (!subsectionElements[0].isInPolylineDirection) {
+        newSubsection.startPoint = newSubsection.elements[0].endPoint
+      }
+
+      if (!subsectionElements[subsectionElements.length - 1].isInPolylineDirection) {
+        newSubsection.endPoint = newSubsection[newSubsection.elements.length - 1].startPoint
+      }
+
+      return newSubsection
+    }
+    default:
+      throw new Error('Invalid element baseType')
+  }
 }
 
 const updateLastTrimSectionEnd = (currentSectionElements, sectionEnd, currentSubElement) => {
     const lastSectionElement =
-        currentSectionElements.length > 0 ? currentSectionElements[currentSectionElements.length - 1] : null
+      currentSectionElements.length > 0 ? currentSectionElements[currentSectionElements.length - 1] : null
     if (
-        lastSectionElement &&
-        lastSectionElement.trimStart &&
-        currentSubElement.id === lastSectionElement.element.id
+      lastSectionElement &&
+      lastSectionElement.trimStart &&
+      currentSubElement.id === lastSectionElement.element.id
     ) {
-        // section start is a previous trim point, so last section's end must be set to current trimPoint
-        // as it will be unset currently
-        lastSectionElement.trimEnd = sectionEnd
-        return true
+      // section start is a previous trim point, so last section's end must be set to current trimPoint
+      // as it will be unset currently
+      lastSectionElement.trimEnd = sectionEnd
+      return true
     }
 
     return false
 }
 
-const assemblePointDistancesAndSubsections = (element, trimPointsByElement, selectPoints) => {
+const assemblePointDistancesAndSubsections = (
+  polyline: FullyDefinedPolyline, 
+  trimPointsByElement: Record<string, Point[]>, 
+  selectPoints: Point[]
+): {
+  pointDistances: {
+    [pointId: string]: number,
+    select: []
+  },
+  subsections: Record<string, PolylineSubsection[]>
+} => {
     let pointDistances = { select: [] }
     const subsections = {}
     let currentSectionElements = []
-    let sectionStartPoint = element.startPoint
+    let sectionStartPoint = polyline.startPoint
     let distanceFromStart = 0
 
-    let lastEndPoint = element.startPoint
-    for (const subElement of element.elements) {
+    let lastEndPoint = polyline.startPoint
+    for (const subElement of polyline.elements) {
         const isInPolylineDirection = pointsMatch(subElement.startPoint, lastEndPoint)
         const subElementEndPoint = isInPolylineDirection ? subElement.endPoint : subElement.startPoint
 
@@ -229,10 +248,10 @@ const assemblePointDistancesAndSubsections = (element, trimPointsByElement, sele
             subElement.baseType === 'line'
                 ? getDistFunc('line', { startPoint: lastEndPoint })
                 : getDistFunc('arc', {
-                      centerPoint: subElement.centerPoint,
+                      centerPoint: (subElement as FullyDefinedArc).centerPoint,
                       startAngle: isInPolylineDirection
-                          ? subElement.startLine.angle
-                          : subElement.endLine.angle
+                          ? (subElement as FullyDefinedArc).startLine.angle
+                          : (subElement as FullyDefinedArc).endLine.angle
                   })
 
         const sortedSubElementTrimPoints = (trimPointsByElement[subElement.id] || []).sort((a, b) =>
@@ -321,7 +340,7 @@ const assemblePointDistancesAndSubsections = (element, trimPointsByElement, sele
     return { pointDistances, subsections }
 }
 
-const getDistFunc = (elementType, elementParams) => {
+const getDistFunc = (elementType: 'line' | 'arc' | 'circle', elementParams): (point: Point) => number => {
     switch (elementType) {
         case 'line': {
             const { startPoint } = elementParams
@@ -435,7 +454,9 @@ const fixJoinedPointDistances = (element, pointDistances, lastTrimPoint) => {
     const distanceShift = oldEndPointDistance - lastTrimPointDistance
 
     for (const pointKey of Object.keys(pointDistances)) {
-        if (pointKey === 'select') continue
+        if (pointKey === 'select') {
+          continue
+        }
 
         const pointDistance = pointDistances[pointKey]
         if (pointDistance < lastTrimPointDistance) {
@@ -461,6 +482,11 @@ const fixJoinedPointDistances = (element, pointDistances, lastTrimPoint) => {
     pointDistances[newEndPoint.pointId] = oldEndPointDistance
 
     return newEndPoint
+}
+
+export type PolylineSubsection = {
+  element: SubElement, 
+  isInPolylineDirection: boolean
 }
 
 export {

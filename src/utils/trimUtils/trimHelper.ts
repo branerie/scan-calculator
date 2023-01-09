@@ -1,10 +1,14 @@
+import Point from '../../drawingElements/point'
+import { SubElement } from '../../drawingElements/polyline'
 import { SELECT_DELTA } from '../constants'
 import { createElement } from '../elementFactory'
 import ElementIntersector from '../elementIntersector'
 import ElementManipulator from '../elementManipulator'
 import { pointsMatch } from '../point'
+import { FullyDefinedRectangle } from '../types/index'
+import { PolylineSubsection } from './trim'
 
-const updateTrimmedSections = (trimmedSections, newSection, isSectionTrimmed) => {
+const updateTrimmedSections = (trimmedSections, newSection, isSectionTrimmed: boolean) => {
     const sectionType = isSectionTrimmed ? 'removed' : 'remaining'
     const sectionsOfType = trimmedSections[sectionType]
 
@@ -27,9 +31,14 @@ const updateTrimmedSections = (trimmedSections, newSection, isSectionTrimmed) =>
     trimmedSections[sectionType] = [newSection]
 }
 
-const getSelectionPointDistances = (subElement, selectPoints, subElementDistFunc, distanceFromElementStart) => {
+const getSelectionPointDistances = (
+    subElement: SubElement, 
+    selectPoints: Point[], 
+    subElementDistFunc: (point: Point) => number, 
+    distanceFromElementStart: number
+): PolylnePointDistance[] => {
     const selectRect = getSelectRect(selectPoints)
-    let selectIntersections = []
+    let selectIntersections: Point[] = []
     if (selectRect) {
         selectIntersections = ElementIntersector.getIntersections(selectRect, subElement) || []
     } else if (subElement.checkIfPointOnElement(selectPoints[0], SELECT_DELTA)) {
@@ -45,22 +54,22 @@ const getSelectionPointDistances = (subElement, selectPoints, subElementDistFunc
     return selectDistances
 }
 
-const getSectionKey = (startPoint, endPoint) => 
+const getSectionKey = (startPoint: Point, endPoint: Point) => 
     `${startPoint.x.toFixed(3)},${startPoint.y.toFixed(3)};${endPoint.x.toFixed(3)},${endPoint.y.toFixed(3)}`
 
-const getSectionKeyStart = (startPoint) => `${startPoint.x.toFixed(3)},${startPoint.y.toFixed(3)}`
+const getSectionKeyStart = (startPoint: Point) => `${startPoint.x.toFixed(3)},${startPoint.y.toFixed(3)}`
 
 
 const splitIntoRemainingRemovedSections = (
-    sectionStartPoint,
-    sectionEndPoint,
+    sectionStartPoint: Point,
+    sectionEndPoint: Point,
     sectionStartDistance,
     sectionEndDistance,
     selectIntersections,
-    selectRect,
+    selectRect: FullyDefinedRectangle,
     trimPointsQueue,
-    distFunc,
-    endPoint
+    distFunc: (point: Point) => number,
+    endPoint: Point
 ) => {
     const sectionsPostTrim = {}
     while (trimPointsQueue.size >= 0) {
@@ -138,34 +147,36 @@ const getSectionFate = (
     return isSectionTrimmed
 }
 
-const getSelectRect = (selectPoints) => {
-    if (selectPoints.length !== 2) return null
+const getSelectRect = (selectPoints: Point[]) => {
+    if (selectPoints.length !== 2) {
+        return null
+    }
 
-    const selectRect = createElement('rectangle', { ...selectPoints[0] })
+    const selectRect = createElement('rectangle', selectPoints[0])
     selectRect.setLastAttribute(selectPoints[1].x, selectPoints[1].y)
 
     return selectRect
 }
 
-const getSubsectionElements = (sectionStart, sectionEnd, subsections) => {
+const getSubsectionElements = (sectionStart: Point, sectionEnd: Point, subsections: Record<string, PolylineSubsection[]>) => {
     const sectionKeyStart = getSectionKeyStart(sectionStart)
-    const firstKey = Object.keys(subsections).find(k => k.startsWith(sectionKeyStart))
+    const firstKey = Object.keys(subsections).find(k => k.startsWith(sectionKeyStart))!
     let [firstPoint, secondPoint] = firstKey.split(';')
-    let subsectionElements = []
+    let subsectionElements: PolylineSubsection[] = []
 
     while (secondPoint !== getSectionKeyStart(sectionEnd)) {
         subsectionElements = subsectionElements.concat(subsections[`${firstPoint};${secondPoint}`])
 
         firstPoint = secondPoint
         // eslint-disable-next-line no-loop-func
-        secondPoint = Object.keys(subsections).find(k => k.startsWith(secondPoint)).split(';')[1]
+        secondPoint = Object.keys(subsections).find(k => k.startsWith(secondPoint))!.split(';')[1]
     }
 
     subsectionElements = subsectionElements.concat(subsections[`${firstPoint};${secondPoint}`])
     return subsectionElements
 }
 
-const trimSubsectionElements = (subsectionElements) => {
+const trimSubsectionElements = (subsectionElements: PolylineSubsection[]) => {
     const subElements = []
     let lastSubElement = null
     for (let subIndex = 0; subIndex < subsectionElements.length; subIndex++) {
@@ -206,6 +217,11 @@ const trimSubsectionElements = (subsectionElements) => {
     }
 
     return subElements
+}
+
+export type PolylnePointDistance = {
+    point: Point,
+    distanceFromStart: number
 }
 
 export {

@@ -23,7 +23,7 @@ export type FullyDefinedElement = Ensure<Element, 'startPoint' | 'endPoint'>
 export type FullyDefinedLine = Ensure<Line, 'startPoint' | 'endPoint' | 'pointB'>
 export type FullyDefinedPolyline = Ensure<Polyline, 'startPoint' | 'endPoint'>
 export type FullyDefinedRectangle = Ensure<Rectangle, 'startPoint' | 'endPoint'>
-export type FullyDefinedArc = Ensure<Arc, 'startPoint' | 'endPoint'>
+export type FullyDefinedArc = Ensure<Arc, 'startPoint' | 'endPoint' | 'startLine' | 'endLine'>
 export type FullyDefinedCircle = Ensure<Circle, 'startPoint' | 'endPoint'>
 
 export type ElementWithId = Ensure<FullyDefinedElement, 'id'>

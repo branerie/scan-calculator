@@ -3,7 +3,7 @@ import { createLine } from '../utils/elementFactory'
 import { pointsMatch } from '../utils/point'
 import ElementManipulator from '../utils/elementManipulator'
 import { SELECT_DELTA } from '../utils/constants'
-import { BoundingBox, SelectionPoint } from '../utils/types/index'
+import { BoundingBox, FullyDefinedArc, FullyDefinedLine, SelectionPoint } from '../utils/types/index'
 import Point from './point'
 import Line from './line'
 import { SelectionPointType } from '../utils/enums/index'
@@ -513,5 +513,5 @@ export default class Polyline extends Element {
   }
 }
 
-export type SubElement = Arc | Line
+export type SubElement = FullyDefinedArc | FullyDefinedLine
 const MID_POINT_STRECH_ERROR = 'Cannot stretch polyline by midpoint - polyline seems to be disjointed'

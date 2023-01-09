@@ -69,7 +69,7 @@ abstract class Element {
 
     abstract getPointById(pointId: string): Point | null
     abstract getSelectionPoints(pointType?: SelectionPointType): SelectionPoint[]
-    abstract checkIfPointOnElement(point: Point, maxDiff: number): boolean
+    abstract checkIfPointOnElement(point: Point, maxDiff?: number): boolean
     abstract defineNextAttribute(definingPoint: Point): void
     abstract setLastAttribute(pointX: number, pointY: number): void
     abstract getBoundingBox(): BoundingBox
