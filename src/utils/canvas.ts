@@ -1,6 +1,11 @@
+import { FullyDefinedArc } from '../drawingElements/arc'
+import { FullyDefinedCircle } from '../drawingElements/circle'
+import { FullyDefinedElement } from '../drawingElements/element'
+import { FullyDefinedLine } from '../drawingElements/line'
 import Point from '../drawingElements/point'
+import { FullyDefinedPolyline } from '../drawingElements/polyline'
 import { degreesToRadians } from './angle'
-import { FullyDefinedArc, FullyDefinedCircle, FullyDefinedElement, FullyDefinedLine, FullyDefinedPolyline, SelectionPoint } from './types/index'
+import { SelectionPoint } from './types/index'
 
 const SELECT_POINT_SQUARE_HALF_SIDE = 4
 const SNAP_POINT_SQUARE_HALF_SIDE = 8

@@ -1,5 +1,6 @@
 import { createLine } from '../utils/elementFactory'
-import Line from './line'
+import { Ensure } from '../utils/types/generics'
+import { FullyDefinedLine } from './line'
 import Point from './point'
 import Polyline from './polyline'
 
@@ -28,18 +29,18 @@ export default class Rectangle extends Polyline {
   }
 
   get isFullyDefined() {
-    return !!(this.elements[0]) && !!(this.elements[1])
+    return this.elements.length === 4
   }
 
   get isAlmostDefined() {
     return this.elements[0].isAlmostDefined
   }
 
-  get elements(): Line[] {
-    return super.elements as Line[]
+  get elements(): FullyDefinedLine[] {
+    return super.elements as FullyDefinedLine[]
   }
 
-  set elements(newElements: Line[]) {
+  set elements(newElements: FullyDefinedLine[]) {
     super.elements = newElements
   }
 
@@ -48,7 +49,7 @@ export default class Rectangle extends Polyline {
       throw new Error('Cannot setLastAttribute without initial base point')
     }
 
-    const elements = this.elements as Line[]
+    const elements = this.elements
     const firstLine = elements[0]
     firstLine.setLastAttribute(pointX, firstLine.pointA!.y)
     const firstLinePointA = firstLine.pointA!
@@ -101,3 +102,5 @@ export default class Rectangle extends Polyline {
     // this.joinEnds()
   }
 }
+
+export type FullyDefinedRectangle = Ensure<Rectangle, 'startPoint' | 'endPoint'>

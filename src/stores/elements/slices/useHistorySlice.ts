@@ -1,14 +1,13 @@
 import { StateCreator } from 'zustand'
 import { createDraft } from 'immer'
-import { v4 as uuidv4 } from 'uuid'
-import { ElementWithId, SelectionPoint } from '../../../utils/types/index'
+import { SelectionPoint } from '../../../utils/types/index'
 import useSelectionPointsSlice from './useSelectionPointsSlice'
-import useElementsSlice from './useElementsSlice'
 import { ElementsState } from '../index'
 import useSelectionSlice from './useSelectionSlice'
 import { useElementContainerContext } from '../../../contexts/ElementContainerContext'
 import Polyline from '../../../drawingElements/polyline'
-import Element from '../../../drawingElements/element'
+import Element, { ElementWithId } from '../../../drawingElements/element'
+import { generateId } from '../../../utils/general'
 
 export type HistorySlice = {
   historyPointer: number | null,
@@ -26,7 +25,6 @@ export type HistorySlice = {
 }
 
 export default function useHistorySlice() {
-  const elementsSlice = useElementsSlice()
   const selectionSlice = useSelectionSlice()
   const selectionPointsSlice = useSelectionPointsSlice()
   const container = useElementContainerContext()
@@ -255,7 +253,7 @@ export default function useHistorySlice() {
 
         let newSelectionPoints: SelectionPoint[] = []
         for (const newElement of newElements) {
-          newElement.id = uuidv4()
+          newElement.id = generateId()
           newSelectionPoints = newSelectionPoints.concat(newElement.getSelectionPoints())
         }
 

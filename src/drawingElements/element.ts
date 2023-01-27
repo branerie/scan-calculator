@@ -3,53 +3,54 @@ import { SelectionPointType } from '../utils/enums/index'
 import { BoundingBox } from '../utils/types/index'
 import Point from './point'
 import { SelectionPoint } from '../utils/types'
+import { Ensure } from '../utils/types/generics'
 
-abstract class Element {
-    [immerable] = true
-    private _id: string | null = null
-    groupId: string | null = null
-    isShown: boolean
+export default abstract class Element {
+  [immerable] = true
+  private _id: string | null = null
+  groupId: string | null = null
+  isShown: boolean
 
-    constructor(id?: string, groupId?: string) {
-        if (id) {
-            this._id = id
-        }
-
-        if (groupId) {
-            this.groupId = groupId
-        }
-
-        this.isShown = true
+  constructor(id?: string, groupId?: string) {
+    if (id) {
+      this._id = id
     }
 
-    get id(): string | null {
-        return this._id
+    if (groupId) {
+      this.groupId = groupId
     }
 
-    set id(value) {
-        this._id = value
-        this.setPointsElementId()
+    this.isShown = true
+  }
+
+  get id(): string | null {
+    return this._id
+  }
+
+  set id(value) {
+    this._id = value
+    this.setPointsElementId()
+  }
+
+  get baseType(): string {
+    const baseType = Object.getPrototypeOf(this.constructor).name
+    return baseType !== 'Element' ? baseType.toLowerCase() : this.type
+  }
+
+  get type(): string {
+    return this.constructor.name.toLowerCase()
+  }
+
+  setPointById(pointId: string, newPointX: number, newPointY: number) {
+    const point = this.getPointById(pointId)
+    if (!point) {
+      return false
     }
 
-    get baseType(): string {
-        const baseType = Object.getPrototypeOf(this.constructor).name
-        return baseType !== 'Element' ? baseType.toLowerCase() : this.type
-    }
-
-    get type(): string {
-        return this.constructor.name.toLowerCase()
-    }
-
-    setPointById(pointId: string, newPointX: number, newPointY: number) {
-        const point = this.getPointById(pointId)
-        if (!point) {
-            return false
-        }
-
-        point.x = newPointX
-        point.y = newPointY
-        return true
-    }
+    point.x = newPointX
+    point.y = newPointY
+    return true
+  }
 
     /**
      * Should return true if all dimensions of the element are defined
@@ -77,7 +78,8 @@ abstract class Element {
     abstract setPointsElementId(): void
 }
 
-export default Element
+export type FullyDefinedElement = Ensure<Element, 'startPoint' | 'endPoint'>
+export type ElementWithId = Ensure<FullyDefinedElement, 'id'>
 
 export const NO_ID_ERROR = 'Attempting to set an undefined element id to points'
 export const NOT_DEFINED_ERROR = 'Attempting to access properties of an element that is not fully defined yet' 

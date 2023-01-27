@@ -1,7 +1,22 @@
 import Point from '../drawingElements/point'
 import { degreesToRadians, getAngleBetweenPoints } from './angle'
 import { createPoint } from './elementFactory'
+import { generateId } from './general'
 import { areAlmostEqual } from './number'
+
+const copyPoint = (point: Point, keepIds = false, assignId = false): Point => {
+  const newPoint = new Point(point.x, point.y)
+  if (keepIds) {
+    newPoint.pointId = point.pointId
+    newPoint.elementId = point.elementId
+  }
+
+  if (assignId) {
+    newPoint.pointId = generateId()
+  }
+
+  return newPoint
+}
 
 const getPointDistance = (a: Point, b: Point) => {
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
@@ -73,6 +88,7 @@ const pointsMatch = (
 }
 
 export {
+  copyPoint,
   getPointDistance,
   getPointDistanceOnArc,
   getRotatedPointAroundPivot,

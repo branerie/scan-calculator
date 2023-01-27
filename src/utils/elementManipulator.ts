@@ -1,6 +1,5 @@
-import { v4 as uuidv4 } from 'uuid'
 import { createElement } from './elementFactory'
-import Line from '../drawingElements/line'
+import Line, { FullyDefinedLine } from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline, { SubElement } from '../drawingElements/polyline'
 import Rectangle from '../drawingElements/rectangle'
@@ -8,12 +7,13 @@ import Element from '../drawingElements/element'
 import { Ensure } from './types/generics'
 import Arc from '../drawingElements/arc'
 import Circle from '../drawingElements/circle'
-import { FullyDefinedLine } from './types/index'
+import { generateId } from './general'
+import { copyPoint } from './point'
 
 class ElementManipulator {
   static copyElement(element: Element, { keepIds = false, assignId = false }): Element {
     // if (element.type === 'point') {
-    //     return ElementManipulator.copyPoint(element, keepIds)
+    //     return copyPoint(element, keepIds)
     // }
 
     // const methodName = `copy${element.type.charAt(0).toUpperCase() + element.type.slice(1)}`
@@ -21,7 +21,7 @@ class ElementManipulator {
 
     // const newElement = copyingMethod(element, keepIds, assignId)
     // if (!keepIds) {
-    //   newElement.id = uuidv4()
+    //   newElement.id = generateId()
     // }
 
     // return newElement
@@ -58,7 +58,7 @@ class ElementManipulator {
       const newPointA = new Point(line.pointA.x, line.pointA.y, line.pointA.elementId)
       newPointA.pointId = line.pointA.pointId
 
-      const newPointB = line.pointB ? ElementManipulator.copyPoint(line.pointB, keepIds) : null
+      const newPointB = line.pointB ? copyPoint(line.pointB, keepIds) : null
       const newLine = new Line(newPointA, { 
         pointB: newPointB || undefined, 
         groupId: line.groupId || undefined, 
@@ -67,7 +67,7 @@ class ElementManipulator {
       })
 
       if (assignId) {
-        newLine.id = uuidv4()
+        newLine.id = generateId()
       }
       
       return newLine
@@ -75,7 +75,7 @@ class ElementManipulator {
 
     const newLine = createElement(
       Line, 
-      ElementManipulator.copyPoint(line.pointA, keepIds),
+      copyPoint(line.pointA, keepIds),
       { groupId: line.groupId, assignId }
     )
 
@@ -96,7 +96,7 @@ class ElementManipulator {
     ) as SubElement[]
 
     if (keepIds) {
-      const newInitialPoint = ElementManipulator.copyPoint(polyline.basePoint, keepIds)
+      const newInitialPoint = copyPoint(polyline.basePoint, keepIds)
       const newPolyline = new Polyline(
         newInitialPoint, 
         { 
@@ -107,7 +107,7 @@ class ElementManipulator {
       )
 
       if (assignId) {
-        newPolyline.id = uuidv4()
+        newPolyline.id = generateId()
       }
 
       return newPolyline
@@ -115,7 +115,7 @@ class ElementManipulator {
     
     const newPolyline = createElement(
       Polyline, 
-      ElementManipulator.copyPoint(polyline.basePoint,  keepIds),
+      copyPoint(polyline.basePoint,  keepIds),
       { assignId }
     )
 
@@ -129,7 +129,7 @@ class ElementManipulator {
 
     let newRectangle
     if (keepIds) {
-      const newInitialPoint = ElementManipulator.copyPoint(initialPoint, keepIds)
+      const newInitialPoint = copyPoint(initialPoint, keepIds)
       newRectangle = new Rectangle(
         newInitialPoint, 
         { 
@@ -140,16 +140,16 @@ class ElementManipulator {
     } else {
       newRectangle = createElement(
         Rectangle, 
-        ElementManipulator.copyPoint(initialPoint, keepIds), 
+        copyPoint(initialPoint, keepIds), 
         { assignId }
       )
     }
 
     if (assignId) {
-      newRectangle.id = uuidv4()
+      newRectangle.id = generateId()
     }
 
-    newRectangle.elements = rectangle.elements.map(line => ElementManipulator.copyLine(line, keepIds))
+    newRectangle.elements = rectangle.elements.map(line => ElementManipulator.copyLine(line, keepIds) as FullyDefinedLine)
     return newRectangle
   } 
   
@@ -163,7 +163,7 @@ class ElementManipulator {
     //     newCenterPoint = new Point(arc.centerPoint.x, arc.centerPoint.y)
     //     newCenterPoint.pointId = arc.centerPoint.pointId
     // } else {
-    //     newCenterPoint = createElement('point', ElementManipulator.copyPoint(arc.centerPoint, keepIds))
+    //     newCenterPoint = createElement('point', copyPoint(arc.centerPoint, keepIds))
     // }
 
     // const newArc = new Arc(
@@ -182,11 +182,11 @@ class ElementManipulator {
 
 
     
-    // const newCenterPoint = ElementManipulator.copyPoint(arc.centerPoint, keepIds)
+    // const newCenterPoint = copyPoint(arc.centerPoint, keepIds)
 
     const newArc = createElement(
       Arc,
-      ElementManipulator.copyPoint(arc.centerPoint, keepIds), { 
+      copyPoint(arc.centerPoint, keepIds), { 
       groupId: arc.groupId, 
       assignId,
         ...(keepIds && { pointsElementId: arc.id }) 
@@ -218,14 +218,14 @@ class ElementManipulator {
   static copyCircle(circle: Circle, keepIds = false, assignId = false): Circle {
     const newCircle = createElement(
       Circle, 
-      ElementManipulator.copyPoint(circle.centerPoint, keepIds, assignId), {
+      copyPoint(circle.centerPoint, keepIds, assignId), {
       assignId,
       ...(keepIds && { pointsElementId: circle.id }) 
     })
 
     newCircle.radius = circle.radius
     const newEndPoints = circle.endPoints 
-        ? circle.endPoints.map(ep => ElementManipulator.copyPoint(ep, keepIds))
+        ? circle.endPoints.map(ep => copyPoint(ep, keepIds))
         : undefined
     newCircle.endPoints = newEndPoints
     if (keepIds && !assignId) {
@@ -234,20 +234,6 @@ class ElementManipulator {
         
     // const newCircle = new Circle(newCenterPoint, { radius: circle.radius, endPoints: newEndPoints, id: circle.id })
     return newCircle
-  }
-
-  static copyPoint(point: Point, keepIds = false, assignId = false): Point {
-    const newPoint = new Point(point.x, point.y)
-    if (keepIds) {
-      newPoint.pointId = point.pointId
-      newPoint.elementId = point.elementId
-    }
-
-    if (assignId) {
-      newPoint.pointId = uuidv4()
-    }
-
-    return newPoint
   }
 }
 

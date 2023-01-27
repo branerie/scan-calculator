@@ -1,16 +1,18 @@
 import { useCallback } from 'react'
 import { useElementContainerContext } from '../contexts/ElementContainerContext'
-import { useElementsStore } from '../stores/elements/index'
+import { FullyDefinedArc } from '../drawingElements/arc'
+import { FullyDefinedElement } from '../drawingElements/element'
+import { FullyDefinedLine } from '../drawingElements/line'
+import useElementsStore from '../stores/elements/index'
 import { DivContentsYieldResult } from '../utils/elementContainers/elementContainer'
 import { findClosestIntersectPoint } from '../utils/intersections'
-import { FullyDefinedArc, FullyDefinedElement, FullyDefinedLine } from '../utils/types/index'
 
 export default function useIntersections() {
   const container = useElementContainerContext()
-  const useStore = useElementsStore()
-  const getElementById = useStore((state) => state.getElementById)
-  const hasSelectedElement = useStore((state) => state.hasSelectedElement)
-  const selectedElements = useStore((state) => state.selectedElements)
+  const elementsStore = useElementsStore()
+  const getElementById = elementsStore((state) => state.getElementById)
+  const hasSelectedElement = elementsStore((state) => state.hasSelectedElement)
+  const selectedElements = elementsStore((state) => state.selectedElements)
 
   const getNextElementIntersection = useCallback((
     element: FullyDefinedElement, 

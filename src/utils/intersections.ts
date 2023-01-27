@@ -1,11 +1,11 @@
 /* eslint-disable no-loop-func */
-import Arc from '../drawingElements/arc'
+import Arc, { FullyDefinedArc } from '../drawingElements/arc'
+import { FullyDefinedElement } from '../drawingElements/element'
 import Point from '../drawingElements/point'
 import { getPointsAngleDistance } from './arc'
 import { MAX_NUM_ERROR } from './constants'
 import ElementIntersector from './elementIntersector'
 import { getPointDistance, pointsMatch } from './point'
-import { FullyDefinedArc, FullyDefinedElement } from './types/index'
 
 const checkArcIntersectionValidity = (
   arc: FullyDefinedArc, 
@@ -108,7 +108,7 @@ const findClosestIntersectPoint = (
       if (distanceFromExtendPoint < minPointDistance) {
         if (
           element instanceof Arc && 
-          !checkArcIntersectionValidity(element, fromStart, distanceFromExtendPoint)
+          !checkArcIntersectionValidity(element as FullyDefinedArc, fromStart, distanceFromExtendPoint)
         ) {
           return
         }

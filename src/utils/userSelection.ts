@@ -1,7 +1,7 @@
+import { FullyDefinedElement } from '../drawingElements/element'
 import Point from '../drawingElements/point'
-import Rectangle from '../drawingElements/rectangle'
+import Rectangle, { FullyDefinedRectangle } from '../drawingElements/rectangle'
 import ElementIntersector from './elementIntersector'
-import { FullyDefinedElement, FullyDefinedRectangle } from './types/index'
 
 export default class UserSelection {
   private _selectionPoints: Point[]
@@ -32,10 +32,7 @@ export default class UserSelection {
     this._selectionPoints = selectionPointsArr
   }
 
-  isElementSelected(element: FullyDefinedElement, includeMode = 'all') {
-    /**
-     * includeMode: 'all' | 'inside' | 'crossing'
-     */
+  isElementSelected(element: FullyDefinedElement, includeMode: 'all' | 'inside' | 'crossing' = 'all') {
     if (!this._selectionPoints || this._selectionPoints?.length === 0) {
       return false
     }

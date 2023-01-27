@@ -1,5 +1,4 @@
-import React from 'react'
-import Canvas from './components/Canvas'
+import Canvas from './components/Canvas/index'
 import AppContextProvider from './contexts/AppContext'
 import ElementContainerProvider from './contexts/ElementContainerContext'
 

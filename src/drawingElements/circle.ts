@@ -1,8 +1,8 @@
 import { MAX_NUM_ERROR, SELECT_DELTA } from '../utils/constants'
 import { createPoint } from '../utils/elementFactory'
-import ElementManipulator from '../utils/elementManipulator'
 import { SelectionPointType } from '../utils/enums/index'
-import { getPointDistance } from '../utils/point'
+import { copyPoint, getPointDistance } from '../utils/point'
+import { Ensure } from '../utils/types/generics'
 import { BoundingBox } from '../utils/types/index'
 import BaseArc from './baseArc'
 import { NOT_DEFINED_ERROR } from './element'
@@ -14,7 +14,7 @@ const FULL_CIRCLE_ANGLE = 360
 const INCONSISTENT_END_POINTS_ERROR =
   'Trying to manually set end points on a circle element which are inconsistent with circle size'
 
-class Circle extends BaseArc {
+export default class Circle extends BaseArc {
   private _endPoints?: Point[]
   private _boundingBox?: BoundingBox
   
@@ -178,7 +178,7 @@ class Circle extends BaseArc {
       throw new Error(NOT_DEFINED_ERROR)
     }
 
-    const centerCopy = ElementManipulator.copyPoint(this.centerPoint, true)
+    const centerCopy = copyPoint(this.centerPoint, true)
     centerCopy.x += dX
     centerCopy.y += dY
 
@@ -215,7 +215,7 @@ class Circle extends BaseArc {
   setPointsElementId() {
     const elementId = this.id
 
-    const newCenterPoint = ElementManipulator.copyPoint(this.centerPoint, true)
+    const newCenterPoint = copyPoint(this.centerPoint, true)
     if (elementId) {
       newCenterPoint.elementId = elementId
     }
@@ -352,4 +352,4 @@ class Circle extends BaseArc {
   }
 }
 
-export default Circle
+export type FullyDefinedCircle = Ensure<Circle, 'startPoint' | 'endPoint'>

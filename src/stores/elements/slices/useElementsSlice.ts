@@ -1,16 +1,15 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 // import { immer } from 'zustand/middleware/immer'
 import { StateCreator } from 'zustand'
-import Element from '../../../drawingElements/element'
+import Element, { ElementWithId } from '../../../drawingElements/element'
 import Point from '../../../drawingElements/point'
-import { ElementWithId, FullyDefinedPolyline, FullyDefinedRectangle } from '../../../utils/types/index'
+import { SelectionPoint } from '../../../utils/types/index'
 import { ElementsState } from '../index'
-import Polyline, { SubElement } from '../../../drawingElements/polyline'
+import Polyline, { FullyDefinedPolyline, SubElement } from '../../../drawingElements/polyline'
 import { Ensure } from '../../../utils/types/generics'
 import { createElement, createPoint } from '../../../utils/elementFactory'
 import { SELECT_DELTA } from '../../../utils/constants'
 import ElementIntersector from '../../../utils/elementIntersector'
-import Rectangle from '../../../drawingElements/rectangle'
+import Rectangle, { FullyDefinedRectangle } from '../../../drawingElements/rectangle'
 import ElementManipulator from '../../../utils/elementManipulator'
 import ElementReplacement from '../../../utils/elementReplacement'
 import { useElementContainerContext } from '../../../contexts/ElementContainerContext'
@@ -19,15 +18,15 @@ const CONTAINER_STATE_MISMATCH_ERROR =
   'Elements container contains element that is not found in the elements state'
 
 export enum ReturnGroupOption {
-  Individual = 0,
-  Members =  1,
-  Owner =  2
+  Individual = 1,
+  Members =  2,
+  Owner =  3
 }
 
 export type ElementsSlice = {
   elements: Map<string, ElementWithId>,
   groupedElements: Map<string, ElementWithId>,
-  snappedPoint: Point | null,
+  snappedPoint: SelectionPoint | null,
   currentlyCreatedElement: Element | null,
   currentlyEditedElements: Map<string, ElementWithId> | null,
   currentlyCopiedElements: {
@@ -41,7 +40,7 @@ export type ElementsSlice = {
       string, {
         replacingElements: ElementWithId[],
         removedSections: Element[],
-        diffElements: Element[]
+        diffElements?: Element[]
       }
     >,
   } | null,
@@ -57,33 +56,33 @@ export type ElementsSlice = {
     pointX: number, 
     pointY: number,
     options: { 
-      maxPointsDiff: number, 
-      returnGroup: ReturnGroupOption
+      maxPointsDiff?: number, 
+      returnGroup?: ReturnGroupOption
     }
   ) => Element[] | null,
   getElementsInContainer: (
     boxStartPoint: Point,
     boxEndPoint: Point,
     options: {
-      shouldSkipPartial: boolean,
-      returnGroup: ReturnGroupOption
+      shouldSkipPartial?: boolean,
+      returnGroup?: ReturnGroupOption
     }
   ) => Element[] | null,
   getElementsNearElement: (
     element: ElementWithId,
     options: {
-      skipSiblings: boolean,
-      returnGroup: ReturnGroupOption,
+      skipSiblings?: boolean,
+      returnGroup?: ReturnGroupOption,
     }
   ) => Element[],
   addCurrentlyCreatedElement: (createdElement: Element) => void,
   removeCurrentlyCreatedElement: () => void,
   startEditingElements: (
     editedElements: ElementWithId[],
-    shouldHideOriginal: boolean,
-    shouldCopyElements: boolean,
+    shouldHideOriginal?: boolean,
+    shouldCopyElements?: boolean,
   ) => void,
-  changeEditingElements: (newEditingElements: ElementWithId[]) => void,
+  changeEditingElements: (newEditingElements: ElementWithId[] | Map<string, ElementWithId>) => void,
   stopEditingElements: () => void,
   completeEditingElements: () => ElementWithId[],
   isEditingElement: (element: ElementWithId) => boolean,
@@ -96,7 +95,7 @@ export type ElementsSlice = {
       string, {
         replacingElements: ElementWithId[],
         removedSections: Element[],
-        diffElements: Element[]
+        diffElements?: Element[]
       }
     >
   ) => void,
@@ -105,7 +104,7 @@ export type ElementsSlice = {
   updateReplacementSteps: (shouldUndo: boolean) => void,
   continueReplacingElements: () => void,
   isReplacingElement: (element: Element) => boolean,
-  setSnappedPoint: (snappedPoint: Point) => void,
+  setSnappedPoint: (snappedPoint: SelectionPoint | null) => void,
   clearSnappedPoint: () => void,
 }
 
@@ -175,11 +174,16 @@ export default function useElementsSlice() {
           returnGroup: ReturnGroupOption.Owner
         }
       ) {
-        const { maxPointsDiff, returnGroup } = options
+        const { 
+          maxPointsDiff = SELECT_DELTA, 
+          returnGroup = ReturnGroupOption.Owner 
+        } = options
         const getElementById = get().getElementById
   
         const elementIdsInDivision = container.getElementsNearPoint(pointX, pointY)
-        if (!elementIdsInDivision) return null
+        if (!elementIdsInDivision) {
+          return null
+        }
   
         const point = createPoint(pointX, pointY)
   
@@ -208,7 +212,7 @@ export default function useElementsSlice() {
           returnGroup: ReturnGroupOption.Owner
         }
       ) {
-        const { shouldSkipPartial, returnGroup } = options
+        const { shouldSkipPartial = true, returnGroup = ReturnGroupOption.Owner } = options
         const startPoint = {
           x: Math.min(boxStartPoint.x, boxEndPoint.x),
           y: Math.min(boxStartPoint.y, boxEndPoint.y)
@@ -267,7 +271,7 @@ export default function useElementsSlice() {
           returnGroup: ReturnGroupOption.Owner 
         }
       ) {        
-        const { returnGroup, skipSiblings } = options
+        const { returnGroup = ReturnGroupOption.Owner, skipSiblings = true } = options
   
         const nearbyElementIds = container.getElementIdsNearElement(element)
   
@@ -330,6 +334,11 @@ export default function useElementsSlice() {
       },
       changeEditingElements(newEditingElements) {
         set((state) => {
+          if (newEditingElements instanceof Map) {
+            state.currentlyEditedElements = newEditingElements
+            return
+          }
+
           const { currentlyEditedElements } = state
   
           let newCurrentlyEdited = currentlyEditedElements || new Map<string, ElementWithId>()

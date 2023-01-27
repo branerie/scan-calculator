@@ -1,18 +1,18 @@
 import { MAX_NUM_ERROR, SELECT_DELTA } from '../utils/constants'
 import { createLine } from '../utils/elementFactory'
-import ElementManipulator from '../utils/elementManipulator'
 import { SelectionPointType } from '../utils/enums/index'
-import { getPointDistance, getRotatedPointAroundPivot, pointsMatch } from '../utils/point'
-import { BoundingBox, FullyDefinedLine, SelectionPoint } from '../utils/types/index'
+import { copyPoint, getPointDistance, getRotatedPointAroundPivot, pointsMatch } from '../utils/point'
+import { Ensure } from '../utils/types/generics'
+import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import BaseArc from './baseArc'
 import { NOT_DEFINED_ERROR, NO_ID_ERROR } from './element'
-import Line from './line'
+import Line, { FullyDefinedLine } from './line'
 import Point from './point'
 
 const INCONSISTENT_LINE_ERROR =
     'Inconsistent inner line of arc - either line length does not equal arc radius or its startPoint does not coincide with arc center'
 
-class Arc extends BaseArc {
+export default class Arc extends BaseArc {
     private _startLine?: FullyDefinedLine
     private _endLine?: FullyDefinedLine
     private _midLine?: FullyDefinedLine
@@ -325,7 +325,7 @@ class Arc extends BaseArc {
       }
 
       if (pointId === this.centerPoint.pointId) {
-        const pointCopy = ElementManipulator.copyPoint(this.centerPoint, true)
+        const pointCopy = copyPoint(this.centerPoint, true)
         pointCopy.x = newPointX
         pointCopy.y = newPointY
 
@@ -388,7 +388,7 @@ class Arc extends BaseArc {
           this.__updateDetails()
       }
 
-      const centerCopy = ElementManipulator.copyPoint(this.centerPoint, true)
+      const centerCopy = copyPoint(this.centerPoint, true)
       centerCopy.x += dX
       centerCopy.y += dY
 
@@ -425,7 +425,7 @@ class Arc extends BaseArc {
       }
 
       const elementId = this.id
-      const newCenterPoint = ElementManipulator.copyPoint(this.centerPoint)
+      const newCenterPoint = copyPoint(this.centerPoint)
       newCenterPoint.elementId = elementId
       this._setCenterPoint(newCenterPoint)
 
@@ -556,4 +556,4 @@ class Arc extends BaseArc {
     }
 }
 
-export default Arc
+export type FullyDefinedArc = Ensure<Arc, 'startPoint' | 'endPoint' | 'startLine' | 'endLine'>

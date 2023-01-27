@@ -1,7 +1,7 @@
 import Arc from '../../drawingElements/arc'
+import { ElementWithId } from '../../drawingElements/element'
 import Line from '../../drawingElements/line'
 import Point from '../../drawingElements/point'
-import { ElementWithId } from '../types/index'
 
 export type DivContentsYieldResult = {
   divContents: Set<string>,

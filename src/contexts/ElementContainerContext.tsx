@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react'
+import { createContext, useContext } from 'react'
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../utils/constants'
 import ElementContainer from '../utils/elementContainers/elementContainer'
 import HashGridElementContainer from '../utils/elementContainers/hashGrid'

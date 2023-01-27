@@ -1,3 +1,7 @@
+import { FullyDefinedArc } from '../drawingElements/arc'
+import { FullyDefinedCircle } from '../drawingElements/circle'
+import { FullyDefinedElement } from '../drawingElements/element'
+import { FullyDefinedLine } from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline from '../drawingElements/polyline'
 import { radiansToDegrees } from './angle'
@@ -6,7 +10,6 @@ import { createLine, createPoint } from './elementFactory'
 import { getPerpendicularPointToLine } from './line'
 import { getPointDistance, getRotatedPointAroundPivot, getUniquePoints } from './point'
 import { capitalize } from './text'
-import { FullyDefinedArc, FullyDefinedCircle, FullyDefinedElement, FullyDefinedLine } from './types/index'
 
 export default class ElementIntersector {
   static getIntersections(

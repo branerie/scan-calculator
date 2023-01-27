@@ -6,10 +6,10 @@ const SELECT_DELTA = 3
 const SNAP_DELTA = 10
 const MAX_NUM_ERROR = 1e-6
 
-const ENTER_KEY_CODE = 13
-const SPACE_KEY_CODE = 32
-const ESCAPE_KEY_CODE = 27
-const DELETE_KEY_CODE = 46
+const ENTER_KEY = 'Enter'
+const SPACE_KEY = ' '
+const ESCAPE_KEY = 'Escape'
+const DELETE_KEY = 'Delete'
 
 export {
   CANVAS_HEIGHT,
@@ -17,8 +17,8 @@ export {
   SELECT_DELTA,
   SNAP_DELTA,
   MAX_NUM_ERROR,
-  ENTER_KEY_CODE,
-  SPACE_KEY_CODE,
-  ESCAPE_KEY_CODE,
-  DELETE_KEY_CODE
+  ENTER_KEY,
+  SPACE_KEY,
+  ESCAPE_KEY,
+  DELETE_KEY
 }

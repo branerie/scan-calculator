@@ -1,14 +1,14 @@
 import Element, { NOT_DEFINED_ERROR } from './element'
 import { createLine } from '../utils/elementFactory'
-import { pointsMatch } from '../utils/point'
+import { copyPoint, pointsMatch } from '../utils/point'
 import ElementManipulator from '../utils/elementManipulator'
 import { SELECT_DELTA } from '../utils/constants'
-import { BoundingBox, FullyDefinedArc, FullyDefinedLine, SelectionPoint } from '../utils/types/index'
+import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import Point from './point'
-import Line from './line'
+import Line, { FullyDefinedLine } from './line'
 import { SelectionPointType } from '../utils/enums/index'
-import Arc from './arc'
 import { Ensure } from '../utils/types/generics'
+import { FullyDefinedArc } from './arc'
 
 export default class Polyline extends Element {
   private _isFullyDefined: boolean = false
@@ -172,7 +172,7 @@ export default class Polyline extends Element {
     //     throw new Error(END_POINT_ERROR)
     // }
 
-    this._startPoint = ElementManipulator.copyPoint(value, true, true)
+    this._startPoint = copyPoint(value, true, true)
     if (this.id) {
       this._startPoint.elementId = this.id
     }
@@ -199,7 +199,7 @@ export default class Polyline extends Element {
     //     throw new Error(END_POINT_ERROR)
     // }
 
-    this._endPoint = ElementManipulator.copyPoint(value, true, true)
+    this._endPoint = copyPoint(value, true, true)
     if (this.id) {
       this._endPoint.elementId = this.id
     }
@@ -277,16 +277,16 @@ export default class Polyline extends Element {
   }
 
   move(dX: number, dY: number) {
-      if(!this.isFullyDefined) {
-        throw new Error(NOT_DEFINED_ERROR)
-      }
+    if(!this.isFullyDefined) {
+      throw new Error(NOT_DEFINED_ERROR)
+    }
 
-      this._elements.forEach(e => e.move(dX, dY))
+    this._elements.forEach(e => e.move(dX, dY))
 
-      this._boundingBox!.left += dX
-      this._boundingBox!.right += dX
-      this._boundingBox!.top += dY
-      this._boundingBox!.bottom += dY
+    this._boundingBox!.left += dX
+    this._boundingBox!.right += dX
+    this._boundingBox!.top += dY
+    this._boundingBox!.bottom += dY
   }
 
   getBoundingBox() {
@@ -438,12 +438,12 @@ export default class Polyline extends Element {
       ? this._elements[this._elements.length - 1].endPoint
       : this._elements[this._elements.length - 1].startPoint
 
-    this._startPoint = ElementManipulator.copyPoint(startPoint!, true, false)
+    this._startPoint = copyPoint(startPoint!, true, false)
     if (this.id) {
       this._startPoint.elementId = this.id
     }
     
-    this._endPoint = ElementManipulator.copyPoint(endPoint!, true, false)
+    this._endPoint = copyPoint(endPoint!, true, false)
     if (this.id) {
       this._endPoint.elementId = this.id
     }
@@ -513,5 +513,8 @@ export default class Polyline extends Element {
   }
 }
 
+export type FullyDefinedPolyline = Ensure<Polyline, 'startPoint' | 'endPoint'>
+
 export type SubElement = FullyDefinedArc | FullyDefinedLine
+
 const MID_POINT_STRECH_ERROR = 'Cannot stretch polyline by midpoint - polyline seems to be disjointed'

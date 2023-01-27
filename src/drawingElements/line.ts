@@ -1,14 +1,14 @@
-import { getPointDistance } from '../utils/point'
-import { degreesToRadians, getQuadrant, getAngleBetweenPoints, getQuadrantFromAngle } from '../utils/angle'
+import { copyPoint, getPointDistance } from '../utils/point'
+import { degreesToRadians, getAngleBetweenPoints, getQuadrantFromAngle } from '../utils/angle'
 import Element, { NOT_DEFINED_ERROR } from './element'
 import { createPoint } from '../utils/elementFactory'
 import { SELECT_DELTA } from '../utils/constants'
 import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import Point from './point'
-import ElementManipulator from '../utils/elementManipulator'
 import { SelectionPointType } from '../utils/enums/index'
+import { Ensure } from '../utils/types/generics'
 
-class Line extends Element {
+export default class Line extends Element {
     private _pointA: Point
     private _pointB?: Point
     private _midPoint?: Point
@@ -27,13 +27,13 @@ class Line extends Element {
       super(id, groupId)
       // TODO: check if both points are the same point
 
-      this._pointA = ElementManipulator.copyPoint(pointA, true, false)
+      this._pointA = copyPoint(pointA, true, false)
       if (!pointA.elementId && this.id) {
         this._pointA.elementId = this.id
       }
 
       if (pointB) {
-        this._pointB = ElementManipulator.copyPoint(pointB, true, false)
+        this._pointB = copyPoint(pointB, true, false)
         if (!pointB.elementId && this.id) {
           this._pointB.elementId = this.id
         }
@@ -240,7 +240,7 @@ class Line extends Element {
       //   return
       // }
 
-      this._pointB = ElementManipulator.copyPoint(definingPoint, true, true)
+      this._pointB = copyPoint(definingPoint, true, true)
       if (!definingPoint.elementId && this.id) {
         this._pointB.elementId = this.id
       }
@@ -462,4 +462,4 @@ class Line extends Element {
     }
 }
 
-export default Line
+export type FullyDefinedLine = Ensure<Line, 'startPoint' | 'endPoint' | 'pointB'>

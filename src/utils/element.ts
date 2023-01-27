@@ -1,13 +1,13 @@
+import { FullyDefinedElement } from '../drawingElements/element'
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import Polyline, { SubElement } from '../drawingElements/polyline'
 import { getPointDistance, getPointDistanceOnArc, pointsMatch } from './point'
-import { FullyDefinedPolyline } from './types/index'
 
 const checkIsElementStartCloserThanEnd = (
-  element: FullyDefinedPolyline, 
+  element: FullyDefinedElement, 
   pointsOnElement: Point[], 
-  polylineSubElement: SubElement
+  polylineSubElement?: SubElement
 ) => {
   if (element.type === 'circle') {
     throw new Error('Elements of type circle do not have a start or end')
@@ -18,7 +18,7 @@ const checkIsElementStartCloserThanEnd = (
   }
 
   const result = []
-  if (element.baseType !== 'polyline') {
+  if (!(element instanceof Polyline)) {
     for (const pointOnElement of pointsOnElement) {
       const startDistance = getPointDistance(element.startPoint, pointOnElement)
       const endDistance = getPointDistance(element.endPoint, pointOnElement)
@@ -27,6 +27,10 @@ const checkIsElementStartCloserThanEnd = (
     }
 
     return result
+  }
+
+  if (!polylineSubElement) {
+    throw new Error('You must explicitly pass polyline sub element if "element" is of type polyline')
   }
 
   const elementStartDistances: Record<string, number> = {}

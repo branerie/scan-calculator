@@ -1,4 +1,4 @@
-import { ElementWithId } from './types/index'
+import { ElementWithId } from '../drawingElements/element'
 
 export default class ElementReplacement {
   private _aggregate: ReplacementAggregate

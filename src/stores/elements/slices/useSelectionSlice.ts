@@ -1,5 +1,6 @@
 import { StateCreator } from 'zustand'
-import { ElementWithId, SelectionPoint } from '../../../utils/types/index'
+import { ElementWithId } from '../../../drawingElements/element'
+import { SelectionPoint } from '../../../utils/types/index'
 import { ElementsState } from '../index'
 
 export type SelectionSlice = {

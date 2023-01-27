@@ -2,8 +2,8 @@ import SetUtils from '../setUtils'
 import { getDimensionDivision1d, getDivKey, parseDivKey } from './utils'
 import { getDivIndicesFromCoordinates, getElementDivKeys } from './extensions/index'
 import Polyline from '../../drawingElements/polyline'
-import { ElementWithId } from '../types/index'
 import Point from '../../drawingElements/point'
+import { ElementWithId } from '../../drawingElements/element'
 
 export default class HashGrid {
   private _divsById: {[key: string]: Set<string>}

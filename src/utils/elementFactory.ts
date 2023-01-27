@@ -1,12 +1,14 @@
-import { v4 as uuidv4 } from 'uuid'
-import Arc from '../drawingElements/arc'
+import Arc, { FullyDefinedArc } from '../drawingElements/arc'
 import Circle from '../drawingElements/circle'
-import Element from '../drawingElements/element'
-import Line from '../drawingElements/line'
+import Element, { FullyDefinedElement } from '../drawingElements/element'
+import Line, { FullyDefinedLine } from '../drawingElements/line'
 import Point from '../drawingElements/point'
-import ElementManipulator from './elementManipulator'
+import Polyline from '../drawingElements/polyline'
+import Rectangle from '../drawingElements/rectangle'
+import { DrawTool } from '../stores/tools/index'
+import { generateId } from './general'
+import { copyPoint } from './point'
 import { Ensure } from './types/generics'
-import { FullyDefinedArc, FullyDefinedElement, FullyDefinedLine } from './types/index'
 
 function createElement<TType extends Element> (
   type: {new(...args : any[]): TType ;},
@@ -34,11 +36,11 @@ function createElement<TType extends Element> (
     pointsElementId
   } = options
 
-  const initialPointCopy = ElementManipulator.copyPoint(initialPoint, false, true)
+  const initialPointCopy = copyPoint(initialPoint, false, true)
 
   let newElementId: string | undefined
   if (assignId) {
-    newElementId = uuidv4()
+    newElementId = generateId()
     initialPointCopy.elementId = newElementId
   }
 
@@ -64,26 +66,56 @@ function createElement<TType extends Element> (
   return createdElement as Ensure<TType, 'startPoint' | 'endPoint'>
 }
 
+function createElementFromName(
+  type: DrawTool['name'],
+  initialPoint: Point,
+  options: { 
+    groupId?: string | null, 
+    assignId?: boolean, 
+    pointsElementId?: string | null 
+  } = {
+    groupId: null,
+    assignId: false,
+    pointsElementId: null
+  },
+): FullyDefinedElement {
+  switch(type) {
+    case 'line':
+      return createElement(Line, initialPoint, options)
+    case 'arc':
+      return createElement(Arc, initialPoint, options)
+    case 'circle':
+      return createElement(Circle, initialPoint, options) 
+    case 'polyline':
+      return createElement(Polyline, initialPoint, options) 
+    case 'rectangle':
+      return createElement(Rectangle, initialPoint, options) 
+    default:
+      throw new Error(`Function createElement not implemented for type ${type}`)
+  }
+}
+
 const createPoint = (
   pointX: number, 
   pointY: number, 
   options: { 
     elementId?: string, 
     assignId?: boolean
-  } = {}) => {
-    const { elementId, assignId } = options
-    let point
-    if (elementId) {
-      point = new Point(pointX, pointY, elementId)
-    } else {
-      point = new Point(pointX, pointY)
-    }
+  } = {}
+) => {
+  const { elementId, assignId } = options
+  let point
+  if (elementId) {
+    point = new Point(pointX, pointY, elementId)
+  } else {
+    point = new Point(pointX, pointY)
+  }
 
-    if (assignId) {
-        point.pointId = uuidv4()
-    }
+  if (assignId) {
+      point.pointId = generateId()
+  }
 
-    return point
+  return point
 }
 
 const createLine = (
@@ -124,6 +156,7 @@ const createArc = (
 
 export {
   createElement,
+  createElementFromName,
   createPoint,
   createLine,
   createArc,

@@ -5,7 +5,7 @@ import useSelectionPointsSlice, { SelectionPointsSlice } from './slices/useSelec
 import useSelectionSlice, { SelectionSlice } from './slices/useSelectionSlice'
 import useHistorySlice, { HistorySlice } from './slices/useHistorySlice'
 
-export const useElementsStore = () => {
+const useElementsStore = () => {
   const createElementsSlice = useElementsSlice()
   const createSelectionPointsSlice = useSelectionPointsSlice()
   const createSelectionSlice = useSelectionSlice()
@@ -20,5 +20,7 @@ export const useElementsStore = () => {
     }))
   )
 }
+
+export default useElementsStore
 
 export type ElementsState = ElementsSlice & SelectionPointsSlice & SelectionSlice & HistorySlice
