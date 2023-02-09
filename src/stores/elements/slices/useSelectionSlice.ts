@@ -41,16 +41,20 @@ export default function useSelectionSlice() {
         }
       })
     },
-    removeSelectedElements(elements) {
-      const newElements = Array.isArray(elements) ? elements : [elements]
+    removeSelectedElements(elementsToRemove) {
+      const newElementsToRemove = Array.isArray(elementsToRemove) ? elementsToRemove : [elementsToRemove]
       
       set((state) => {
         if (!state.selectedElements) {
-          state.selectedElements = new Map<string, ElementWithId>()
+          return
         }
 
-        for (const addedElement of newElements) {
-          state.selectedElements.delete(addedElement.id)
+        for (const elementToRemove of newElementsToRemove) {
+          state.selectedElements.delete(elementToRemove.id)
+        }
+
+        if (state.selectedElements.size === 0) {
+          state.selectedElements = null
         }
       })
     },
