@@ -14,8 +14,9 @@ export type SelectionPointsSlice = {
   pointsTree: Node<PointTreeNode>,
   addSelectionPoints(elementPoints: SelectionPoint[]): void,
   removeSelectionPoints(elementPoints: SelectionPoint[]): void,
-  replaceSelectionPoints(pointsAfterReplace: SelectionPoint[], pointsBeforeReplace: SelectionPoint[]): void,
-  findNearbyPoints(mouseX: number, mouseY: number, delta: number): SelectionPoint[]
+  replaceSelectionPoints(pointsAfterReplace: SelectionPoint[]): void,
+  findNearbyPoints(mouseX: number, mouseY: number, delta: number): SelectionPoint[],
+  findPointById(pointId: string): PointTreeNode | null,
 }
 
 export default function useSelectionPointsSlice() {
@@ -54,12 +55,12 @@ export default function useSelectionPointsSlice() {
         }
       })
     },
-    replaceSelectionPoints(pointsAfterReplace, pointsBeforeReplace) {
+    replaceSelectionPoints(pointsAfterReplace) {
       set((state) => {
         const { pointsTree } = state
 
         for (const par of pointsAfterReplace) {
-          const pointBeforeEdit = pointsBeforeReplace.find(pbr => pbr.pointId === par.pointId)
+          const pointBeforeEdit = pointsTree.find(Number.MIN_VALUE, Number.MAX_VALUE, { pointId: par.pointId })[0]
           if (!pointBeforeEdit) {
             continue
           }
@@ -69,13 +70,23 @@ export default function useSelectionPointsSlice() {
           }
 
           pointsTree.replace(
-            pointBeforeEdit.x,
+            pointBeforeEdit.leafValue,
             { pointId: par.pointId },
             par.x,
             buildPointsTreeDataObject(par, par.pointType)
           )
         }
       })
+    },
+    findPointById(pointId) {
+      const pointsTree = get().pointsTree
+      const point = pointsTree.find(Number.MIN_VALUE, Number.MAX_VALUE, { pointId })
+
+      if (!point || !point.length) {
+        return null
+      }
+
+      return point[0]
     },
     findNearbyPoints(mouseX, mouseY, delta) {
       const pointsTree = get().pointsTree

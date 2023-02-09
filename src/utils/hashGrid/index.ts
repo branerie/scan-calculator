@@ -138,7 +138,7 @@ export default class HashGrid {
   }
 
   getDivisionContents(xDiv: number, yDiv: number) {
-    return this._idsByDiv[getDivKey(xDiv, yDiv)]
+    return new Set(this._idsByDiv[getDivKey(xDiv, yDiv)])
   }
 
   getDivisionContentsFromCoordinates(pointX: number, pointY: number) {

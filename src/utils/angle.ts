@@ -1,6 +1,6 @@
 import Line from '../drawingElements/line'
 import Point from '../drawingElements/point'
-import { createPoint } from './elementFactory'
+import { createPoint } from './point'
 
 const getQuadrant = (deltaX: number, deltaY: number) => {
   if (deltaX === 0 || deltaY === 0) {

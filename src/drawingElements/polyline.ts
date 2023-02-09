@@ -1,7 +1,5 @@
 import Element, { NOT_DEFINED_ERROR } from './element'
-import { createLine } from '../utils/elementFactory'
 import { copyPoint, pointsMatch } from '../utils/point'
-import ElementManipulator from '../utils/elementManipulator'
 import { SELECT_DELTA } from '../utils/constants'
 import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import Point from './point'
@@ -9,6 +7,9 @@ import Line, { FullyDefinedLine } from './line'
 import { SelectionPointType } from '../utils/enums/index'
 import { Ensure } from '../utils/types/generics'
 import { FullyDefinedArc } from './arc'
+import { copyLine } from '../utils/line'
+import { copyArc } from '../utils/arc'
+import { generateId } from '../utils/general'
 
 export default class Polyline extends Element {
   private _isFullyDefined: boolean = false
@@ -17,8 +18,8 @@ export default class Polyline extends Element {
   private _boundingBox?: BoundingBox
   private _startPoint?: Point
   private _endPoint?: Point
-  private _isStartInPolyDirection: boolean = false
-  private _isEndInPolyDirection: boolean = false
+  private _isStartInPolyDirection: boolean = true
+  private _isEndInPolyDirection: boolean = true
 
   constructor(
     initialPoint: Point,
@@ -26,43 +27,51 @@ export default class Polyline extends Element {
       id?: string
       groupId?: string
       elements?: SubElement[]
-      isStartInPolyDirection?: boolean
-      isEndInPolyDirection?: boolean
-    }
+    } = {}
   ) {
-    super(opts.id, opts.groupId)
-    if (opts.groupId && !opts.id) {
-      this.id = opts.groupId
+    const { id, groupId, elements } = opts
+    super(id, groupId)
+    if (groupId && !id) {
+      this.id = groupId
       this.groupId = null
     }
 
     // this._isJoined = false
 
-    if (opts.isStartInPolyDirection !== undefined) {
-      this._isStartInPolyDirection = opts.isStartInPolyDirection
-    }
-
-    if (opts.isEndInPolyDirection !== undefined) {
-      this._isEndInPolyDirection = opts.isEndInPolyDirection
-    }
-
-    if (opts.elements) {
+    if (elements) {
       // do not use this._elements directly; must go through setter logic
-      this.elements = opts.elements
+      this.elements = elements
 
-      this._updateEndPoints()
+      if (elements.length > 1) {
+        this._isStartInPolyDirection = pointsMatch(
+          elements[0].endPoint,
+          elements[1].startPoint
+        )
+
+        this._isEndInPolyDirection = pointsMatch(
+          elements[elements.length - 2].endPoint,
+          elements[elements.length - 1].startPoint
+        )
+      } else {
+        this._isStartInPolyDirection = true
+        this._isEndInPolyDirection = true
+      }
+
+      if (elements.every(e => e.isFullyDefined)) {
+        this._updateEndPoints()
+      }
 
       return
     }
 
+    const initialLine = new Line(
+      copyPoint(initialPoint, false, true), { 
+        groupId: this.id || undefined 
+      }
+    )
+    initialLine.id = generateId()
     this._elements = [
-      createLine(
-        initialPoint.x, 
-        initialPoint.y, 
-        null, 
-        null, 
-        { groupId: this.id || undefined, assignId: true }
-      )
+      initialLine as SubElement
     ]
 
     this._isFullyDefined = false
@@ -158,6 +167,7 @@ export default class Polyline extends Element {
 
     const startElement = this._elements[0]
     const isStartInPolyDirection = pointsMatch(startElement.startPoint!, this._startPoint!)
+    this._isStartInPolyDirection = isStartInPolyDirection
     if (isStartInPolyDirection) {
       // if (!pointsMatch(value, this._startPoint)) {
       //     throw new Error(END_POINT_ERROR)
@@ -185,6 +195,7 @@ export default class Polyline extends Element {
 
     const endElement = this._elements[this._elements.length - 1]
     const isEndInPolyDirection = pointsMatch(endElement.endPoint!, this._endPoint!)
+    this._isEndInPolyDirection = isEndInPolyDirection
     if (isEndInPolyDirection) {
         // if (!pointsMatch(value, this._startPoint)) {
         //     throw new Error(END_POINT_ERROR)
@@ -211,14 +222,20 @@ export default class Polyline extends Element {
 
   defineNextAttribute(definingPoint: Point) {
       const elementToDefine = this._elements[this._elements.length - 1]
-      elementToDefine.defineNextAttribute(definingPoint)
+      elementToDefine.defineNextAttribute(
+        copyPoint(definingPoint, false, true)
+      )
 
-      const line = createLine(definingPoint.x, definingPoint.y, null, null, {
-        groupId: this.id || undefined,
-        assignId: true
-      })
+      // const line = createLine(definingPoint, null, {
+      //   groupId: this.id || undefined,
+      //   assignId: true
+      // })
 
-      this._elements.push(line)
+      const newPoint = copyPoint(definingPoint, false, true)
+      const line = new Line(newPoint, { groupId: this.id || undefined })
+      line.id = generateId()
+
+      this._elements.push(line as SubElement)
       this._endPoint = undefined
   }
 
@@ -310,7 +327,9 @@ export default class Polyline extends Element {
 
   stretchByMidPoint(dX: number, dY: number, midPointId: string) {
     const movedElementIndex = this._elements.findIndex(e => e.getPointById(midPointId))
-    if (movedElementIndex < 0) return false
+    if (movedElementIndex < 0) {
+      return false
+    }
 
     const movedElement = this._elements[movedElementIndex]
     if (this.isClosed) {
@@ -335,9 +354,8 @@ export default class Polyline extends Element {
       }
     }
 
-    this._elements[movedElementIndex].move(dX, dY)
-
     if (movedElementIndex > 0) {
+      // the previous element's connecting point needs to be moved
       const previousElement = this._elements[movedElementIndex - 1]
       const { pointId, connectionPoint } = this.__findConnectionEndPoint(previousElement, movedElement)
 
@@ -348,6 +366,7 @@ export default class Polyline extends Element {
     }
 
     if (movedElementIndex < this._elements.length - 1) {
+      // the next element's connecting point needs to be moved
       const nextElement = this._elements[movedElementIndex + 1]
       const { pointId, connectionPoint } = this.__findConnectionEndPoint(nextElement, movedElement)
 
@@ -356,6 +375,9 @@ export default class Polyline extends Element {
         connectionPoint!.x + dX, connectionPoint!.y + dY
       )
     }
+
+    // element whose midPoint is being edited should be moved
+    this._elements[movedElementIndex].move(dX, dY)
 
     this._updateBoundingBox()
     return true
@@ -386,10 +408,12 @@ export default class Polyline extends Element {
       }
 
       if (newElement.groupId !== this.id) {
-        newElement = ElementManipulator.copyElement(newElement, {
-          keepIds: true,
-          assignId: false
-        }) as Ensure<SubElement, 'startPoint' | 'endPoint'>
+        if (newElement instanceof Line) {
+          newElement = copyLine(newElement, true, false)
+        } else {
+          newElement = copyArc(newElement, true, false)
+        }
+
         newElement.groupId = this.id
       }
 
@@ -404,13 +428,23 @@ export default class Polyline extends Element {
   }
 
   setPointsElementId() {
-      if (!this._elements) return
+    if (!this._elements) {
+      return
+    }
 
-      const elementId = this.id
-      for (const element of this._elements) {
-          element.groupId = elementId
-          // element.setPointsElementId()
-      }
+    const elementId = this.id || undefined
+    for (const element of this._elements) {
+      element.groupId = this.id
+      // element.setPointsElementId()
+    }
+
+    if (this._startPoint) {
+      this._startPoint.elementId = elementId
+    }
+
+    if (this._endPoint) {
+      this._endPoint.elementId = elementId
+    }
   }
 
   _updateBoundingBox() {
@@ -447,6 +481,11 @@ export default class Polyline extends Element {
     if (this.id) {
       this._endPoint.elementId = this.id
     }
+
+    this._isStartInPolyDirection = pointsMatch(
+      this._elements[0].startPoint,
+      this._startPoint
+    )
   }
 
   _validateElementReplacement(elementIndex: number, newElement: Ensure<SubElement, 'startPoint' | 'endPoint'>) {

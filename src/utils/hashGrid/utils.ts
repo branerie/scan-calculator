@@ -34,7 +34,7 @@ const sortDivs = (divs: [number, number][], crossingVertical: boolean = false, a
 
 const sortDivsByArcIntersectionOrder = (
   intersectionDivsTuple: [number, number][], 
-  intersectionAngleFromArcCenter: 0 | 90 | 180 | 270 | 360, 
+  intersectionAngleFromArcCenter: number, 
   crossing: CrossingType
 ) => {
   const intersectionQuadrant = getQuadrantFromAngle(intersectionAngleFromArcCenter)

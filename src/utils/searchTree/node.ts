@@ -91,6 +91,27 @@ export default class Node<TData extends TreeData> {
     this.remove(nodeValue, dataFilters)
     this.insert(newNodeValue, newData)
   }
+
+  toArray() {
+    let data: TData[] = []
+    if (this.left) {
+      data = data.concat(this.left.toArray())
+    }
+
+    if (this.right) {
+      data = data.concat(this.right.toArray())
+    }
+
+    if (this._leftData) {
+      data = data.concat(this._leftData)
+    }
+
+    if (this._rightData) {
+      data = data.concat(this._rightData)
+    }
+
+    return data
+  }
 }
 
 export type TreeData = {

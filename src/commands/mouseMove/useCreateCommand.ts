@@ -1,28 +1,30 @@
 import { useCallback } from 'react'
-import useElementsStore from '../../stores/elements/index'
+import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 import ElementManipulator from '../../utils/elementManipulator'
 import { MousePosition } from '../../utils/types/index'
 
 const useCreateCommand = () => {
-  const elementsStore = useElementsStore()
-  const currentlyCreatedElement = elementsStore(state => state.currentlyCreatedElement)
-  const addCurrentlyCreatedElement = elementsStore(state => state.addCurrentlyCreatedElement)
+  const useElementsStore = useElementsStoreContext()
+  const currentlyCreatedElement = useElementsStore((state) => state.currentlyCreatedElement)
+  const addCurrentlyCreatedElement = useElementsStore((state) => state.addCurrentlyCreatedElement)
 
-  const handleCreateCmd = useCallback(({ mouseX, mouseY }: MousePosition) => {
-    if (!currentlyCreatedElement || !currentlyCreatedElement.isAlmostDefined) {
-      return false
-    }
+  const handleCreateCmd = useCallback(
+    ({ mouseX, mouseY }: MousePosition) => {
+      if (!currentlyCreatedElement || !currentlyCreatedElement.isAlmostDefined) {
+        return false
+      }
 
-    const newCurrentlyCreatedElement = ElementManipulator.copyElement(
-      currentlyCreatedElement, 
-      { keepIds: true }
-    )
+      const newCurrentlyCreatedElement = ElementManipulator.copyElement(currentlyCreatedElement, {
+        keepIds: true,
+      })
 
-    newCurrentlyCreatedElement.setLastAttribute(mouseX, mouseY)
+      newCurrentlyCreatedElement.setLastAttribute(mouseX, mouseY)
 
-    addCurrentlyCreatedElement(newCurrentlyCreatedElement)
-    return true
-  }, [addCurrentlyCreatedElement, currentlyCreatedElement])
+      addCurrentlyCreatedElement(newCurrentlyCreatedElement)
+      return true
+    },
+    [addCurrentlyCreatedElement, currentlyCreatedElement]
+  )
 
   return handleCreateCmd
 }

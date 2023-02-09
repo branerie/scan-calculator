@@ -7,7 +7,7 @@ import { getNextInterceptPoint } from './utils/gridUtils'
 import { getArcIntersectionsWithAxis } from '../hashGrid/extensions/arc'
 import ElementManipulator from '../elementManipulator'
 import { getAngleBetweenPoints } from '../angle'
-import { checkIntersectionAngleConsistency, getContainingDivsFromIntersectionPoint } from '../hashGrid/extensions/common'
+import { getContainingDivsFromIntersectionPoint } from '../hashGrid/extensions/common'
 import { getPointsAngleDistance } from '../arc'
 import ElementContainer, { DivContentsYieldResult } from './elementContainer'
 import HashGrid from '../hashGrid/index.js'
@@ -166,7 +166,7 @@ class HashGridElementContainer implements ElementContainer {
         const divContents = this._hashGrid.getDivisionContents(nextDivision.xDiv, nextDivision.yDiv)
 
         yield {
-          divContents: divContents || [],
+          divContents: divContents || new Set(),
           checkIfPointInSameDiv: function(point: Point) {
             return thisGrid.checkIfPointInDivision(point, [nextDivision.xDiv, nextDivision.yDiv])
           }
@@ -208,7 +208,7 @@ class HashGridElementContainer implements ElementContainer {
       }
     }
 
-    const arcExtension = ElementManipulator.copyArc(arc, false)
+    const arcExtension = ElementManipulator.copyArc(arc, true)
     const oldStartPoint = arcExtension.startPoint!
     const oldEndPoint = arcExtension.endPoint!
 
@@ -242,7 +242,7 @@ class HashGridElementContainer implements ElementContainer {
     })
 
     const centerPoint = arcExtension.centerPoint
-    const queue = new PriorityQueue<ElementGridIntersection & { angle: 0 | 90 | 180 | 270 | 360 }>(
+    const queue = new PriorityQueue<ElementGridIntersection & { angle: number }>(
       (intersectionA, intersectionB) => intersectionA.distanceFromStart < intersectionB.distanceFromStart
     )
 
@@ -254,15 +254,11 @@ class HashGridElementContainer implements ElementContainer {
         arcHIntersection.point
       )
 
-      const intersectionAngle = checkIntersectionAngleConsistency(
-        getAngleBetweenPoints(centerPoint, arcHIntersection.point)
-      )
-
       queue.push({
         point: arcHIntersection.point,
         crossing: arcHIntersection.crossing,
         distanceFromStart: angleDistance,
-        angle: intersectionAngle
+        angle: getAngleBetweenPoints(centerPoint, arcHIntersection.point)
       })
     }
 
@@ -274,15 +270,11 @@ class HashGridElementContainer implements ElementContainer {
         arcVIntersection.point
       )
 
-      const intersectionAngle = checkIntersectionAngleConsistency(
-        getAngleBetweenPoints(centerPoint, arcVIntersection.point)
-      )
-
       queue.push({
         point: arcVIntersection.point,
         crossing: arcVIntersection.crossing,
         distanceFromStart: angleDistance,
-        angle: intersectionAngle
+        angle: getAngleBetweenPoints(centerPoint, arcVIntersection.point)
       })
     }
 
@@ -300,14 +292,14 @@ class HashGridElementContainer implements ElementContainer {
       )
 
       yield {
-        divContents: this._hashGrid.getDivisionContents(...sortedDivs[0]) || [],
+        divContents: this._hashGrid.getDivisionContents(...sortedDivs[0]) || new Set(),
         checkIfPointInSameDiv: function(this: HashGridElementContainer, point: Point) {
           return this.checkIfPointInDivision(point, sortedDivs[0])
         }.bind(this)
       }
 
       yield {
-        divContents: this._hashGrid.getDivisionContents(...sortedDivs[1]) || [],
+        divContents: this._hashGrid.getDivisionContents(...sortedDivs[1]) || new Set(),
         checkIfPointInSameDiv: function(this: HashGridElementContainer, point: Point) {
           return this.checkIfPointInDivision(point, sortedDivs[1])
         }.bind(this)

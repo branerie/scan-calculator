@@ -71,28 +71,6 @@ const checkIsElementStartCloserThanEnd = (
   }
 
   return result
-  // if (element.type === 'line') {
-  //     const startDistance = getPointDistance(element.startPoint, point)
-  //     const endDistance = getPointDistance(element.endPoint, point)
-
-  //     return startDistance < endDistance
-  // }
-
-  // if (element.type === 'arc') {
-  //     const pointAngleFromCenter = getAngleBetweenPoints(element.centerPoint, point)
-
-  //     let startDiff = Math.abs(element.startLine.angle - pointAngleFromCenter)
-  //     if (startDiff > 180) {
-  //         startDiff = 360 - startDiff
-  //     }
-
-  //     let endDiff = Math.abs(element.endLine.angle - pointAngleFromCenter)
-  //     if (endDiff > 180) {
-  //         endDiff = 360 - endDiff
-  //     }
-
-  //     return startDiff < endDiff
-  // }
 }
 
 export {

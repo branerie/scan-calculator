@@ -15,16 +15,16 @@ import {
   fixJoinedPointDistances,
   getDistFunc,
   getTrimSections,
-  joinTrimEndSubsections
+  joinTrimEndSubsections,
 } from './trimUtils/trim'
 import { Defined, Ensure } from './types/generics'
 
 export default class ElementTrimmer {
-  static trimElement(element: ElementWithId, trimPoints: Defined<Point, "pointId">[], selectPoints: Point[]) {
+  static trimElement(element: ElementWithId, trimPoints: Defined<Point, 'pointId'>[], selectPoints: Point[]) {
     // TODO: Improve below logic
     if (element.baseType !== 'polyline') {
-      trimPoints = trimPoints.filter(tp =>
-        element.getSelectionPoints(SelectionPointType.EndPoint).every(ep => !pointsMatch(ep, tp))
+      trimPoints = trimPoints.filter((tp) =>
+        element.getSelectionPoints(SelectionPointType.EndPoint).every((ep) => !pointsMatch(ep, tp))
       )
     }
     const capitalizedElementType = capitalize(element.type)
@@ -36,7 +36,11 @@ export default class ElementTrimmer {
       case 'trimArc':
         return ElementTrimmer.trimArc(element as Ensure<FullyDefinedArc, 'id'>, trimPoints, selectPoints)
       case 'trimCircle':
-        return ElementTrimmer.trimCircle(element as Ensure<FullyDefinedCircle, 'id'>, trimPoints, selectPoints)
+        return ElementTrimmer.trimCircle(
+          element as Ensure<FullyDefinedCircle, 'id'>,
+          trimPoints,
+          selectPoints
+        )
       default:
         throw new Error(`ElementTrimmer.trimElement does not support element type ${element.type}`)
     }
@@ -44,36 +48,34 @@ export default class ElementTrimmer {
     // return ElementTrimmer[methodName](element, trimPoints, selectPoints)
   }
 
-  static trimLine(element: Ensure<FullyDefinedLine, 'id'>, trimPoints: Defined<Point, "pointId">[], selectPoints: Point[]) {
+  static trimLine(
+    element: Ensure<FullyDefinedLine, 'id'>,
+    trimPoints: Defined<Point, 'pointId'>[],
+    selectPoints: Point[]
+  ) {
     const startPoint = element.startPoint
     const distFunc = getDistFunc('line', { startPoint })
 
-    return getTrimSections(
-      element,
-      trimPoints,
-      selectPoints,
-      distFunc,
-      element.startPoint,
-      element.endPoint
-    )
+    return getTrimSections(element, trimPoints, selectPoints, distFunc, element.startPoint, element.endPoint)
   }
 
-  static trimArc(element: Ensure<FullyDefinedArc, 'id'>, trimPoints: Defined<Point, "pointId">[], selectPoints: Point[]) {
+  static trimArc(
+    element: Ensure<FullyDefinedArc, 'id'>,
+    trimPoints: Defined<Point, 'pointId'>[],
+    selectPoints: Point[]
+  ) {
     const centerPoint = element.centerPoint
-    const startAngle = element.startLine.angle
+    const startAngle = element.startAngle
     const distFunc = getDistFunc('arc', { centerPoint, startAngle })
 
-    return getTrimSections(
-      element,
-      trimPoints,
-      selectPoints,
-      distFunc,
-      element.startPoint,
-      element.endPoint
-    )
+    return getTrimSections(element, trimPoints, selectPoints, distFunc, element.startPoint, element.endPoint)
   }
 
-  static trimCircle(element: Ensure<FullyDefinedCircle, 'id'>, trimPoints: Defined<Point, "pointId">[], selectPoints: Point[]) {
+  static trimCircle(
+    element: Ensure<FullyDefinedCircle, 'id'>,
+    trimPoints: Defined<Point, 'pointId'>[],
+    selectPoints: Point[]
+  ) {
     if (trimPoints.length < 2) {
       return null
     }
@@ -103,8 +105,8 @@ export default class ElementTrimmer {
   }
 
   static trimPolyline(
-    element: Ensure<FullyDefinedPolyline, 'id'>, 
-    trimPointsByElement: Record<string, Defined<Point, 'pointId'>[]>, 
+    element: Ensure<FullyDefinedPolyline, 'id'>,
+    trimPointsByElement: Record<string, Defined<Point, 'pointId'>[]>,
     selectPoints: Point[]
   ) {
     let { pointDistances, subsections } = assemblePointDistancesAndSubsections(
@@ -115,11 +117,11 @@ export default class ElementTrimmer {
 
     const distFunc = (point: Defined<Point, 'pointId'>) => {
       const pointDistance = pointDistances.points[point.pointId]
-      if (pointDistance && pointDistance !== 0) {
+      if (pointDistance || pointDistance === 0) {
         return pointDistance
       }
 
-      const selectPoint = pointDistances.selection.find(s => pointsMatch(point, s.point))
+      const selectPoint = pointDistances.selection.find((s) => pointsMatch(point, s.point))
       if (selectPoint) {
         return selectPoint.distanceFromStart
       }
@@ -129,8 +131,15 @@ export default class ElementTrimmer {
 
     let startPoint = null
     let endPoint = null
+    const trimPoints = Object.values(
+      Object.values(trimPointsByElement)
+        .flat()
+        .reduce<Record<string, Defined<Point, 'pointId'>>>((acc, point) => {
+          acc[`${point.x},${[point.y]}`] = point
+          return acc
+        }, {})
+    )
 
-    const trimPoints = Object.values(trimPointsByElement).flat()
     if (element.isJoined) {
       subsections = fixJoinedSections(element, subsections)
 

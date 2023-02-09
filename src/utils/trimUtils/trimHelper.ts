@@ -25,7 +25,7 @@ const updateTrimmedSections = (
   const sectionType = isSectionTrimmed ? 'removed' : 'remaining'
   const sectionsOfType = trimmedSections[sectionType]
 
-  if (sectionsOfType) {
+  if (sectionsOfType.length) {
     const lastSection = sectionsOfType[sectionsOfType.length - 1]
     if (pointsMatch(lastSection.end, newSection.start)) {
       sectionsOfType[sectionsOfType.length - 1].end = newSection.end
@@ -183,7 +183,7 @@ const getSelectRect = (selectPoints: Point[]) => {
   const selectRect = createElementFromName('rectangle', selectPoints[0])
   selectRect.setLastAttribute(selectPoints[1].x, selectPoints[1].y)
 
-  return selectRect
+  return selectRect as FullyDefinedRectangle
 }
 
 const getSubsectionElementsInfo = (

@@ -1,19 +1,18 @@
 import { useCallback } from 'react'
+import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 import useKeyPress from '../../hooks/useKeyPress'
-import useElementsStore from '../../stores/elements/index'
 import { useToolsStore } from '../../stores/tools/index'
 import { ENTER_KEY, ESCAPE_KEY, SPACE_KEY } from '../../utils/constants'
 
 const useExtendCommand = () => {
-  const elementsStore = useElementsStore()
-  const currentlyReplacedElements = elementsStore(state => state.currentlyReplacedElements)
-  const updateReplacementSteps = elementsStore(state => state.updateReplacementSteps)
-  const replaceElements = elementsStore(state => state.replaceElements)
+  const useElementsStore = useElementsStoreContext()
+  const currentlyReplacedElements = useElementsStore((state) => state.currentlyReplacedElements)
+  const updateReplacementSteps = useElementsStore((state) => state.updateReplacementSteps)
+  const replaceElements = useElementsStore((state) => state.replaceElements)
 
-  const toolsStore = useToolsStore()
-  const tool = toolsStore(state => state.tool)
-  const startUsingTool = toolsStore(state => state.startUsingTool)
-  const resetTool = toolsStore(state => state.resetTool)
+  const tool = useToolsStore((state) => state.tool)
+  const startUsingTool = useToolsStore((state) => state.startUsingTool)
+  const resetTool = useToolsStore((state) => state.resetTool)
 
   const { undoIsPressed, redoIsPressed } = useKeyPress()
 
@@ -60,7 +59,7 @@ const useExtendCommand = () => {
       resetTool,
       undoIsPressed,
       redoIsPressed,
-      updateReplacementSteps
+      updateReplacementSteps,
     ]
   )
 

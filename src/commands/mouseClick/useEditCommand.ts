@@ -1,11 +1,11 @@
 import { useCallback } from 'react'
-import useElementsStore from '../../stores/elements/index'
+import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 import { useToolsStore } from '../../stores/tools/index'
 
 const useEditCommand = () => {
-  const elementsStore = useElementsStore()
-  const editElements = elementsStore(state => state.editElements)
-  const resetTool = useToolsStore()(state => state.resetTool)
+  const useElementsStore = useElementsStoreContext()
+  const editElements = useElementsStore((state) => state.editElements)
+  const resetTool = useToolsStore((state) => state.resetTool)
 
   const handleEditCmd = useCallback(() => {
     editElements()

@@ -34,15 +34,15 @@ const draw = (context: CanvasRenderingContext2D, element: FullyDefinedElement, c
       break
     case 'arc':
       context.moveTo(
-        (element as FullyDefinedArc).startLine.pointB.x, 
-        (element as FullyDefinedArc).startLine.pointB.y
+        (element as FullyDefinedArc).startPoint.x, 
+        (element as FullyDefinedArc).startPoint.y
       )
       context.arc(
         (element as FullyDefinedArc).centerPoint.x,
         (element as FullyDefinedArc).centerPoint.y,
         (element as FullyDefinedArc).radius,
-        degreesToRadians((element as FullyDefinedArc).startLine.angle),
-        degreesToRadians((element as FullyDefinedArc).endLine.angle),
+        degreesToRadians((element as FullyDefinedArc).startAngle),
+        degreesToRadians((element as FullyDefinedArc).endAngle),
         true
       )
       break

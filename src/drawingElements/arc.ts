@@ -1,559 +1,563 @@
-import { MAX_NUM_ERROR, SELECT_DELTA } from '../utils/constants'
-import { createLine } from '../utils/elementFactory'
+import { getAngleBetweenPoints } from '../utils/angle'
+import { SELECT_DELTA } from '../utils/constants'
 import { SelectionPointType } from '../utils/enums/index'
-import { copyPoint, getPointDistance, getRotatedPointAroundPivot, pointsMatch } from '../utils/point'
+import { generateId } from '../utils/general'
+import { areAlmostEqual, isDiffSignificant } from '../utils/number'
+import { copyPoint, createPoint, getPointByDeltasAndDistance, getPointDistance, getRotatedPointAroundPivot } from '../utils/point'
 import { Ensure } from '../utils/types/generics'
 import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import BaseArc from './baseArc'
 import { NOT_DEFINED_ERROR, NO_ID_ERROR } from './element'
-import Line, { FullyDefinedLine } from './line'
+import Line from './line'
 import Point from './point'
 
-const INCONSISTENT_LINE_ERROR =
-    'Inconsistent inner line of arc - either line length does not equal arc radius or its startPoint does not coincide with arc center'
-
 export default class Arc extends BaseArc {
-    private _startLine?: FullyDefinedLine
-    private _endLine?: FullyDefinedLine
-    private _midLine?: FullyDefinedLine
-    private _boundingBox?: BoundingBox
-    private _isJoined: boolean = false
-    private _isChanged: boolean = false
+  private _startPoint: Point | null
+  private _endPoint: Point | null
+  private _midPoint?: Point | null
+  private _boundingBox?: BoundingBox
+  private _isJoined: boolean = false
+  private _isChanged: boolean = false
 
-    constructor(
-      centerPoint: Point,
-      options: { 
-        radius?: number, 
-        groupId?: string,
-        startLine?: FullyDefinedLine, 
-        endLine?: FullyDefinedLine, 
-        midLine?: FullyDefinedLine, 
-        id?: string
-      }
-    ) {
-      const { radius, groupId, startLine, endLine, midLine, id } = options
-      super(centerPoint, { id, groupId, radius })
+  constructor(
+    centerPoint: Point,
+    options: { 
+      radius?: number, 
+      groupId?: string,
+      startPoint?: Point,
+      endPoint?: Point,
+      id?: string
+    } = {}
+  ) {
+    const { radius, groupId, startPoint, endPoint, id } = options
+    super(centerPoint, { id, groupId, radius })
 
-      this.startLine = startLine
-      this.endLine = endLine
-      this.midLine = midLine
-
-      if (startLine && endLine) {
-        this.__updateDetails()
-      }
-    }
-
-    get basePoint() {
-      return this.centerPoint
-    }
-
-    get startPoint() {
-      if (!this._startLine) {
-        return null
-      }
-      
-      return this._startLine.pointB
-    }
-
-    get endPoint() {
-      if (!this._endLine){ 
-        return null
+    this._startPoint = startPoint || null
+    this._endPoint = endPoint || null
+    if (startPoint && endPoint) {
+      const startDistance = getPointDistance(centerPoint, startPoint)
+      const endDistance = getPointDistance(centerPoint, endPoint)
+      if (
+        isDiffSignificant(startDistance, endDistance)
+      ) {
+        throw new Error('Creating arcs with different radiuses not currently supported')
+      } else {
+        this._radius = startDistance
       }
 
-      return this._endLine.pointB
+      this.__updateDetails()
+    } else {
+      this._midPoint = null
+    }
+  }
+
+  get basePoint() {
+    return this.centerPoint
+  }
+
+  get startPoint() {
+    return this._startPoint
+  }
+
+  get endPoint() {
+    return this._endPoint
+  }
+
+  set startPoint(value: Point | null) {
+    if (!value) {
+      this._startPoint = null
+      return
     }
 
-    set startPoint(value: Point | null) {
-      if (!value) {
-        return
-      }
+    const newStartPoint = getPointByDeltasAndDistance(
+      this._centerPoint,
+      value.x - this._centerPoint.x,
+      value.y - this._centerPoint.y,
+      // can be used with a not fully defined arc
+      this._radius || getPointDistance(value, this._centerPoint)
+    )
+    
+    newStartPoint.pointId = this._startPoint?.pointId || value.pointId
+    newStartPoint.elementId = this.id || undefined
+    this._startPoint = newStartPoint
 
-      if (this._startLine) {
-        this._startLine.setPointB(value.x, value.y)
-        this.__updateDetails()
-      }
+    this.__updateMidPoint()
+  }
+  
+  set endPoint(value: Point | null) {
+    if (!value) {
+      this._endPoint = null
+      return
     }
 
-    set endPoint(value: Point | null) {
-      if (!value) {
-        return
-      }
+    const newEndPoint = getPointByDeltasAndDistance(
+      this._centerPoint,
+      value.x - this._centerPoint.x,
+      value.y - this._centerPoint.y,
+      this._radius || getPointDistance(value, this._centerPoint)
+    )
+    
+    newEndPoint.pointId = this._endPoint?.pointId || value.pointId
+    newEndPoint.elementId = this.id || undefined
+    this._endPoint = newEndPoint
 
-      if (this._endLine) {
-        this._endLine.setPointB(value.x, value.y)
-        this.__updateDetails()
-      }
+    this.__updateMidPoint()
+  }
+
+  get midPoint() {
+    return this._midPoint
+  }
+
+  set midPointId(value: string | undefined) {
+    if (!this._midPoint) {
+      return
     }
 
-    get startLine() {
-      return this._startLine
-    }
-    get endLine() {
-      return this._endLine
-    }
-    get midLine() {
-      return this._midLine
+    this._midPoint.pointId = value
+  }
+
+  get startAngle() {
+    if (!this._startPoint) {
+      return undefined
     }
 
-    set startLine(newLine) {
-      if (!newLine) {
-        return
-      }
+    return this.__pointAngle(true)!
+  }
 
-      if (!this.radius) {
-        this._setRadius(newLine.length)
-      }
-
-      const isConsistent = this.__checkNewInnerLineConsistency(newLine)
-      if (isConsistent) {
-        this._startLine = newLine
-        this._isChanged = true
-        return
-      }
-
-      throw new Error(INCONSISTENT_LINE_ERROR)
+  get endAngle() {
+    if (!this._endPoint) {
+      return undefined
     }
 
-    set endLine(newLine) {
-      if (!newLine) return
+    return this.__pointAngle(false)!
+  }
 
-      const isConsistent = this.__checkNewInnerLineConsistency(newLine)
-      if (isConsistent) {
-        this._endLine = newLine
-        this._isChanged = true
+  get radius() {
+    return super.radius
+  }
 
-        return
-      }
+  set radius(value: number) {
+    this._radius = value
+    this._isChanged = true
 
-      throw new Error(INCONSISTENT_LINE_ERROR)
+    if (this._startPoint) {
+      // just making it go through setter which takes care of updating
+      // its position with the new radius
+      this.startPoint = this._startPoint
     }
 
-    set midLine(newLine) {
-      if (!newLine) return
-
-      const isConsistent = this.__checkNewInnerLineConsistency(newLine)
-      if (isConsistent) {
-        this._midLine = newLine
-        return
-      }
-
-      throw new Error(INCONSISTENT_LINE_ERROR)
+    if (this._endPoint) {
+      // just making it go through setter which takes care of updating
+      // its position with the new radius
+      this.endPoint = this._endPoint
     }
-
-    get radius() {
-      return super.radius
-    }
-
-    set radius(value: number) {
-      this._setRadius(value)
-      this._startLine?.setLength(value, false)
-      this._endLine?.setLength(value, false) 
-      this._midLine?.setLength(value, false)
-      this._isChanged = true
-
-      this.__updateBoundingBox()
-    }
-
-    get isFullyDefined() {
-      return !!this.centerPoint && this.radius > 0 && !!this._startLine && !!this._endLine
-    }
-
-    get isAlmostDefined() {
-      return (
-        this.centerPoint &&
-        this.radius > 0 &&
-        !!this._startLine &&
-        this._startLine.angle >= 0 &&
-        this._startLine.angle <= 360
-      )
-    }
-
-    get isJoined() {
-      if (this._isChanged) {
-        this.__updateDetails()
-      }
-
-      return this._isJoined
-    }
-
-    get angle() {
-      if (!this._startLine || !this._endLine) {
-        throw new Error('Attempting to access angle of arc without defined inner lines')
-      }
-
-      if (!this.containsAngle(0)) {
-        return Math.abs(this._startLine.angle - this._endLine.angle)
-      }
-
-      return 360 - this._endLine.angle + this._startLine.angle
-    }
-
-    get length() {
-      const arcAngle = this.angle
-
-      return (2 * Math.PI * this.radius * arcAngle) / 360
-    }
-
-    getSelectionPoints(pointType?: SelectionPointType): SelectionPoint[] {
-      if (!this.isFullyDefined) {
-        return []
-      }
-
-      const centerPoint = this.centerPoint as Required<Point>
-      const startLineEnd = this._startLine!.pointB! as Required<Point>
-      const endLineEnd = this._endLine!.pointB! as Required<Point>
-      const midLineEnd = this._midLine!.pointB! as Required<Point>
  
-      return [
-        ...(!pointType || pointType === SelectionPointType.CenterPoint 
-          ? [{ ...centerPoint, pointType: SelectionPointType.CenterPoint }] 
-          : []
-        ),
-        ...(!pointType || pointType === SelectionPointType.EndPoint
-          ? [
-            { ...startLineEnd, pointType: SelectionPointType.EndPoint },
-            { ...endLineEnd, pointType: SelectionPointType.EndPoint }
-            ]
-          : []
-        ),
-        ...(!pointType || pointType === SelectionPointType.MidPoint
-          ? [{ ...midLineEnd, pointType: SelectionPointType.MidPoint }]
-          : []
-        )
-      ]
-    }
+    this.__updateBoundingBox()
+  }
 
-    checkIfPointOnElement(point: Point, maxDiff: number = SELECT_DELTA) {
-      if (!this.isFullyDefined) {
-        throw new Error(NOT_DEFINED_ERROR)
-      }
+  get isFullyDefined() {
+    return !!this.centerPoint && this.radius > 0 && !!this._startPoint && !!this._endPoint
+  }
 
-      const distanceFromCenter = getPointDistance(this.centerPoint, point)
-      if (Math.abs(this.radius - distanceFromCenter) > maxDiff) {
-        return false
-      }
-
-      const lineFromCenter = new Line(this.centerPoint, { pointB: point })
-      const lineAngle = lineFromCenter.angle
-      const startAngle = this._startLine!.angle
-      const endAngle = this._endLine!.angle
-      const isInArc =
-          startAngle < endAngle
-              ? lineAngle <= startAngle || lineAngle >= endAngle
-              : lineAngle <= startAngle && lineAngle >= endAngle
-
-      if (isInArc) {
-        return true
-      }
-
+  get isAlmostDefined() {
+    if (!this._centerPoint || !this.radius) {
       return false
     }
 
-    getNearestPoint() {
-      // TODO: implement nearest point snap of arc
+    const startAngle = this.__pointAngle(true)
+    if (!startAngle && startAngle !== 0) {
+      return false
     }
 
-    setLastAttribute(pointX: number, pointY: number) {
-      this._endLine = createLine(this.centerPoint.x, this.centerPoint.y, pointX, pointY, {
-        groupId: this.groupId || undefined,
-        pointsElementId: this.id || undefined
-      })
+    return (
+      startAngle >= 0 &&
+      startAngle <= 360
+    )
+  }
 
-      this._endLine.setLength(this.radius, false)
+  get isJoined() {
+    if (this._isChanged) {
       this.__updateDetails()
     }
 
-    defineNextAttribute(definingPoint: Point) {
-      if (this.isFullyDefined) return
+    return this._isJoined
+  }
 
-      const centerPoint = this.centerPoint
-      if (!centerPoint) {
-        this._setCenterPoint(definingPoint)
-
-        return
-      }
-
-      if (!this.radius) {
-        this._setRadius(getPointDistance(centerPoint, definingPoint))
-
-        this._startLine = createLine(
-          centerPoint.x, 
-          centerPoint.y, 
-          definingPoint.x, 
-          definingPoint.y, 
-          {
-            groupId: this.groupId || undefined,
-            pointsElementId: this.id || undefined
-          }
-        )
-
-        return
-      }
+  get angle() {
+    if (!this._startPoint || !this._endPoint) {
+      throw new Error('Attempting to access angle of arc without defined inner lines')
     }
 
-    getPointById(pointId: string) {
-      if (this.centerPoint.pointId === pointId) {
-        return this.centerPoint
-      }
+    const startAngle = this.__pointAngle(true)!
+    const endAngle = this.__pointAngle(false)!
+    if (!this.containsAngle(0)) {
+      return Math.abs(startAngle - endAngle)
+    }
 
-      if (!this.isFullyDefined) {
-        throw new Error(NOT_DEFINED_ERROR)
-      }
+    return 360 - endAngle + startAngle
+  }
 
-      if (this._startLine!.pointB!.pointId === pointId) {
-        return this._startLine!.pointB
-      }
+  get length() {
+    const arcAngle = this.angle
 
-      if (this._endLine!.pointB!.pointId === pointId) {
-        return this._endLine!.pointB
-      }
+    return (2 * Math.PI * this.radius * arcAngle) / 360
+  }
 
-      if (this._midLine!.pointB!.pointId === pointId) {
-        return this._midLine!.pointB
-      }
+  getSelectionPoints(pointType?: SelectionPointType): SelectionPoint[] {
+    if (!this.isFullyDefined) {
+      return []
+    }
 
+    const centerPoint = this.centerPoint as Required<Point>
+    const startPoint = this._startPoint! as Required<Point>
+    const endPoint = this._endPoint! as Required<Point>
+    const midPoint = this._midPoint! as Required<Point>
+
+    return [
+      ...(!pointType || pointType === SelectionPointType.CenterPoint 
+        ? [{ ...centerPoint, pointType: SelectionPointType.CenterPoint }] 
+        : []
+      ),
+      ...(!pointType || pointType === SelectionPointType.EndPoint
+        ? [
+          { ...startPoint, pointType: SelectionPointType.EndPoint },
+          { ...endPoint, pointType: SelectionPointType.EndPoint }
+          ]
+        : []
+      ),
+      ...(!pointType || pointType === SelectionPointType.MidPoint
+        ? [{ ...midPoint, pointType: SelectionPointType.MidPoint }]
+        : []
+      )
+    ]
+  }
+
+  checkIfPointOnElement(point: Point, maxDiff: number = SELECT_DELTA) {
+    if (!this.isFullyDefined) {
+      throw new Error(NOT_DEFINED_ERROR)
+    }
+
+    const distanceFromCenter = getPointDistance(this.centerPoint, point)
+    if (Math.abs(this.radius - distanceFromCenter) > maxDiff) {
+      return false
+    }
+
+    const lineFromCenter = new Line(this.centerPoint, { pointB: point })
+    const lineAngle = lineFromCenter.angle
+    const startAngle = this.__pointAngle(true)!
+    const endAngle = this.__pointAngle(false)!
+    const isInArc =
+        startAngle < endAngle
+            ? lineAngle <= startAngle || lineAngle >= endAngle
+            : lineAngle <= startAngle && lineAngle >= endAngle
+
+    if (isInArc) {
+      return true
+    }
+
+    return false
+  }
+
+  getNearestPoint() {
+    // TODO: implement nearest point snap of arc
+  }
+
+  setLastAttribute(pointX: number, pointY: number) {
+    const deltaX = pointX - this._centerPoint.x
+    const deltaY = pointY - this._centerPoint.y
+
+    let endPoint: Point
+    if (deltaY === 0) {
+      const xDiff = deltaX > 0 ? this.radius : -this.radius
+      endPoint = createPoint(
+        this.centerPoint.x + xDiff,
+        this.centerPoint.y
+      )
+    } else {
+      endPoint = getPointByDeltasAndDistance(
+        this._centerPoint,
+        deltaX,
+        deltaY,
+        this._radius
+      )
+    }
+
+    endPoint.elementId = this.id || undefined
+    endPoint.pointId = this._endPoint?.pointId || generateId()
+
+    this._endPoint = endPoint
+    this.__updateDetails()
+  }
+
+  defineNextAttribute(definingPoint: Point) {
+    if (this.isFullyDefined) {
+      return
+    }
+
+    const centerPoint = this.centerPoint
+    if (!this._centerPoint) {
+      this._centerPoint = copyPoint(definingPoint, false, true)
+      this._centerPoint.elementId = this.id || undefined
+
+      return
+    }
+
+    if (!this.radius) {
+      this._radius = getPointDistance(centerPoint, definingPoint)
+
+      this._startPoint = copyPoint(definingPoint, false, true)
+      this._startPoint.elementId = this.id || undefined
+      
+      return
+    }
+  }
+
+  getPointById(pointId: string) {
+    if (this.centerPoint.pointId === pointId) {
+      return this.centerPoint
+    }
+
+    if (!this.isFullyDefined) {
+      throw new Error(NOT_DEFINED_ERROR)
+    }
+
+    if (this._startPoint!.pointId === pointId) {
+      return this._startPoint
+    }
+
+    if (this._endPoint!.pointId === pointId) {
+      return this._endPoint
+    }
+
+    if (this._midPoint!.pointId === pointId) {
+      return this._midPoint || null
+    }
+
+    return null
+  }
+
+  setPointById(
+    pointId: string,
+    newPointX: number, 
+    newPointY: number
+  ) {
+    if (!pointId) {
+      throw new Error('Attempting to set point by an empty id parameter')
+    }
+
+    let isArcChanged: boolean = false
+    if (pointId === this._centerPoint.pointId) {
+      this.move(newPointX - this._centerPoint.x, newPointY - this.centerPoint.y)
+      isArcChanged = true
+    } else if (pointId === this._startPoint?.pointId) {
+      const newPoint = getPointByDeltasAndDistance(
+        this._centerPoint,
+        newPointX - this._centerPoint.x,
+        newPointY - this._centerPoint.y,
+        this._radius
+      )
+
+      newPoint.pointId = pointId
+      newPoint.elementId = this._startPoint.elementId
+      this._startPoint = newPoint
+
+      isArcChanged = true
+    } else if (pointId === this._endPoint?.pointId) {
+      const newPoint = getPointByDeltasAndDistance(
+        this._centerPoint,
+        newPointX - this._centerPoint.x,
+        newPointY - this._centerPoint.y,
+        this._radius
+      )
+
+      newPoint.pointId = pointId
+      newPoint.elementId = this._endPoint.elementId
+      this._endPoint = newPoint
+
+      isArcChanged = true
+    }
+
+    if (isArcChanged && this.isFullyDefined) {
+      this.__updateDetails()
+      return true
+    }
+
+    return false
+  }
+
+  getBoundingBox() {
+    if (!this.isFullyDefined) {
+      throw new Error(NOT_DEFINED_ERROR)
+    }
+
+    // if (this._isChanged) {
+    //   this.__updateDetails()
+    // }
+
+    return {
+      top: this._boundingBox!.top,
+      bottom: this._boundingBox!.bottom,
+      left: this._boundingBox!.left,
+      right: this._boundingBox!.right,
+    }
+  }
+
+  move(dX: number, dY: number) {
+    if (!this.isFullyDefined) {
+      throw new Error(NOT_DEFINED_ERROR)
+    }
+
+    if (this._isChanged) {
+        this.__updateDetails()
+    }
+
+    this._centerPoint = copyPoint(this._centerPoint, true)
+    this._centerPoint.x += dX
+    this._centerPoint.y += dY
+
+    this._startPoint = copyPoint(this._startPoint!, true)
+    this._startPoint.x += dX
+    this._startPoint.y += dY
+
+    this._endPoint = copyPoint(this._endPoint!, true)
+    this._endPoint.x += dX
+    this._endPoint.y += dY
+
+    this._boundingBox!.left += dX
+    this._boundingBox!.right += dX
+    this._boundingBox!.top += dY
+    this._boundingBox!.bottom += dY
+  }
+
+  containsAngle(angle: number) {
+    if (!this.isFullyDefined) {
+      throw new Error(NOT_DEFINED_ERROR)
+    }
+
+    const startAngle = this.__pointAngle(true)!
+    const endAngle = this.__pointAngle(false)!
+
+    if (startAngle > endAngle) {
+      return angle <= startAngle && angle >= endAngle
+    }
+
+    return angle <= startAngle || angle >= endAngle
+  }
+
+  setPointsElementId() {
+    const elementId = this.id || undefined
+
+    this._centerPoint.elementId = elementId
+    if (this._startPoint) {
+      this._startPoint.elementId = elementId
+    }
+    
+    if (this._endPoint) {
+      this._endPoint.elementId = elementId
+    }
+
+    if (this._midPoint) {
+      this._midPoint.elementId = elementId
+    }
+  }
+
+  __updateDetails() {
+    this.__updateMidPoint()
+    this.__updateBoundingBox()
+
+    if (!this._startPoint || !this._endPoint) {
+      return
+    }
+
+    const startAngle = this.__pointAngle(true)!
+    const endAngle = this.__pointAngle(false)!
+    this._isJoined = areAlmostEqual(startAngle, endAngle)
+    this._isChanged = false
+  }
+
+  __updateBoundingBox() {
+    if (!this.isFullyDefined) {
+      return
+    }
+
+    const centerPoint = this.centerPoint
+    const radius = this.radius
+
+    const left = this.containsAngle(180)
+      ? centerPoint.x - radius
+      : Math.min(this._startPoint!.x, this._endPoint!.x)
+    const right = this.containsAngle(0)
+      ? centerPoint.x + radius
+      : Math.max(this._startPoint!.x, this._endPoint!.x)
+    const top = this.containsAngle(270)
+      ? centerPoint.y - radius
+      : Math.min(this._startPoint!.y, this._endPoint!.y)
+    const bottom = this.containsAngle(90)
+      ? centerPoint.y + radius
+      : Math.max(this._startPoint!.y, this._endPoint!.y)
+
+    this._boundingBox = { left, right, top, bottom }
+  }
+
+  private __pointAngle(fromStartPoint: boolean) {
+    const point = fromStartPoint ? this._startPoint : this._endPoint
+    if (!point) {
       return null
     }
 
-    setPointById(
-      pointId: string,
-      newPointX: number, 
-      newPointY: number
-    ) {
-      if (!pointId) {
-        throw new Error('Attempting to set point by an empty id parameter')
-      }
+    return getAngleBetweenPoints(this.centerPoint, point)
+  }
 
-      if (pointId === this.centerPoint.pointId) {
-        const pointCopy = copyPoint(this.centerPoint, true)
-        pointCopy.x = newPointX
-        pointCopy.y = newPointY
-
-        this._setCenterPoint(pointCopy)
-
-        if (this._startLine) {
-          this._startLine.setPointA(newPointX, newPointY)
-        }
-
-        if (this.isFullyDefined) {
-          this._endLine!.setPointA(newPointX, newPointY)
-          this._midLine!.setPointA(newPointX, newPointY)
-        }
-
-        return true
-      }
-
-      let lineToChange
-      if (pointId === this._startLine?.pointB?.pointId) {
-        lineToChange = this._startLine
-      } else if (pointId === this._endLine?.pointB?.pointId) {
-        lineToChange = this._endLine
-      }
-
-      if (!lineToChange) return false
-
-      lineToChange.setPointB(newPointX, newPointY)
-      lineToChange.setLength(this.radius, false)
-
-      if (this.isFullyDefined) {
-        this.__updateDetails()
-      }
-
-      return true
+  private __updateMidPoint() {
+    if (!this._startPoint || !this._endPoint) {
+      return
     }
 
-    getBoundingBox() {
-      if (!this.isFullyDefined) {
-        throw new Error(NOT_DEFINED_ERROR)
-      }
+    const startAngle = this.__pointAngle(true)!
+    const endAngle = this.__pointAngle(false)!
 
-      if (this._isChanged) {
-        this.__updateDetails()
-      }
+    const angleStartToEnd = Math.abs(startAngle - endAngle)
 
-      return {
-        top: this._boundingBox!.top,
-        bottom: this._boundingBox!.bottom,
-        left: this._boundingBox!.left,
-        right: this._boundingBox!.right,
-      }
+    if (areAlmostEqual(angleStartToEnd, 180)) {
+      const oldMidPoint = this._midPoint
+      this._midPoint = getRotatedPointAroundPivot(
+        this._startPoint, 
+        this._centerPoint, 
+        90
+      )
+
+      this._midPoint.pointId = oldMidPoint?.pointId || generateId()
+      this._midPoint.elementId = this.id!
+      
+      return
     }
 
-    move(dX: number, dY: number) {
-      if (!this.isFullyDefined) {
-        throw new Error(NOT_DEFINED_ERROR)
-      }
+    const isStartLessThanEnd = startAngle < endAngle
+    const isLessThan180 = angleStartToEnd < 180
 
-      if (this._isChanged) {
-          this.__updateDetails()
-      }
+    const deltaSign = isStartLessThanEnd !== isLessThan180 ? 1 : -1
 
-      const centerCopy = copyPoint(this.centerPoint, true)
-      centerCopy.x += dX
-      centerCopy.y += dY
+    // line from centerPoint to midPoint has to pass through (midPointX, midPointY)
+    // but have length equal to the radius
+    const midPointX = (this._startPoint.x + this._endPoint.x) / 2
+    const midPointY = (this._startPoint.y + this._endPoint.y) / 2
+    const newMidPoint = getPointByDeltasAndDistance(
+      this._centerPoint,
+      deltaSign * (midPointX - this._centerPoint.x),
+      deltaSign * (midPointY - this._centerPoint.y),
+      this._radius
+    )
 
-      this._setCenterPoint(centerCopy)
-
-      this._startLine!.move(dX, dY)
-      this._endLine!.move(dX, dY)
-      this._midLine!.move(dX, dY)
-
-      this._boundingBox!.left += dX
-      this._boundingBox!.right += dX
-      this._boundingBox!.top += dY
-      this._boundingBox!.bottom += dY
+    if (!this._midPoint) {
+      this._midPoint = newMidPoint
+      this._midPoint.pointId = generateId()
+      this._midPoint.elementId = this.id!
+      return
     }
 
-    containsAngle(angle: number) {
-      if (!this.isFullyDefined) {
-        throw new Error(NOT_DEFINED_ERROR)
-      }
-
-      const startAngle = this._startLine!.angle
-      const endAngle = this._endLine!.angle
-
-      if (startAngle > endAngle) {
-        return angle <= startAngle && angle >= endAngle
-      }
-
-      return angle <= startAngle || angle >= endAngle
-    }
-
-    setPointsElementId() {
-      if (!this.id) {
-        throw new Error(NO_ID_ERROR)
-      }
-
-      const elementId = this.id
-      const newCenterPoint = copyPoint(this.centerPoint)
-      newCenterPoint.elementId = elementId
-      this._setCenterPoint(newCenterPoint)
-
-      if (this._startLine) {
-        this._startLine = createLine(
-          this._startLine.pointA!.x,
-          this._startLine.pointA!.y,
-          this._startLine.pointB!.x,
-          this._startLine.pointB!.y,
-          { groupId: this.groupId || undefined, pointsElementId: elementId }
-        )          
-      }
-
-      if (this._endLine) {
-        this._endLine = createLine(
-          this._endLine.pointA!.x,
-          this._endLine.pointA!.y,
-          this._endLine.pointB!.x,
-          this._endLine.pointB!.y,
-          { groupId: this.groupId || undefined, pointsElementId: elementId }
-        )
-
-        this._midLine = createLine(
-          this._midLine!.pointA!.x,
-          this._midLine!.pointA!.y,
-          this._midLine!.pointB!.x,
-          this._midLine!.pointB!.y,
-          { groupId: this.groupId || undefined, pointsElementId: elementId }
-        )
-      }
-
-    }
-
-    __updateDetails() {
-      this.__updateMidLine()
-      this.__updateBoundingBox()
-
-      if (!this._startLine || !this._endLine) {
-        return
-      }
-
-      this._isJoined = 
-        Math.abs(this._startLine.angle - this._endLine.angle) < MAX_NUM_ERROR
-      this._isChanged = false
-    }
-
-    __updateBoundingBox() {
-      if (!this._startLine || !this._endLine) {
-        return
-      }
-
-      const centerPoint = this.centerPoint
-      const radius = this.radius
-
-      const left = this.containsAngle(180)
-        ? centerPoint.x - radius
-        : Math.min(this._startLine.pointB!.x, this._endLine.pointB!.x)
-      const right = this.containsAngle(0)
-        ? centerPoint.x + radius
-        : Math.max(this._startLine.pointB!.x, this._endLine.pointB!.x)
-      const top = this.containsAngle(270)
-        ? centerPoint.y - radius
-        : Math.min(this._startLine.pointB!.y, this._endLine.pointB!.y)
-      const bottom = this.containsAngle(90)
-        ? centerPoint.y + radius
-        : Math.max(this._startLine.pointB!.y, this._endLine.pointB!.y)
-
-      this._boundingBox = { left, right, top, bottom }
-    }
-
-    __updateMidLine() {
-        const centerPoint = this.centerPoint
-
-        if (!this._startLine || !this._endLine) return
-
-        if (!this._midLine) {
-          this._midLine = createLine(
-            centerPoint.x, 
-            centerPoint.y, 
-            this._startLine.pointB!.x, // | only for initial creation
-            this._startLine.pointB!.y, // | should always be changed further down
-            {
-              groupId: this.groupId || undefined,
-              pointsElementId: this.id || undefined
-            }
-          )
-        }
-
-        const angleStartToEnd = Math.abs(this._startLine.angle - this._endLine.angle)
-
-        if (Math.abs(angleStartToEnd - 180) <= MAX_NUM_ERROR) {
-          const midLineEndPoint = getRotatedPointAroundPivot(
-            this._startLine.pointB!, 
-            centerPoint, 
-            90
-          )
-
-          this._midLine.setPointB(midLineEndPoint.x, midLineEndPoint.y)
-          return
-        }
-
-        const midPointX = (this._startLine.pointB!.x + this._endLine.pointB!.x) / 2
-        const midPointY = (this._startLine.pointB!.y + this._endLine.pointB!.y) / 2
-        this._midLine.setPointB(midPointX, midPointY)
-
-        const isStartLessThanEnd = this._startLine.angle < this._endLine.angle
-        const isLessThan180 = angleStartToEnd < 180
-
-        const newLength = isStartLessThanEnd !== isLessThan180 ? this.radius : -this.radius
-
-        this._midLine.setLength(newLength, false)
-    }
-
-    __checkNewInnerLineConsistency(newLine: FullyDefinedLine) {
-      if (!this.isFullyDefined) {
-        return true
-      }
-
-      if (Math.abs(newLine.length - this.radius) > MAX_NUM_ERROR) {
-        return false
-      }
-
-      if (!pointsMatch(newLine.startPoint, this.centerPoint)) {
-        return false
-      }
-
-      return true
-    }
+    this._midPoint.x = newMidPoint.x
+    this._midPoint.y = newMidPoint.y
+  }
 }
 
-export type FullyDefinedArc = Ensure<Arc, 'startPoint' | 'endPoint' | 'startLine' | 'endLine'>
+export type FullyDefinedArc = Ensure<Arc, 'startPoint' | 'endPoint' | 'startAngle' | 'endAngle'>

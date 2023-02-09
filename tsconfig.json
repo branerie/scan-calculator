@@ -6,7 +6,7 @@
     "moduleResolution": "Node16",
     "strict": true,           
     "target": "ES2020",
-    "jsx": "preserve",             
+    "jsx": "react-jsx",
     "allowJs": true,
     "strictNullChecks": true,   
     "noUnusedLocals": false,

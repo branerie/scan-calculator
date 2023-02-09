@@ -3,6 +3,7 @@ import { MAX_NUM_ERROR } from '../../constants'
 import HashGrid from '../'
 import { CrossingType, ElementGridIntersection, getDimensionDivision1d, getDivKey } from '../utils'
 import PriorityQueue from '../../priorityQueue'
+import { areAlmostEqual } from '../../number'
 
 function getContainingDivsFromIntersectionPoint(this: HashGrid, point: Point, crossingAxis: CrossingType): [string, string] {
   // returns an array with two values, containing the hash grid divisions
@@ -55,8 +56,7 @@ function getContainingDivsFromIntersectionsQueue(
 
     if (
       !!nextIntersection &&
-      Math.abs(currentIntersection.distanceFromStart - nextIntersection.distanceFromStart) <
-          MAX_NUM_ERROR
+      areAlmostEqual(currentIntersection.distanceFromStart, nextIntersection.distanceFromStart)
     ) {
       if (currentIntersection.crossing !== nextIntersection.crossing) {
         // line is crossing through an intersection in the HashGrid (therefore is passing through
@@ -82,23 +82,23 @@ function getContainingDivsFromIntersectionsQueue(
 }
 
 function checkIntersectionAngleConsistency(angle: number): 0 | 90 | 180 | 270 | 360 {
-  if(angle === 0 || Math.abs(angle) < MAX_NUM_ERROR) {
+  if(areAlmostEqual(angle, 0)) {
     return 0
   }
 
-  if (angle === 90 || Math.abs(angle - 90) < MAX_NUM_ERROR) {
+  if (areAlmostEqual(angle, 90)) {
     return 90
   }
 
-  if (angle === 180 || Math.abs(angle - 180) < MAX_NUM_ERROR) {
+  if (areAlmostEqual(angle, 180)) {
     return 180
   }
 
-  if (angle === 270 || Math.abs(angle - 270) < MAX_NUM_ERROR) {
+  if (areAlmostEqual(angle, 270)) {
     return 270
   }
 
-  if (angle === 360 || Math.abs(angle - 360) < MAX_NUM_ERROR) {
+  if (areAlmostEqual(angle, 360)) {
     return 360
   }
 

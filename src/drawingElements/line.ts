@@ -1,12 +1,12 @@
-import { copyPoint, getPointDistance } from '../utils/point'
+import { copyPoint, createPoint, getPointDistance } from '../utils/point'
 import { degreesToRadians, getAngleBetweenPoints, getQuadrantFromAngle } from '../utils/angle'
-import Element, { NOT_DEFINED_ERROR } from './element'
-import { createPoint } from '../utils/elementFactory'
+import Element, { NOT_DEFINED_ERROR, NO_ID_ERROR } from './element'
 import { SELECT_DELTA } from '../utils/constants'
 import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import Point from './point'
 import { SelectionPointType } from '../utils/enums/index'
 import { Ensure } from '../utils/types/generics'
+import { generateId } from '../utils/general'
 
 export default class Line extends Element {
     private _pointA: Point
@@ -21,16 +21,18 @@ export default class Line extends Element {
         id?: string,
         groupId?: string, 
         midPointId?: string 
-      }
+      } = {}
     ) {
       const { pointB, id, groupId, midPointId } = options
       super(id, groupId)
       // TODO: check if both points are the same point
 
       this._pointA = copyPoint(pointA, true, false)
-      if (!pointA.elementId && this.id) {
+       if (!pointA.elementId && this.id) {
         this._pointA.elementId = this.id
       }
+
+      this._pointA.pointId
 
       if (pointB) {
         this._pointB = copyPoint(pointB, true, false)
@@ -170,6 +172,9 @@ export default class Line extends Element {
 
     setLastAttribute(pointX: number, pointY: number) {
       this.setPointB(pointX, pointY)
+      if (!this._pointA.pointId) {
+        this._pointA.pointId = generateId()
+      }
     }
 
     setPointById(
@@ -401,11 +406,7 @@ export default class Line extends Element {
     }
 
     setPointsElementId() {
-      if (!this.id) {
-        throw new Error('Attempting to set an undefined element id to points')
-      }
-
-      const elementId = this.id
+      const elementId = this.id || undefined
 
       this._pointA.elementId = elementId
       if (this._pointB) {

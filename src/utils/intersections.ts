@@ -66,24 +66,24 @@ const findClosestIntersectPoint = (
 
     for (const intersection of intersections) {
       if (!elementToIntersect.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
-        return
+        continue
       }
 
       if (excludeExistingIntersections && element.checkIfPointOnElement(intersection, MAX_NUM_ERROR)) {
         if (element.type !== 'arc') {
-          return
+          continue
         }
 
         const stationaryPoint = fromStart ? element.endPoint : element.startPoint
         if (!pointsMatch(intersection, stationaryPoint)) {
-          return
+          continue
         }
       }
 
       if (checkIntersectionLocality && !checkIntersectionLocality(extendedPoint, intersection)) {
         // elements intersect, but not in the locality of "element"'s extendedPoint
         // i.e. there might be other intersections closer to this end
-        return
+        continue
       }
 
       // TODO: Check whether intersection in the opposite direction causes bugs at all
@@ -110,7 +110,7 @@ const findClosestIntersectPoint = (
           element instanceof Arc && 
           !checkArcIntersectionValidity(element as FullyDefinedArc, fromStart, distanceFromExtendPoint)
         ) {
-          return
+          continue
         }
 
         minPoint = intersection

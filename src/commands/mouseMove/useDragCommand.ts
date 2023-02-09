@@ -2,9 +2,8 @@ import { MouseEvent, useCallback } from 'react'
 import { useToolsStore } from '../../stores/tools/index'
 
 const useDragCommand = () => {
-  const toolsStore = useToolsStore()
-  const mouseDrag = toolsStore(state => state.mouseDrag)
-  const panView = toolsStore(state => state.panView)
+  const mouseDrag = useToolsStore(state => state.mouseDrag)
+  const panView = useToolsStore(state => state.panView)
   
   const handleDragCmd = useCallback((event: MouseEvent) => {
     if (!mouseDrag || event.buttons !== 4) {

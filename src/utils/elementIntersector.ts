@@ -8,7 +8,12 @@ import { radiansToDegrees } from './angle'
 import { MAX_NUM_ERROR } from './constants'
 import { createLine, createPoint } from './elementFactory'
 import { getPerpendicularPointToLine } from './line'
-import { getPointDistance, getRotatedPointAroundPivot, getUniquePoints } from './point'
+import { getPointDistance, getRotatedPointAroundPivot, getUniquePoints, pointsMatch } from './point'
+
+// TODO: For same-type intersections (line-line, circle-circle, arc-arc, arc-circle)
+// Check if they are one and the same (therefore have infinite common points)
+// and decide what to do in that case
+
 import { capitalize } from './text'
 
 export default class ElementIntersector {
@@ -289,22 +294,22 @@ export default class ElementIntersector {
   ): Point[] | null {
     const intersections = []
     if (
-      getPointDistance(lineA.pointA, lineB.pointA) < MAX_NUM_ERROR || 
-      getPointDistance(lineA.pointA, lineB.pointB) < MAX_NUM_ERROR
+      pointsMatch(lineA.pointA, lineB.pointA) || 
+      pointsMatch(lineA.pointA, lineB.pointB)
     ) {
       intersections.push(createPoint(lineA.pointA.x, lineA.pointA.y))
     }
 
     if (
-      getPointDistance(lineA.pointB, lineB.pointA) < MAX_NUM_ERROR || 
-      getPointDistance(lineA.pointB, lineB.pointB) < MAX_NUM_ERROR
+      pointsMatch(lineA.pointB, lineB.pointA) || 
+      pointsMatch(lineA.pointB, lineB.pointB)
     ) {
       if (intersections.length > 0) {
         // lines are identical
         return null
       }
 
-      intersections.push(createPoint(lineA.pointA.x, lineA.pointA.y))
+      intersections.push(createPoint(lineA.pointB.x, lineA.pointB.y))
     }
 
     if (intersections.length > 0) {

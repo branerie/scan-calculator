@@ -7,11 +7,11 @@ import Polyline from './polyline'
 export default class Rectangle extends Polyline {
   constructor(
     pointA: Point, 
-    options: { 
+    options: {
       pointB?: Point, 
       id?: string, 
       groupId?: string 
-    }
+    } = {}
   ) {
     const { pointB, id, groupId } = options  
     super(pointA, { id, groupId })

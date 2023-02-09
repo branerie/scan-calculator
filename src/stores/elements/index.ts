@@ -1,26 +1,20 @@
-import create from 'zustand'
+import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import useElementsSlice, { ElementsSlice } from './slices/useElementsSlice'
 import useSelectionPointsSlice, { SelectionPointsSlice } from './slices/useSelectionPointsSlice'
 import useSelectionSlice, { SelectionSlice } from './slices/useSelectionSlice'
 import useHistorySlice, { HistorySlice } from './slices/useHistorySlice'
 
-const useElementsStore = () => {
-  const createElementsSlice = useElementsSlice()
-  const createSelectionPointsSlice = useSelectionPointsSlice()
-  const createSelectionSlice = useSelectionSlice()
-  const createHistorySlice = useHistorySlice()
+const initElementsStore = () => create(
+  immer<ElementsState>((set, get, store) => ({
+    ...useElementsSlice()(set, get, store),
+    ...useSelectionPointsSlice()(set, get, store),
+    ...useSelectionSlice()(set, get, store),
+    ...useHistorySlice()(set, get, store),
+  }))
+)
 
-  return create(
-    immer<ElementsState>((set, get, store) => ({
-      ...createElementsSlice(set, get, store),
-      ...createSelectionPointsSlice(set, get, store),
-      ...createSelectionSlice(set, get, store),
-      ...createHistorySlice(set, get, store),
-    }))
-  )
-}
+export default initElementsStore
 
-export default useElementsStore
-
+export type ElementsStoreType = ReturnType<typeof initElementsStore>
 export type ElementsState = ElementsSlice & SelectionPointsSlice & SelectionSlice & HistorySlice

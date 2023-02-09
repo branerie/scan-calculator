@@ -1,11 +1,10 @@
 import { useToolsStore } from '../../stores/tools/index'
 
 const Navbar = () => {
-  const toolsStore = useToolsStore()
-  const tool = toolsStore(state => state.tool)
-  const setTool = toolsStore(state => state.setTool)
-  const options = toolsStore(state => state.options)
-  const toggleOption = toolsStore(state => state.toggleOption)
+  const tool = useToolsStore(state => state.tool)
+  const setTool = useToolsStore(state => state.setTool)
+  const options = useToolsStore(state => state.options)
+  const toggleOption = useToolsStore(state => state.toggleOption)
 
   return (<>
     <div>

@@ -32,8 +32,8 @@ export default class ElementReplacement {
     if (!currentStep) return null
 
     return {
-      added: { ...currentStep.added },
-      removed: { ...currentStep.removed }
+      added: new Map(currentStep.added),
+      removed: new Map(currentStep.removed)
     }
   }
 
@@ -42,8 +42,8 @@ export default class ElementReplacement {
     if (!nextStep) return null
 
     return {
-      added: { ...nextStep.added },
-      removed: { ...nextStep.removed },
+      added: new Map(nextStep.added),
+      removed: new Map(nextStep.removed),
     }
   }
 
@@ -52,16 +52,16 @@ export default class ElementReplacement {
     if (!prevStep) return null
 
     return {
-      added: { ...prevStep.added },
-      removed: { ...prevStep.removed },
+      added: new Map(prevStep.added),
+      removed: new Map(prevStep.removed),
     }
   }
 
   addStep(step: ReplacementStep) {
     if (!this._aggregate) {
       this._aggregate = { 
-        added: { ...step.added }, 
-        removed: { ...step.removed }, 
+        added: new Map(step.added), 
+        removed: new Map(step.removed), 
         archived: new Map() 
       }
 

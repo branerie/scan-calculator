@@ -52,30 +52,30 @@ export default abstract class Element {
     return true
   }
 
-    /**
-     * Should return true if all dimensions of the element are defined
-     */
-    abstract get isFullyDefined(): boolean
+  /**
+   * Should return true if all dimensions of the element are defined
+   */
+  abstract get isFullyDefined(): boolean
 
-    /**
-     * Should return true if all but the last dimension of the element are defined
-     */
-    abstract get isAlmostDefined(): boolean
+  /**
+   * Should return true if all but the last dimension of the element are defined
+   */
+  abstract get isAlmostDefined(): boolean
 
-    abstract get basePoint(): Point | null
-    abstract get startPoint(): Point | null
-    abstract set startPoint(value: Point | null)
-    abstract get endPoint(): Point | null
-    abstract set endPoint(value: Point | null)
+  abstract get basePoint(): Point | null
+  abstract get startPoint(): Point | null
+  abstract set startPoint(value: Point | null)
+  abstract get endPoint(): Point | null
+  abstract set endPoint(value: Point | null)
 
-    abstract getPointById(pointId: string): Point | null
-    abstract getSelectionPoints(pointType?: SelectionPointType): SelectionPoint[]
-    abstract checkIfPointOnElement(point: Point, maxDiff?: number): boolean
-    abstract defineNextAttribute(definingPoint: Point): void
-    abstract setLastAttribute(pointX: number, pointY: number): void
-    abstract getBoundingBox(): BoundingBox
-    abstract move(dX: number, dY: number): void
-    abstract setPointsElementId(): void
+  abstract getPointById(pointId: string): Point | null
+  abstract getSelectionPoints(pointType?: SelectionPointType): SelectionPoint[]
+  abstract checkIfPointOnElement(point: Point, maxDiff?: number): boolean
+  abstract defineNextAttribute(definingPoint: Point): void
+  abstract setLastAttribute(pointX: number, pointY: number): void
+  abstract getBoundingBox(): BoundingBox
+  abstract move(dX: number, dY: number): void
+  abstract setPointsElementId(): void
 }
 
 export type FullyDefinedElement = Ensure<Element, 'startPoint' | 'endPoint'>

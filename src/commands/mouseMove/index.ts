@@ -11,25 +11,24 @@ import useExtendCommand from './useExtendCommand'
 import { getOrthoCoordinates } from '../../utils/options'
 import { createLine } from '../../utils/elementFactory'
 import { MousePosition } from '../../utils/types/index'
-import useElementsStore from '../../stores/elements/index'
 import { useToolsStore } from '../../stores/tools/index'
+import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 
 const useMouseMoveCommands = () => {
-  const elementsStore = useElementsStore()
-  const currentlyEditedElements = elementsStore(state => state.currentlyEditedElements)
-  const currentlyCreatedElement = elementsStore(state => state.currentlyCreatedElement)
-  const currentlyCopiedElements = elementsStore(state => state.currentlyCopiedElements)
-  const snappedPoint = elementsStore(state => state.snappedPoint)
-  const selectedPoints = elementsStore(state => state.selectedPoints)
+  const useElementsStore = useElementsStoreContext()
+  const currentlyEditedElements = useElementsStore((state) => state.currentlyEditedElements)
+  const currentlyCreatedElement = useElementsStore((state) => state.currentlyCreatedElement)
+  const currentlyCopiedElements = useElementsStore((state) => state.currentlyCopiedElements)
+  const snappedPoint = useElementsStore((state) => state.snappedPoint)
+  const selectedPoints = useElementsStore((state) => state.selectedPoints)
 
-  const toolsStore = useToolsStore()
-  const tool = toolsStore(state => state.tool)
-  const toolClicks = toolsStore(state => state.toolClicks)
-  const mouseDrag = toolsStore(state => state.mouseDrag)
-  const options = toolsStore(state => state.options)
-  const getRealMouseCoordinates = toolsStore(state => state.getRealMouseCoordinates)
-  const getLastReferenceClick = toolsStore(state => state.getLastReferenceClick)
-  const addToolProp = toolsStore(state => state.addToolProp)
+  const tool = useToolsStore((state) => state.tool)
+  const toolClicks = useToolsStore((state) => state.toolClicks)
+  const mouseDrag = useToolsStore((state) => state.mouseDrag)
+  const options = useToolsStore((state) => state.options)
+  const getRealMouseCoordinates = useToolsStore((state) => state.getRealMouseCoordinates)
+  const getLastReferenceClick = useToolsStore((state) => state.getLastReferenceClick)
+  const addToolProp = useToolsStore((state) => state.addToolProp)
 
   const drag = useDragCommand()
   const snap = useSnapCommand()
@@ -41,113 +40,111 @@ const useMouseMoveCommands = () => {
   const trim = useTrimCommand()
   const extend = useExtendCommand()
 
-  const executeMouseMoveCommand = useCallback((event: MouseEvent) => {
-    if (mouseDrag && event.buttons === 4) {
-      drag(event)
-      return
-    }
-
-    let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
-
-    if (options.snap && tool.type !== 'select' && tool.type !== 'trim') {
-      snap({ mouseX: realClientX, mouseY: realClientY })
-    }
-
-    if (options.ortho && toolClicks && !snappedPoint && tool.type !== 'trim') {
-      const lastClick = getLastReferenceClick()
-      if (lastClick) {
-        const [finalX, finalY] = getOrthoCoordinates(
-          lastClick.x,
-          lastClick.y,
-          realClientX,
-          realClientY
-        )
-        realClientX = finalX
-        realClientY = finalY
-      }
-    }
-
-    if (snappedPoint && tool.type !== 'trim') {
-      // [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
-      realClientX = snappedPoint.x
-      realClientY = snappedPoint.y
-    }
-
-    const realMousePosition: MousePosition = { mouseX: realClientX, mouseY: realClientY }
-
-    if (tool.type === 'trim') {
-      let isTrim = tool.name === 'trim'
-      if (event.shiftKey) {
-        isTrim = !isTrim
-      }
-
-      if (isTrim) {
-        trim(realMousePosition)
-      } else {
-        extend(realMousePosition)
-      }
-
-      return
-    }
-
-    if (toolClicks) {
-      if (tool.name === 'select') {
-        select(realMousePosition)
+  const executeMouseMoveCommand = useCallback(
+    (event: MouseEvent) => {
+      if (mouseDrag && event.buttons === 4) {
+        drag(event)
         return
       }
 
-      const refClick = getLastReferenceClick()
-      if (refClick) {
-        const toolLine = createLine(refClick.x, refClick.y, realClientX, realClientY)
-        addToolProp({ line: toolLine })
-      }
-    }
+      let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
 
-    // if (!currentlyEditedElements && !currentlyCreatedElement) return
-
-    if (currentlyEditedElements) {
-      if (selectedPoints) {
-        edit(realMousePosition)
-      } else {
-        transform(realMousePosition)
+      if (options.snap && tool.type !== 'select' && tool.type !== 'trim') {
+        snap({ mouseX: realClientX, mouseY: realClientY })
       }
 
-      return
-    }
+      if (options.ortho && toolClicks && !snappedPoint && tool.type !== 'trim') {
+        const lastClick = getLastReferenceClick()
+        if (lastClick) {
+          const [finalX, finalY] = getOrthoCoordinates(lastClick.x, lastClick.y, realClientX, realClientY)
+          realClientX = finalX
+          realClientY = finalY
+        }
+      }
 
-    if (currentlyCreatedElement && currentlyCreatedElement.isAlmostDefined) {
-      create(realMousePosition)
-      return
-    }
+      if (snappedPoint && tool.type !== 'trim') {
+        // [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
+        realClientX = snappedPoint.x
+        realClientY = snappedPoint.y
+      }
 
-    if (currentlyCopiedElements) {
-      copy(realMousePosition)
-    }
-  }, [
-    drag,
-    snap,
-    trim,
-    extend,
-    select,
-    edit,
-    transform,
-    create,
-    copy,
-    currentlyCreatedElement,
-    currentlyEditedElements,
-    currentlyCopiedElements,
-    mouseDrag,
-    options.snap,
-    options.ortho,
-    selectedPoints,
-    tool.type,
-    tool.name,
-    toolClicks,
-    snappedPoint,
-    getRealMouseCoordinates,
-    getLastReferenceClick,
-    addToolProp
-  ])
+      const realMousePosition: MousePosition = { mouseX: realClientX, mouseY: realClientY }
+
+      if (tool.type === 'trim') {
+        let isTrim = tool.name === 'trim'
+        if (event.shiftKey) {
+          isTrim = !isTrim
+        }
+
+        if (isTrim) {
+          trim(realMousePosition)
+        } else {
+          extend(realMousePosition)
+        }
+
+        return
+      }
+
+      if (toolClicks) {
+        if (tool.name === 'select') {
+          select(realMousePosition)
+          return
+        }
+
+        const refClick = getLastReferenceClick()
+        if (refClick) {
+          const toolLine = createLine(refClick.x, refClick.y, realClientX, realClientY)
+          addToolProp({ line: toolLine })
+        }
+      }
+
+      // if (!currentlyEditedElements && !currentlyCreatedElement) return
+
+      if (currentlyEditedElements) {
+        if (selectedPoints) {
+          edit(realMousePosition)
+        } else {
+          transform(realMousePosition)
+        }
+
+        return
+      }
+
+      if (currentlyCreatedElement && currentlyCreatedElement.isAlmostDefined) {
+        create(realMousePosition)
+        return
+      }
+
+      if (currentlyCopiedElements) {
+        copy(realMousePosition)
+      }
+    },
+    [
+      drag,
+      snap,
+      trim,
+      extend,
+      select,
+      edit,
+      transform,
+      create,
+      copy,
+      currentlyCreatedElement,
+      currentlyEditedElements,
+      currentlyCopiedElements,
+      mouseDrag,
+      options.snap,
+      options.ortho,
+      selectedPoints,
+      tool.type,
+      tool.name,
+      toolClicks,
+      snappedPoint,
+      getRealMouseCoordinates,
+      getLastReferenceClick,
+      addToolProp,
+    ]
+  )
 
   return executeMouseMoveCommand
 }

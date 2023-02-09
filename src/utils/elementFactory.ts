@@ -22,7 +22,7 @@ function createElement<TType extends Element> (
     assignId: false,
     pointsElementId: null
   },
-): Ensure<TType, 'startPoint' | 'endPoint'> {
+): TType {
   if (
     (!initialPoint.x && initialPoint.x !== 0) || 
     (!initialPoint.y && initialPoint.y !== 0)
@@ -36,7 +36,7 @@ function createElement<TType extends Element> (
     pointsElementId
   } = options
 
-  const initialPointCopy = copyPoint(initialPoint, false, true)
+  const initialPointCopy = copyPoint(initialPoint, true, assignId)
 
   let newElementId: string | undefined
   if (assignId) {
@@ -78,7 +78,7 @@ function createElementFromName(
     assignId: false,
     pointsElementId: null
   },
-): FullyDefinedElement {
+): Element {
   switch(type) {
     case 'line':
       return createElement(Line, initialPoint, options)
@@ -124,12 +124,13 @@ const createLine = (
   lastPointX: number | null, 
   lastPointY: number | null, 
   options: { 
+    initialPoint?: Point,
     groupId?: string, 
     assignId?: boolean, 
     pointsElementId?: string 
   } = {}
 ): FullyDefinedLine => {
-  const { groupId, assignId, pointsElementId } = options 
+  const { groupId, assignId, pointsElementId, initialPoint } = options 
   const line = createElement(
     Line,
     { x: initialPointX, y: initialPointY },
@@ -149,8 +150,8 @@ const createArc = (
   endPoint: Point
 ): FullyDefinedArc => {
   return new Arc(centerPoint, {
-    startLine: new Line(centerPoint, { pointB: startPoint }) as FullyDefinedLine,
-    endLine: new Line(centerPoint, { pointB: endPoint }) as FullyDefinedLine
+    startPoint,
+    endPoint,
   }) as FullyDefinedArc
 }
 

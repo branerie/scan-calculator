@@ -27,8 +27,7 @@ const AppContextProvider: React.FC<{ children: React.ReactNode }> = (
 ) => {
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null)
 
-  const toolsStore = useToolsStore() 
-  const setToolKeys = toolsStore().setToolKeys
+  const setToolKeys = useToolsStore(state => state.setToolKeys)
 
   useEffect(() => {
     const updateToolKeys = (keys: string[]) => {

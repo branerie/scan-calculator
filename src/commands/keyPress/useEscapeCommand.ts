@@ -1,33 +1,32 @@
 import { useCallback } from 'react'
+import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 import Polyline from '../../drawingElements/polyline'
-import useElementsStore from '../../stores/elements/index'
 import { useToolsStore } from '../../stores/tools/index'
 
 const useEscapeCommand = () => {
-  const elementsstore = useElementsStore()
-  const currentlyCreatedElement = elementsstore(state => state.currentlyCreatedElement)
-  const clearSnappedPoint = elementsstore(state => state.clearSnappedPoint)
-  const removeCurrentlyCreatedElement = elementsstore(state => state.removeCurrentlyCreatedElement)
-  const currentlyEditedElements = elementsstore(state => state.currentlyEditedElements)
-  const stopEditingElements = elementsstore(state => state.stopEditingElements)
-  const currentlyCopiedElements = elementsstore(state => state.currentlyCopiedElements)
-  const completeCopyingElements = elementsstore(state => state.completeCopyingElements)
-  const selectedElements = elementsstore(state => state.selectedElements)
-  const clearSelection = elementsstore(state => state.clearSelection)
-  const clearSelectedPoints = elementsstore(state => state.clearSelectedPoints)
-  const addElements = elementsstore(state => state.addElements)
+  const useElementsStore = useElementsStoreContext()
+  const currentlyCreatedElement = useElementsStore((state) => state.currentlyCreatedElement)
+  const clearSnappedPoint = useElementsStore((state) => state.clearSnappedPoint)
+  const removeCurrentlyCreatedElement = useElementsStore((state) => state.removeCurrentlyCreatedElement)
+  const currentlyEditedElements = useElementsStore((state) => state.currentlyEditedElements)
+  const stopEditingElements = useElementsStore((state) => state.stopEditingElements)
+  const currentlyCopiedElements = useElementsStore((state) => state.currentlyCopiedElements)
+  const completeCopyingElements = useElementsStore((state) => state.completeCopyingElements)
+  const selectedElements = useElementsStore((state) => state.selectedElements)
+  const clearSelection = useElementsStore((state) => state.clearSelection)
+  const clearSelectedPoints = useElementsStore((state) => state.clearSelectedPoints)
+  const addElements = useElementsStore((state) => state.addElements)
 
-  const toolsStore = useToolsStore()
-  const resetTool = toolsStore(state => state.resetTool)
-  const clearCurrentTool = toolsStore(state => state.clearCurrentTool)
+  const resetTool = useToolsStore((state) => state.resetTool)
+  const clearCurrentTool = useToolsStore((state) => state.clearCurrentTool)
 
   const handleEscapeCmd = useCallback(() => {
     if (currentlyCreatedElement) {
       if (
-        currentlyCreatedElement instanceof Polyline && 
-        currentlyCreatedElement.elements.length > 1
+        currentlyCreatedElement.type === 'polyline' &&
+        (currentlyCreatedElement as Polyline).elements.length > 1
       ) {
-        currentlyCreatedElement.elements.pop()
+        ;(currentlyCreatedElement as Polyline).elements.pop()
         addElements([currentlyCreatedElement])
         resetTool()
 
@@ -60,19 +59,19 @@ const useEscapeCommand = () => {
 
     clearSnappedPoint()
   }, [
-    clearSelectedPoints, 
-    clearSelection, 
-    clearSnappedPoint, 
-    currentlyCreatedElement, 
-    currentlyEditedElements, 
+    clearSelectedPoints,
+    clearSelection,
+    clearSnappedPoint,
+    currentlyCreatedElement,
+    currentlyEditedElements,
     removeCurrentlyCreatedElement,
-    selectedElements, 
+    selectedElements,
     stopEditingElements,
     resetTool,
     clearCurrentTool,
     currentlyCopiedElements,
     completeCopyingElements,
-    addElements
+    addElements,
   ])
 
   return handleEscapeCmd

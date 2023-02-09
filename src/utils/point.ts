@@ -1,8 +1,30 @@
 import Point from '../drawingElements/point'
 import { degreesToRadians, getAngleBetweenPoints } from './angle'
-import { createPoint } from './elementFactory'
 import { generateId } from './general'
 import { areAlmostEqual } from './number'
+
+const createPoint = (
+  pointX: number, 
+  pointY: number, 
+  options: { 
+    elementId?: string, 
+    assignId?: boolean
+  } = {}
+) => {
+  const { elementId, assignId } = options
+  let point
+  if (elementId) {
+    point = new Point(pointX, pointY, elementId)
+  } else {
+    point = new Point(pointX, pointY)
+  }
+
+  if (assignId) {
+      point.pointId = generateId()
+  }
+
+  return point
+}
 
 const copyPoint = (point: Point, keepIds = false, assignId = false): Point => {
   const newPoint = new Point(point.x, point.y)
@@ -54,6 +76,23 @@ const getRotatedPointAroundPivot = (point: Point, pivotPoint: Point, angle: numb
   return rotatedPoint
 }
 
+const getPointByDeltasAndDistance = (originPoint: Point, deltaX: number, deltaY: number, distance: number) => {
+  const slope = Math.abs(deltaX / deltaY)
+
+  const deltaYSign = deltaY > 0 ? 1 : -1
+  const dY = deltaYSign * Math.sqrt((distance**2)/(slope**2 + 1))
+
+  const deltaXSign = deltaX > 0 ? 1: -1
+  const dX = deltaXSign * Math.abs(slope * dY)
+
+  const newPoint = createPoint(
+    originPoint.x + dX,
+    originPoint.y + dY,
+  )
+
+  return newPoint
+}
+
 const getUniquePoints = (points: Point[]) => {
   const pointsByCoordinates: Record<string, Point> = {}
   for (const point of points) {
@@ -88,10 +127,12 @@ const pointsMatch = (
 }
 
 export {
+  createPoint,
   copyPoint,
   getPointDistance,
   getPointDistanceOnArc,
   getRotatedPointAroundPivot,
+  getPointByDeltasAndDistance,
   getUniquePoints,
   pointsMatch
 }

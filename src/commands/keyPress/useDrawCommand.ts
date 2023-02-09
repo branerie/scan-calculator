@@ -1,18 +1,17 @@
 import { useCallback } from 'react'
+import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 import Polyline from '../../drawingElements/polyline'
-import useElementsStore from '../../stores/elements/index'
 import { useToolsStore } from '../../stores/tools/index'
 import { generateId } from '../../utils/general'
 
 const useDrawCommand = () => {
-  const elementsStore = useElementsStore()
-  const currentlyCreatedElement = elementsStore(state => state.currentlyCreatedElement)
-  const clearSnappedPoint = elementsStore(state => state.clearSnappedPoint)
-  const removeCurrentlyCreatedElement = elementsStore(state => state.removeCurrentlyCreatedElement)
-  const addElements = elementsStore(state => state.addElements)
+  const useElementsStore = useElementsStoreContext()
+  const currentlyCreatedElement = useElementsStore((state) => state.currentlyCreatedElement)
+  const clearSnappedPoint = useElementsStore((state) => state.clearSnappedPoint)
+  const removeCurrentlyCreatedElement = useElementsStore((state) => state.removeCurrentlyCreatedElement)
+  const addElements = useElementsStore((state) => state.addElements)
 
-  const toolsStore = useToolsStore()
-  const clearCurrentTool = toolsStore(state => state.clearCurrentTool)
+  const clearCurrentTool = useToolsStore((state) => state.clearCurrentTool)
 
   const handleEnterCmd = useCallback(() => {
     if (!currentlyCreatedElement || !(currentlyCreatedElement instanceof Polyline)) {
@@ -22,11 +21,11 @@ const useDrawCommand = () => {
     if (currentlyCreatedElement.type === 'polyline') {
       currentlyCreatedElement.completeDefinition()
     }
-    
-    currentlyCreatedElement.elements.forEach(e => (e.id = generateId()))
+
+    currentlyCreatedElement.elements.forEach((e) => (e.id = generateId()))
 
     clearSnappedPoint()
-    
+
     addElements([currentlyCreatedElement])
     removeCurrentlyCreatedElement()
     clearCurrentTool()
@@ -35,7 +34,7 @@ const useDrawCommand = () => {
     clearSnappedPoint,
     currentlyCreatedElement,
     removeCurrentlyCreatedElement,
-    clearCurrentTool
+    clearCurrentTool,
   ])
 
   return handleEnterCmd
