@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { mountStoreDevtool } from 'simple-zustand-devtools'
 import { FullyDefinedLine } from '../../drawingElements/line'
 import Point from '../../drawingElements/point'
 import { SELECT_DELTA } from '../../utils/constants'
@@ -175,10 +174,6 @@ export const useToolsStore = create(
     },
   }))
 )
-
-if (process.env.NODE_ENV === 'development') {
-  mountStoreDevtool('ToolsStore', useToolsStore, document.getElementById('zustand-ToolsStore')!)
-}
 
 export type ToolsState = {
   currentTranslate: [number, number]
