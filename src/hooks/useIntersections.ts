@@ -35,6 +35,10 @@ export default function useIntersections() {
 
         const filteredNearbyElements = []
         for (const nearbyElementId of nearbyElementIds) {
+          if (nearbyElementId === element.id) {
+            continue
+          }
+
           const nearbyElement = getElementById(nearbyElementId)!
           if (selectedElements && !hasSelectedElement(nearbyElement)) {
             continue

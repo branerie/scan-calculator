@@ -213,7 +213,8 @@ export default class ElementIntersector {
 
     if (
       centerDistance > radiusSum || 
-      isDiffSignificant(largerRadius, (centerDistance + smallerRadius))
+      // case of smaller circle completely enclosed in larger
+      largerRadius - (centerDistance + smallerRadius) > MAX_NUM_ERROR 
     ) {
       return null
     }
@@ -259,7 +260,7 @@ export default class ElementIntersector {
       return null
     }
 
-    if (Math.abs(distanceToCenter - circle.radius) < MAX_NUM_ERROR) {
+    if (areAlmostEqual(distanceToCenter, circle.radius)) {
       const perpLiesOnLine = line.checkIfPointOnElement(perpPoint)
 
       if (

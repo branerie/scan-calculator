@@ -1,4 +1,4 @@
-import { copyPoint, createPoint, getPointDistance } from '../utils/point'
+import { copyPoint, createPoint, getPointDistance, pointsMatch } from '../utils/point'
 import { degreesToRadians, getAngleBetweenPoints, getQuadrantFromAngle } from '../utils/angle'
 import Element, { NOT_DEFINED_ERROR } from './element'
 import { SELECT_DELTA } from '../utils/constants'
@@ -158,9 +158,7 @@ export default class Line extends Element {
       }
 
       const nearestPoint = this.getNearestPoint(point, false)
-      const perpendicular = new Line(point, { pointB: nearestPoint })
-
-      return perpendicular.length < maxDiff
+      return getPointDistance(point, nearestPoint) < maxDiff
     }
 
     setLastAttribute(pointX: number, pointY: number) {
