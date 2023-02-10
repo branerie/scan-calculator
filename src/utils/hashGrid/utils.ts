@@ -19,8 +19,7 @@ const getDimensionDivision1d = (dim: number, dimStart: number, divisionSize: num
 
 const getDivKey = (xDivIndex: number, yDivIndex: number) => `${xDivIndex},${yDivIndex}`
 
-const parseDivKey= (divKey: string) => divKey.split(',').map(Number)
-
+const parseDivKey = (divKey: string) => divKey.split(',').map(Number)
 
 const sortDivs = (divs: [number, number][], crossingVertical: boolean = false, ascending: boolean = false) => {
   const axisIndex = crossingVertical ? 0 : 1

@@ -44,7 +44,6 @@ const getPointDistance = (a: Point, b: Point) => {
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
 }
 
-// TODO: not tested
 const getPointDistanceOnArc = (pointA: Point, pointB: Point, arcCenter: Point) => {
   const angleA = getAngleBetweenPoints(arcCenter, pointA)
   const angleB = getAngleBetweenPoints(arcCenter, pointB)

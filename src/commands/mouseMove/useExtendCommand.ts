@@ -335,8 +335,6 @@ const useExtendCommand = () => {
 
       clearReplacingElements(filteredElementsToExtend.map((fe) => fe.element))
 
-      // TODO: For trim/extend and possibly other commands: what if first and second click are the same point?
-
       if (commandResult.size > 0) {
         startReplacingElements(commandResult)
       }

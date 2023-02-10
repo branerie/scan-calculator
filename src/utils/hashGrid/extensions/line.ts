@@ -100,8 +100,8 @@ function getLineDivKeys(this: HashGrid, line: Line) {
   
   if (intersectionsQueue.size === 0) {
     // element is contained within a single HashGrid division
-    const elementXDiv = getDimensionDivision1d(startPoint.x, this.startPosX, this.divSizeX)
-    const elementYDiv = getDimensionDivision1d(startPoint.y, this.startPosY, this.divSizeY)
+    const elementXDiv = getDimensionDivision1d(startPoint.x, this.minXDiv, this.divSizeX)
+    const elementYDiv = getDimensionDivision1d(startPoint.y, this.minYDiv, this.divSizeY)
 
     return new Set([getDivKey(elementXDiv, elementYDiv)])
   }

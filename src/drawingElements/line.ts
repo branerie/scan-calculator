@@ -1,6 +1,6 @@
 import { copyPoint, createPoint, getPointDistance } from '../utils/point'
 import { degreesToRadians, getAngleBetweenPoints, getQuadrantFromAngle } from '../utils/angle'
-import Element, { NOT_DEFINED_ERROR, NO_ID_ERROR } from './element'
+import Element, { NOT_DEFINED_ERROR } from './element'
 import { SELECT_DELTA } from '../utils/constants'
 import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import Point from './point'
@@ -25,7 +25,6 @@ export default class Line extends Element {
     ) {
       const { pointB, id, groupId, midPointId } = options
       super(id, groupId)
-      // TODO: check if both points are the same point
 
       this._pointA = copyPoint(pointA, true, false)
        if (!pointA.elementId && this.id) {
@@ -75,13 +74,7 @@ export default class Line extends Element {
     }
 
     get isFullyDefined() {
-      return (
-        !!this._pointA && !!this._pointB
-        // (!!(this._pointA.x) || this._pointA.x === 0) &&
-        // (!!(this._pointA.y) || this._pointA.y === 0) &&
-        // (!!(this._pointB.x) || this._pointB.x === 0) &&
-        // (!!(this._pointB.y) || this._pointB.y === 0)
-      )
+      return !!this._pointA && !!this._pointB
     }
 
     get isAlmostDefined() {
@@ -258,6 +251,7 @@ export default class Line extends Element {
         throw new Error(NOT_DEFINED_ERROR)
       }
 
+      // nearestPoint - perpendicular point from "point" that lies on the line
       let nearestPoint = null
       if (this.isVertical || this.isHorizontal) {
         nearestPoint = this.isVertical
@@ -291,7 +285,6 @@ export default class Line extends Element {
         const distanceFromStart = getPointDistance(this._pointA, nearestPoint)
         const distanceFromEnd = getPointDistance(this._pointB!, nearestPoint)
 
-        // TODO: does not check if point lies on extension of line or is just really far away
         if (distanceFromStart > this.length) {
           return createPoint(this._pointB!.x, this._pointB!.y, { assignId: false })
         }

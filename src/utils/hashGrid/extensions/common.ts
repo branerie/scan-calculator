@@ -10,12 +10,12 @@ function getContainingDivsFromIntersectionPoint(this: HashGrid, point: Point, cr
   // between which the intersection point lies    
   const intersectionInitX = getDimensionDivision1d(
     point.x,
-    this.startPosX,
+    this.minXDiv,
     this.divSizeX
   )
   const intersectionInitY = getDimensionDivision1d(
     point.y,
-    this.startPosY,
+    this.minYDiv,
     this.divSizeY
   )
 

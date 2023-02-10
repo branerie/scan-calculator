@@ -65,7 +65,7 @@ const useDrawing = () => {
   }, [canvasContext, pointsTree])
 
   const drawHashGrid = () => {
-    for (let xIdx = hashGrid.startPosX; xIdx <= hashGrid.initialNumDivsX; xIdx++) {
+    for (let xIdx = hashGrid.minXDiv; xIdx <= hashGrid.initialNumDivsX; xIdx++) {
       const currentX = xIdx * hashGrid.divSizeX
       drawElement(
         new Line({ x: currentX, y: 0 }, { pointB: { x: currentX, y: 5000 } }) as FullyDefinedElement,
@@ -73,7 +73,7 @@ const useDrawing = () => {
       )
     }
 
-    for (let yIdx = hashGrid.startPosY; yIdx <= hashGrid.initialNumDivsY; yIdx++) {
+    for (let yIdx = hashGrid.minYDiv; yIdx <= hashGrid.initialNumDivsY; yIdx++) {
       const currentY = yIdx * hashGrid.divSizeY
       drawElement(
         new Line({ x: 0, y: currentY }, { pointB: { x: 5000, y: currentY } }) as FullyDefinedElement,

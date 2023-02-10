@@ -249,7 +249,7 @@ export default class Polyline extends Element {
   }
 
   getNearestPoint(point: Point) {
-      // TODO: implement method
+      // TODO: implement nearest point snap of polyline
       throw new Error('Method getNearestPoint is not implemented on element type Polyline')
   }
 

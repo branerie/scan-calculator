@@ -32,8 +32,8 @@ function getElementDivKeys(this: HashGrid, element: Element) {
 }
 
 function getDivIndicesFromCoordinates(this: HashGrid, x: number, y: number) {
-  const xDiv = getDimensionDivision1d(x, this.startPosX, this.divSizeX)
-  const yDiv = getDimensionDivision1d(y, this.startPosY, this.divSizeY)
+  const xDiv = getDimensionDivision1d(x, this.minXDiv, this.divSizeX)
+  const yDiv = getDimensionDivision1d(y, this.minYDiv, this.divSizeY)
 
   return [xDiv, yDiv]
 }

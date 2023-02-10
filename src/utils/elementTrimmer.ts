@@ -169,7 +169,6 @@ export default class ElementTrimmer {
       subsections
     )
 
-    // TODO: Test if polylines don't need to use the joinTrimEndSubsections function, same as circle
     return trimSections
   }
 

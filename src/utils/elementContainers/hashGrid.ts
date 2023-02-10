@@ -93,12 +93,12 @@ class HashGridElementContainer implements ElementContainer {
 
     const xDiv = getDimensionDivision1d(
       pointOfExtend.x,
-      this._hashGrid.startPosX,
+      this._hashGrid.minXDiv,
       this._hashGrid.divSizeX
     )
     const yDiv = getDimensionDivision1d(
       pointOfExtend.y,
-      this._hashGrid.startPosY,
+      this._hashGrid.minYDiv,
       this._hashGrid.divSizeY
     )
 
@@ -159,8 +159,7 @@ class HashGridElementContainer implements ElementContainer {
         })
 
         if (!nextDivision) {
-          throw new Error(`Invalid line intercept point. The point ${interceptPoint.x}, ${interceptPoint.y} does not
-          intercept with the hash grid`)
+          break
         }
 
         const divContents = this._hashGrid.getDivisionContents(nextDivision.xDiv, nextDivision.yDiv)
@@ -225,8 +224,8 @@ class HashGridElementContainer implements ElementContainer {
       centerPoint: arcExtension.centerPoint,
       radius: arcExtension.radius,
       startPoint: arcExtension.startPoint!,
-      min: getDimensionDivision1d(top, this._hashGrid.startPosY, this._hashGrid.divSizeY),
-      max: getDimensionDivision1d(bottom, this._hashGrid.startPosY, this._hashGrid.divSizeY),
+      min: getDimensionDivision1d(top, this._hashGrid.minYDiv, this._hashGrid.divSizeY),
+      max: getDimensionDivision1d(bottom, this._hashGrid.minYDiv, this._hashGrid.divSizeY),
       axis: 'x',
       checkIfPointOnElement: checkIfPointOnExtension
     })
@@ -235,8 +234,8 @@ class HashGridElementContainer implements ElementContainer {
       centerPoint: arcExtension.centerPoint,
       radius: arcExtension.radius,
       startPoint: arcExtension.startPoint!,
-      min: getDimensionDivision1d(left, this._hashGrid.startPosX, this._hashGrid.divSizeX),
-      max: getDimensionDivision1d(right, this._hashGrid.startPosX, this._hashGrid.divSizeX),
+      min: getDimensionDivision1d(left, this._hashGrid.minXDiv, this._hashGrid.divSizeX),
+      max: getDimensionDivision1d(right, this._hashGrid.minXDiv, this._hashGrid.divSizeX),
       axis: 'y',
       checkIfPointOnElement: checkIfPointOnExtension
     })
@@ -321,11 +320,42 @@ class HashGridElementContainer implements ElementContainer {
     const interceptsHorizontalBorder = Math.abs(point.x % this._hashGrid.divSizeX) < MAX_NUM_ERROR
     const interceptsVerticalBorder = Math.abs(point.y % this._hashGrid.divSizeY) < MAX_NUM_ERROR
 
-    if (!interceptsHorizontalBorder && !interceptsVerticalBorder) return null
+    if (!interceptsHorizontalBorder && !interceptsVerticalBorder) {
+      throw new Error(
+        `Invalid line intercept point. The point ${point.x}, ${point.y} does not intercept with the hash grid`
+      )
+    }
 
-    // TODO: need to check for min/max divisions?
-    const potentialNewXDiv = xDivsGoingDown ? lastDivision.xDiv - 1 : lastDivision.xDiv + 1
-    const potentialNewYDiv = yDivsGoingDown ? lastDivision.yDiv - 1 : lastDivision.yDiv + 1
+    let potentialNewXDiv: number
+    if (xDivsGoingDown) {
+      if (lastDivision.xDiv === this._hashGrid.minXDiv) {
+        return null
+      }
+
+      potentialNewXDiv = lastDivision.xDiv - 1
+    } else {
+      if (lastDivision.xDiv === this._hashGrid.maxXDiv) {
+        return null
+      }
+
+      potentialNewXDiv = lastDivision.xDiv + 1
+    }
+
+    let potentialNewYDiv: number
+    if (yDivsGoingDown) {
+      if (lastDivision.yDiv === this._hashGrid.minYDiv) {
+        return null
+      }
+
+      potentialNewYDiv = lastDivision.yDiv - 1
+    } else {
+      if (lastDivision.yDiv === this._hashGrid.maxYDiv) {
+        return null
+      }
+
+      potentialNewYDiv = lastDivision.yDiv + 1
+    }
+    
     if (interceptsHorizontalBorder && !interceptsVerticalBorder) {
       return { xDiv: potentialNewXDiv, yDiv: lastDivision.yDiv }
     } else if (!interceptsHorizontalBorder && interceptsVerticalBorder) {

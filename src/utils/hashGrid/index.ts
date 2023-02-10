@@ -6,12 +6,14 @@ import Point from '../../drawingElements/point'
 import { ElementWithId } from '../../drawingElements/element'
 
 export default class HashGrid {
+  private _minXDiv: number
+  private _maxXDiv: number
+  private _minYDiv: number
+  private _maxYDiv: number
   private _divsById: {[key: string]: Set<string>}
   private _idsByDiv: {[key: string]: Set<string>}
   divSizeX: number
   divSizeY: number
-  startPosX: number
-  startPosY: number
   initialNumDivsX: number
   initialNumDivsY: number
 
@@ -25,8 +27,10 @@ export default class HashGrid {
   ) {
     this.divSizeX = divSizeX
     this.divSizeY = divSizeY
-    this.startPosX = startPosX
-    this.startPosY = startPosY
+    this._minXDiv = startPosX
+    this._minYDiv = startPosY
+    this._maxXDiv = startPosX + initialNumDivsX
+    this._maxYDiv = startPosY + initialNumDivsY
 
     this.initialNumDivsX = initialNumDivsX
     this.initialNumDivsY = initialNumDivsY
@@ -39,6 +43,11 @@ export default class HashGrid {
       }
     }
   }
+  
+  get minXDiv() { return this._minXDiv }
+  get maxXDiv() { return this._maxXDiv }
+  get minYDiv() { return this._minYDiv }
+  get maxYDiv() { return this._maxYDiv }
 
   get range() {
     let minX = Number.MAX_VALUE
@@ -77,8 +86,9 @@ export default class HashGrid {
         if (!this._idsByDiv[divKey]) {
           this._idsByDiv[divKey] = new Set()
         }
-
+        
         this._idsByDiv[divKey].add(newElement.id)
+        this.__updateDivBoundaries(divKey, true)
       }
       // const [leftDiv, topDiv, rightDiv, bottomDiv] = this.__getElementDivRanges(newElement)
 
@@ -120,6 +130,11 @@ export default class HashGrid {
     const elementDivs = this._divsById[elementId]
     for (const elementDiv of elementDivs) {
       this._idsByDiv[elementDiv].delete(elementId)
+      if (this._idsByDiv[elementDiv]?.size === 0) {
+        delete this._idsByDiv[elementDiv]
+      }
+
+      this.__updateDivBoundaries(elementDiv, false)
     }
 
     delete this._divsById[elementId]
@@ -142,8 +157,8 @@ export default class HashGrid {
   }
 
   getDivisionContentsFromCoordinates(pointX: number, pointY: number) {
-    const xDiv = getDimensionDivision1d(pointX, this.startPosX, this.divSizeX)
-    const yDiv = getDimensionDivision1d(pointY, this.startPosY, this.divSizeY)
+    const xDiv = getDimensionDivision1d(pointX, this._minXDiv, this.divSizeX)
+    const yDiv = getDimensionDivision1d(pointY, this._minYDiv, this.divSizeY)
 
     return this.getDivisionContents(xDiv, yDiv)
   }
@@ -151,13 +166,13 @@ export default class HashGrid {
   getContainerContents(firstContainerPoint: Point, secondContainerPoint: Point) {
     const startPointX = Math.min(firstContainerPoint.x, secondContainerPoint.x)
     const startPointY = Math.min(firstContainerPoint.y, secondContainerPoint.y)
-    const startDivX = getDimensionDivision1d(startPointX, this.startPosX, this.divSizeX)
-    const startDivY = getDimensionDivision1d(startPointY, this.startPosY, this.divSizeY)
+    const startDivX = getDimensionDivision1d(startPointX, this._minXDiv, this.divSizeX)
+    const startDivY = getDimensionDivision1d(startPointY, this._minYDiv, this.divSizeY)
 
     const endPointX = Math.max(firstContainerPoint.x, secondContainerPoint.x)
     const endPointY = Math.max(firstContainerPoint.y, secondContainerPoint.y)
-    const endDivX = getDimensionDivision1d(endPointX, this.startPosX, this.divSizeX)
-    const endDivY = getDimensionDivision1d(endPointY, this.startPosY, this.divSizeY)
+    const endDivX = getDimensionDivision1d(endPointX, this._minXDiv, this.divSizeX)
+    const endDivY = getDimensionDivision1d(endPointY, this._minYDiv, this.divSizeY)
 
     let elementIds = new Set<string>()
     for (let xIndex = startDivX; xIndex <= endDivX; xIndex++) {
@@ -198,9 +213,88 @@ export default class HashGrid {
 
   getPointDivision(point: Point): [number, number] {
     return [
-      getDimensionDivision1d(point.x, this.startPosX, this.divSizeX),
-      getDimensionDivision1d(point.y, this.startPosY, this.divSizeY),
+      getDimensionDivision1d(point.x, this._minXDiv, this.divSizeX),
+      getDimensionDivision1d(point.y, this._minYDiv, this.divSizeY),
     ]
+  }
+
+  /**
+   * Updates min/max of x/y div boundaries after altering a div key (if needed)
+   * @param divKey - div key which is being altered
+   * @param isAddingDiv - whether we are adding this div or removing from it
+   */
+  private __updateDivBoundaries(divKey: string, isAddingDiv: boolean) {
+    const [xDiv, yDiv] = parseDivKey(divKey)
+
+    if (
+      (isAddingDiv && xDiv < this._minXDiv) ||
+      (!isAddingDiv && xDiv === this._minXDiv)
+    ) {
+      const newValue = this.__updateDivAxisBoundary(xDiv, 'x', 'min', isAddingDiv)
+      if (newValue !== null) {
+        this._minXDiv = newValue
+      }
+    } else if (
+      (isAddingDiv && xDiv > this._maxXDiv) ||
+      (!isAddingDiv && xDiv === this._maxXDiv)
+    ) {
+      const newValue = this.__updateDivAxisBoundary(xDiv, 'x', 'max', isAddingDiv)
+      if (newValue !== null) {
+        this._maxXDiv = newValue
+      }
+    }
+
+    if (
+      (isAddingDiv && yDiv < this._minYDiv) ||
+      (!isAddingDiv && yDiv === this._minYDiv)
+    ) {
+      const newValue = this.__updateDivAxisBoundary(yDiv, 'y', 'min', isAddingDiv)
+      if (newValue !== null) {
+        this._minYDiv = newValue
+      }
+    } else if (
+      (isAddingDiv && yDiv > this._maxYDiv) ||
+      (!isAddingDiv && yDiv === this._maxYDiv)
+    ) {
+      const newValue = this.__updateDivAxisBoundary(yDiv, 'y', 'max', isAddingDiv)
+      if (newValue !== null) {
+        this._maxYDiv = newValue
+      }
+    }
+  }
+
+  /**
+   * Helper method to __updateDivBoundaries
+   */
+  private __updateDivAxisBoundary(this: HashGrid, divValue: number, axis: 'x' | 'y', boundaryToUpdate: 'min' | 'max', isAddingDiv: boolean) {
+    if (isAddingDiv) {
+      return divValue
+    }
+
+    let shouldRemove = true
+    const divMinBoundary = axis === 'x' ? this._minYDiv : this._minXDiv
+    const divMaxBoundary = axis === 'x' ? this._maxYDiv : this._maxXDiv
+    for (let currDiv = divMinBoundary; currDiv <= divMaxBoundary; currDiv++) {
+      const currDivKey = axis === 'x' ? getDivKey(divValue, currDiv) : getDivKey(currDiv, divValue)
+      if (this._idsByDiv[currDivKey] && this._idsByDiv[currDivKey].size > 0) {
+        shouldRemove = false
+        break
+      }
+    }
+
+    if (!shouldRemove) {
+      return null
+    }
+
+    const dim = axis === 'x' ? 0 : 1
+    const sortFunc = boundaryToUpdate === 'min' 
+      ? (a: number[], b: number[]) => a[dim] - b[dim]
+      : (a: number[], b: number[]) => b[dim] - a[dim]
+    const sortedKeys = Object.keys(this._idsByDiv)
+                              .map(k => parseDivKey(k))
+                              .sort(sortFunc)
+
+    return sortedKeys[0][dim]                                
   }
 
   __getElementDivKeys = getElementDivKeys.bind(this)
@@ -247,10 +341,10 @@ export default class HashGrid {
   // __getElementDivRanges(element) {
   //     const boundingBox = element.getBoundingBox()
 
-  //     const leftDiv = getDimensionDivision1d(boundingBox.left, this.startPosX, this.divSizeX)
-  //     const topDiv = getDimensionDivision1d(boundingBox.top, this.startPosY, this.divSizeY)
-  //     const rightDiv = getDimensionDivision1d(boundingBox.right, this.startPosX, this.divSizeX)
-  //     const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this.startPosY, this.divSizeY)
+  //     const leftDiv = getDimensionDivision1d(boundingBox.left, this._minXDiv, this.divSizeX)
+  //     const topDiv = getDimensionDivision1d(boundingBox.top, this._minYDiv, this.divSizeY)
+  //     const rightDiv = getDimensionDivision1d(boundingBox.right, this._minXDiv, this.divSizeX)
+  //     const bottomDiv = getDimensionDivision1d(boundingBox.bottom, this._minYDiv, this.divSizeY)
 
   //     return [leftDiv, topDiv, rightDiv, bottomDiv]
   // }

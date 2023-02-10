@@ -9,6 +9,7 @@ import { CrossingType, ElementGridIntersection, getDivKey } from '../utils'
 import { getContainingDivsFromIntersectionsQueue } from './common'
 import Arc from '../../../drawingElements/arc'
 import { Ensure } from '../../types/generics'
+import { isDiffSignificant } from '../../number'
 
 function* getArcIntersectionsWithAxis(this: HashGrid, options: {
   centerPoint: Point,
@@ -50,7 +51,9 @@ function* getArcIntersectionsWithAxis(this: HashGrid, options: {
     // if positive - there are two intersections between line and circle (in case of
     // partial arc we adjust later)
     const adjust = (r - perpAxisDim + c[perpAxis]) * (r + perpAxisDim - c[perpAxis])
-    if (adjust < 0) continue
+    if (adjust < 0) {
+      continue
+    }
 
     if (adjust === 0) {
       const intersectionPoint = createPointWithAxisDimensions(c[axis], perpAxisDim)
@@ -98,14 +101,11 @@ function getIntersectionsQueue(this: HashGrid, options: {
 }) {
   const { minV, maxV, minH, maxH, arc } = options
   
-  // TODO: filter out intersections which do not lie on arc
   const intersectionsQueue = new PriorityQueue<ElementGridIntersection>((entryA, entryB) => {
     const distanceDiff: number = entryB.distanceFromStart - entryA.distanceFromStart
     
     // if false, assume distanceDiff is due to numeric rounding errors
-    const isDistanceDiffSignificant = Math.abs(distanceDiff) > MAX_NUM_ERROR
-    // TODO: check if queue is working correctly
-    return isDistanceDiffSignificant // ? distanceDiff : 0
+    return isDiffSignificant(distanceDiff, 0)
   })
   
   const generalParams = {

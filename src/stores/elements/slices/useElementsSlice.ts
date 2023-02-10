@@ -741,7 +741,6 @@ export default function useElementsSlice() {
 
         let isInCurrentReplacements = false
         if (currentReplacements) {
-          // TODO: Change replacement logic to avoid nested looping
           isInCurrentReplacements = Array.from(currentReplacements.values()).some((cr) =>
             cr.replacingElements.some((re) => re.id === element.id)
           )
@@ -751,7 +750,6 @@ export default function useElementsSlice() {
           return true
         }
 
-        // TODO: What happens if replacing a polyline? (14.02.2022)
         return !!completed?.current?.removed && completed.current.removed.has(element.id)
       },
       setSnappedPoint(snappedPoint) {
@@ -812,9 +810,7 @@ function parseReplacingElementsInContinuation(
 
       allReplacingElements[polylineId] = polylineCopy
     }
-
-    // TODO: need to make sure all subElements are replaced with copies, with new IDs
-    // or that somehow we keep information about which subElement was replaced
+    
     polylineCopy.replaceElement(replacingElement as Ensure<SubElement, 'startPoint' | 'endPoint'>, replacedId)
 
     currentElementReplacingElements.push(polylineCopy)

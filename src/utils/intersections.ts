@@ -81,14 +81,12 @@ const findClosestIntersectPoint = (
       }
 
       if (checkIntersectionLocality && !checkIntersectionLocality(extendedPoint, intersection)) {
-        // elements intersect, but not in the locality of "element"'s extendedPoint
+        // elements intersect, but not in the same container div of "element"'s extendedPoint
         // i.e. there might be other intersections closer to this end
         continue
       }
 
-      // TODO: Check whether intersection in the opposite direction causes bugs at all
-
-      let getIntersectionDistance
+      let getIntersectionDistance: (pointA: Point, pointB: Point) => number
       if (element.type === 'line') {
         getIntersectionDistance = getPointDistance
       } else if (element instanceof Arc) {

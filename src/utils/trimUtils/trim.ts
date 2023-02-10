@@ -33,6 +33,13 @@ type PointDistancesAndSubsections = {
 type LineElementDistFuncParams = { startPoint: Point }
 type ArcElementDistFuncParams = { centerPoint: Point; startAngle: number }
 
+/**
+ * Joins subsections if the first subsection's startPoint coincides with the
+ * last subsection's endPoint
+ * @param trimSections sections of element, split by trim points
+ * @param element - parent element of trim subsections
+ * @param assignId - whether to assign a new id to the potential new, joined section
+ */
 function joinTrimEndSubsections(
   trimSections: FullyDefinedElement[],
   element: FullyDefinedElement,
@@ -48,10 +55,7 @@ function joinTrimEndSubsections(
   element: FullyDefinedElement,
   assignId: boolean = true
 ) {
-  // joins subsections, in case the first subsection's startPoint coincides with the
-  // last subsection's endPoint
-
-  if (!trimSections || trimSections.length < 2) {
+  if (trimSections?.length < 2) {
     return trimSections
   }
 
@@ -163,7 +167,6 @@ const trimWithSelectBox = (
     return null
   }
 
-  // TODO: Is it worth moving to priority queue?
   const sortedSelectDistances: TrimPointElementDistances[] = selectIntersections
     .map((si) => ({ point: si, distanceFromStart: distFunc(si) }))
     .sort((a, b) => (a.distanceFromStart < b.distanceFromStart ? 1 : -1))

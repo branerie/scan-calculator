@@ -8,11 +8,10 @@ import { radiansToDegrees } from './angle'
 import { MAX_NUM_ERROR } from './constants'
 import { createLine, createPoint } from './elementFactory'
 import { getPerpendicularPointToLine } from './line'
+import { areAlmostEqual, isDiffSignificant } from './number'
 import { getPointDistance, getRotatedPointAroundPivot, getUniquePoints, pointsMatch } from './point'
 
-// TODO: For same-type intersections (line-line, circle-circle, arc-arc, arc-circle)
-// Check if they are one and the same (therefore have infinite common points)
-// and decide what to do in that case
+const IDENTICAL_ELEMENTS_ERROR = 'Identical elements have infinite intersections'
 
 import { capitalize } from './text'
 
@@ -61,6 +60,29 @@ export default class ElementIntersector {
     arcB: FullyDefinedArc, 
     shouldLieOnElements: 'yes' | 'no' | 'any' = 'yes'
   ): Point[] | null {
+    if (pointsMatch(arcA.centerPoint, arcB.centerPoint)) {
+      if (isDiffSignificant(arcA.radius, arcB.radius)) {
+        // concentric arcs, can't have any intersections 
+        return null
+      }
+
+      // arcs with same center and radius
+
+      if (
+        shouldLieOnElements !== 'no' &&
+        !arcA.checkIfPointOnElement(arcB.startPoint) &&
+        !arcA.checkIfPointOnElement(arcB.endPoint)
+      ) {
+        // arcs have the same center and radius, but no overlapping points
+        // and we are not looking for extension intersection points exclusively
+        // therefore, we can simply say the arcs have no intersections
+        // (any of the requirements not fulfilled and they have infinite intersections)
+        return null
+      }
+
+      throw new Error(IDENTICAL_ELEMENTS_ERROR)
+    }
+
     const circleIntersections = this.getCircleCircleIntersections(
       arcA as unknown as FullyDefinedCircle, 
       arcB as unknown as FullyDefinedCircle
@@ -171,18 +193,27 @@ export default class ElementIntersector {
     shouldLieOnElements: 'yes' | 'no' | 'any' = 'yes'
   ): Point[] | null {
     if (shouldLieOnElements === 'no') {
+      // circles cannot be extended, therefore cannot have intersections that lie outside
+      // any one of them
       return null
     }
 
     const centerDistance = getPointDistance(circleA.centerPoint, circleB.centerPoint)
+    if (areAlmostEqual(centerDistance, 0)) {
+      if (areAlmostEqual(circleA.radius, circleB.radius)) {
+        throw new Error(IDENTICAL_ELEMENTS_ERROR)
+      }
+
+      return null
+    }
+
     const radiusSum  = circleA.radius + circleB.radius
     const [smallerRadius, largerRadius] = 
         [circleA.radius, circleB.radius].sort((rA, rB) => rA > rB ? 1 : -1)
 
     if (
       centerDistance > radiusSum || 
-      centerDistance < MAX_NUM_ERROR ||
-      largerRadius - (centerDistance + smallerRadius) > MAX_NUM_ERROR
+      isDiffSignificant(largerRadius, (centerDistance + smallerRadius))
     ) {
       return null
     }
@@ -194,7 +225,7 @@ export default class ElementIntersector {
       circleB.centerPoint.y,
     )
 
-    if (Math.abs(centerDistance - radiusSum) < MAX_NUM_ERROR) {
+    if (areAlmostEqual(centerDistance, radiusSum)) {
       centerLine.setLength(circleA.radius, false)
       return [centerLine.pointB!]
     }
@@ -306,7 +337,7 @@ export default class ElementIntersector {
     ) {
       if (intersections.length > 0) {
         // lines are identical
-        return null
+        throw new Error(IDENTICAL_ELEMENTS_ERROR)
       }
 
       intersections.push(createPoint(lineA.pointB.x, lineA.pointB.y))
