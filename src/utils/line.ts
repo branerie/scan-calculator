@@ -2,7 +2,7 @@ import Line, { FullyDefinedLine } from '../drawingElements/line'
 import Point from '../drawingElements/point'
 import { MAX_NUM_ERROR } from './constants'
 import { generateId } from './general'
-import { copyPoint, createPoint } from './point'
+import { copyPoint, createPoint, getThreePointDeterminantResult } from './point'
 
 const createLine = (
   initialPoint: Point, 
@@ -98,6 +98,23 @@ const getPerpendicularToLine = (initialPoint: Point, line: Line) => {
   return createLine(initialPoint, perpendicularPoint)
 }
 
+const getPointSideOfLine = (point: Point, line: FullyDefinedLine) => {
+  const a = line.pointA,
+        b = line.pointB,
+        c = point
+
+  const sideResult = getThreePointDeterminantResult(a, b, c)
+  if (sideResult > 0) {
+    return 'left'
+  } 
+  
+  if (sideResult < 0) {
+    return 'right'
+  }
+
+  return 'colinear'
+}
+
 const getLineX = (slope: number, intercept: number, lineY: number) => (lineY - intercept) / (slope || MAX_NUM_ERROR)
 const getLineY = (slope: number, intercept: number, lineX: number) => slope * lineX + intercept
 
@@ -106,6 +123,7 @@ export {
   copyLine,
   getPerpendicularPointToLine,
   getPerpendicularToLine,
+  getPointSideOfLine,
   getLineX,
   getLineY
 }

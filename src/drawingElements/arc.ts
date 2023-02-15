@@ -1,9 +1,10 @@
 import { getAngleBetweenPoints } from '../utils/angle'
+import { getArcCenterByThreePoints } from '../utils/arc'
 import { SELECT_DELTA } from '../utils/constants'
 import { SelectionPointType } from '../utils/enums/index'
 import { generateId } from '../utils/general'
 import { areAlmostEqual, isDiffSignificant } from '../utils/number'
-import { copyPoint, createPoint, getPointByDeltasAndDistance, getPointDistance, getRotatedPointAroundPivot } from '../utils/point'
+import { arePointsColinear, copyPoint, createPoint, getPointByDeltasAndDistance, getPointDistance, getRotatedPointAroundPivot, getThreePointDeterminantResult } from '../utils/point'
 import { Ensure } from '../utils/types/generics'
 import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import BaseArc from './baseArc'
@@ -341,6 +342,15 @@ export default class Arc extends BaseArc {
     newPointX: number, 
     newPointY: number
   ) {
+    /*
+    TODO: Започнах промяна в едита на арката. Трябва да стане по начина, по който работи АутоКАД
+    Тоест, като се едитва едната крайна точка на арката, центъра се мести така, че новата арка да минава 
+    през оригиналната средна точка другият край на арката да. Начина на едитване е сменен, но не работи съвсем
+    както трябва. Оригиналната средна точка не остава част от арката
+
+    Също по подразбиране в АутоКАД арка се създава по три точки, принадлежащи на арката. Дали да не се добави това
+    и да се сложи като дефолтния вариант?
+    */
     if (!pointId) {
       throw new Error('Attempting to set point by an empty id parameter')
     }
@@ -350,31 +360,103 @@ export default class Arc extends BaseArc {
       this.move(newPointX - this._centerPoint.x, newPointY - this.centerPoint.y)
       isArcChanged = true
     } else if (pointId === this._startPoint?.pointId) {
-      const newPoint = getPointByDeltasAndDistance(
-        this._centerPoint,
-        newPointX - this._centerPoint.x,
-        newPointY - this._centerPoint.y,
-        this._radius
+      const newStartPoint = copyPoint(this._startPoint, true, false)
+      newStartPoint.x = newPointX
+      newStartPoint.y = newPointY
+      const threePointsDeterminant = getThreePointDeterminantResult(
+        newStartPoint,
+        this._endPoint!,
+        this._midPoint!, 
       )
+      
+      if (
+        areAlmostEqual(threePointsDeterminant, 0)
+      ) {
+        // new point, together with mid point and other end point, are colinear
+        // we cannot change the arc that way, so we just hide it (autoCAD does the same)
+       this.isShown = false
+      } else {
+        const oldPointsDeterminant = getThreePointDeterminantResult(
+          this._startPoint,
+          this._endPoint!,
+          this._midPoint!,
+        )
 
-      newPoint.pointId = pointId
-      newPoint.elementId = this._startPoint.elementId
-      this._startPoint = newPoint
+        // center point has to change side of imaginary line between start and end points
+        // (since midPoint seems to have changed it too)
+        const centerChangedSide = threePointsDeterminant > 0 !== oldPointsDeterminant > 0
+        if (centerChangedSide) {
+          this._startPoint = this._endPoint
+          this._endPoint = newStartPoint
+        } else {
+          this._startPoint = newStartPoint
+        }
 
-      isArcChanged = true
+        this.__updateCenterPoint()
+        this.isShown = true
+      }
+
+      // const newPoint = getPointByDeltasAndDistance(
+      //   this._centerPoint,
+      //   newPointX - this._centerPoint.x,
+      //   newPointY - this._centerPoint.y,
+      //   this._radius
+      // )
+
+      // newPoint.pointId = pointId
+      // newPoint.elementId = this._startPoint.elementId
+      // this._startPoint = newPoint
+
+      // isArcChanged = true
     } else if (pointId === this._endPoint?.pointId) {
-      const newPoint = getPointByDeltasAndDistance(
-        this._centerPoint,
-        newPointX - this._centerPoint.x,
-        newPointY - this._centerPoint.y,
-        this._radius
+      const newEndPoint = copyPoint(this._endPoint, true, false)
+      newEndPoint.x = newPointX
+      newEndPoint.y = newPointY
+      const threePointsDeterminant = getThreePointDeterminantResult(
+        this._startPoint!,
+        newEndPoint,
+        this._midPoint!, 
       )
+      
+      if (
+        areAlmostEqual(threePointsDeterminant, 0)
+      ) {
+        // new point, together with mid point and other end point, are colinear
+        // we cannot change the arc that way, so we just hide it (autoCAD does the same)
+       this.isShown = false
+      } else {
+        const oldPointsDeterminant = getThreePointDeterminantResult(
+          this._startPoint!,
+          this._endPoint,
+          this._midPoint!,
+        )
 
-      newPoint.pointId = pointId
-      newPoint.elementId = this._endPoint.elementId
-      this._endPoint = newPoint
+        // center point has to change side of imaginary line between start and end points
+        // (since midPoint seems to have changed it too)
+        const centerChangedSide = threePointsDeterminant > 0 !== oldPointsDeterminant > 0
+        if (centerChangedSide) {
+          this._endPoint = this._startPoint
+          this._startPoint = newEndPoint
+        } else {
+          this._endPoint = newEndPoint
+        }
 
-      isArcChanged = true
+        this.__updateCenterPoint()
+        this.isShown = true
+      }
+
+      // const newPoint = getPointByDeltasAndDistance(
+      //   this._centerPoint,
+      //   newPointX - this._centerPoint.x,
+      //   newPointY - this._centerPoint.y,
+      //   this._radius
+      // )
+
+      // newPoint.pointId = pointId
+      // newPoint.elementId = this._endPoint.elementId
+      // this._endPoint = newPoint
+
+      // isArcChanged = true
     }
 
     if (isArcChanged && this.isFullyDefined) {
@@ -557,6 +639,20 @@ export default class Arc extends BaseArc {
 
     this._midPoint.x = newMidPoint.x
     this._midPoint.y = newMidPoint.y
+  }
+
+  private __updateCenterPoint() {
+    const newCenterPoint = getArcCenterByThreePoints(
+      this._startPoint!,
+      this._midPoint!,
+      this._endPoint!,
+    )
+
+    newCenterPoint.pointId = this._centerPoint.pointId
+    newCenterPoint.elementId = this._centerPoint.elementId
+
+    this._centerPoint = newCenterPoint
+    this._radius = getPointDistance(newCenterPoint, this._startPoint!)
   }
 }
 

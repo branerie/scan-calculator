@@ -2,7 +2,7 @@ import Arc, { FullyDefinedArc } from '../drawingElements/arc'
 import Point from '../drawingElements/point'
 import { getAngleBetweenPoints } from './angle'
 import { generateId } from './general'
-import { createLine } from './line'
+import { createLine, getPerpendicularToLine } from './line'
 import { copyPoint, createPoint } from './point'
 import { Ensure } from './types/generics'
 
@@ -115,9 +115,41 @@ const getPointsAngleDistance = (
   return (360 - angleTo) + angleFrom
 }
 
+const getArcCenterByThreePoints = (pointA: Point, pointB: Point, pointC: Point) => {
+  const firstLine = createLine(pointA, pointB, { assignId: false })
+  const secondLine = createLine(pointB, pointC, { assignId: false })
+
+  const { slope: firstLineSlope } = firstLine.equation
+  const { slope: secondLineSlope } = secondLine.equation
+
+  const firstLineMidPoint = firstLine.midPoint!
+  const secondLineMidPoint = secondLine.midPoint!
+
+  /**
+   * Idea is to get the perpendiculars of two lines between the three points
+   * The intersection of these perpendiculars is where the center point is located
+   */
+
+  // mp = - 1 / m (slope of perpendicular)
+  // bp = yp - mp * xp = yp + (xp / m) (intercept of perpendicular)
+  const firstPerpSlope = -1 / firstLineSlope
+  const firstPerpIntercept = firstLineMidPoint.y - firstPerpSlope * firstLineMidPoint.x
+
+  const secondPerpSlope = -1 / secondLineSlope
+  const secondPerpIntercept = secondLineMidPoint.y - secondPerpSlope * secondLineMidPoint.x
+
+  // m1 * x + b1 = m2 * x + b2 => x = (b2 - b1) / (m1 - m2)
+  // y = m1 * x + b1 || m2 * x + b2
+  const centerX = (secondPerpIntercept - firstPerpIntercept) / (firstPerpSlope - secondPerpSlope)
+  const centerY = firstPerpSlope * centerX + firstPerpIntercept
+
+  return createPoint(centerX, centerY, { assignId: false })
+}
+
 export {
   createArc,
   copyArc,
   getArcEndPoints,
-  getPointsAngleDistance
+  getPointsAngleDistance,
+  getArcCenterByThreePoints
 }

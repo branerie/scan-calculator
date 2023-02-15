@@ -125,6 +125,12 @@ const pointsMatch = (
   )
 }
 
+const getThreePointDeterminantResult = (a: Point, b: Point, c: Point) => {
+  return (b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x)
+}
+
+const arePointsColinear = (a: Point, b: Point, c: Point) => areAlmostEqual(getThreePointDeterminantResult(a, b, c),  0)
+
 export {
   createPoint,
   copyPoint,
@@ -133,5 +139,7 @@ export {
   getRotatedPointAroundPivot,
   getPointByDeltasAndDistance,
   getUniquePoints,
-  pointsMatch
+  pointsMatch,
+  getThreePointDeterminantResult,
+  arePointsColinear
 }
