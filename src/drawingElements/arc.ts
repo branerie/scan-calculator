@@ -82,7 +82,7 @@ export default class Arc extends BaseArc {
     newStartPoint.elementId = this.id || undefined
     this._startPoint = newStartPoint
 
-    this.__updateMidPoint()
+    this.__updateDetails()
   }
   
   set endPoint(value: Point | null) {
@@ -102,7 +102,7 @@ export default class Arc extends BaseArc {
     newEndPoint.elementId = this.id || undefined
     this._endPoint = newEndPoint
 
-    this.__updateMidPoint()
+    this.__updateDetails()
   }
 
   get midPoint() {
@@ -343,128 +343,95 @@ export default class Arc extends BaseArc {
     newPointY: number
   ) {
     /*
-    TODO: Започнах промяна в едита на арката. Трябва да стане по начина, по който работи АутоКАД
-    Тоест, като се едитва едната крайна точка на арката, центъра се мести така, че новата арка да минава 
-    през оригиналната средна точка другият край на арката да. Начина на едитване е сменен, но не работи съвсем
-    както трябва. Оригиналната средна точка не остава част от арката
-
-    Също по подразбиране в АутоКАД арка се създава по три точки, принадлежащи на арката. Дали да не се добави това
+    TODO: По подразбиране в АутоКАД арка се създава по три точки, принадлежащи на арката. Дали да не се добави това
     и да се сложи като дефолтния вариант?
     */
     if (!pointId) {
       throw new Error('Attempting to set point by an empty id parameter')
     }
 
-    let isArcChanged: boolean = false
     if (pointId === this._centerPoint.pointId) {
       this.move(newPointX - this._centerPoint.x, newPointY - this.centerPoint.y)
-      isArcChanged = true
-    } else if (pointId === this._startPoint?.pointId) {
-      const newStartPoint = copyPoint(this._startPoint, true, false)
-      newStartPoint.x = newPointX
-      newStartPoint.y = newPointY
-      const threePointsDeterminant = getThreePointDeterminantResult(
-        newStartPoint,
-        this._endPoint!,
-        this._midPoint!, 
-      )
-      
-      if (
-        areAlmostEqual(threePointsDeterminant, 0)
-      ) {
-        // new point, together with mid point and other end point, are colinear
-        // we cannot change the arc that way, so we just hide it (autoCAD does the same)
-       this.isShown = false
-      } else {
-        const oldPointsDeterminant = getThreePointDeterminantResult(
-          this._startPoint,
-          this._endPoint!,
-          this._midPoint!,
-        )
-
-        // center point has to change side of imaginary line between start and end points
-        // (since midPoint seems to have changed it too)
-        const centerChangedSide = threePointsDeterminant > 0 !== oldPointsDeterminant > 0
-        if (centerChangedSide) {
-          this._startPoint = this._endPoint
-          this._endPoint = newStartPoint
-        } else {
-          this._startPoint = newStartPoint
-        }
-
-        this.__updateCenterPoint()
-        this.isShown = true
-      }
-
-      // const newPoint = getPointByDeltasAndDistance(
-      //   this._centerPoint,
-      //   newPointX - this._centerPoint.x,
-      //   newPointY - this._centerPoint.y,
-      //   this._radius
-      // )
-
-      // newPoint.pointId = pointId
-      // newPoint.elementId = this._startPoint.elementId
-      // this._startPoint = newPoint
-
-      // isArcChanged = true
+      this.__updateDetails()
+      return true
+    }
+    
+    let originalEndPoint: Point | null = null
+    let oppositeEndPoint: Point | null
+    let isStartBeingChanged: boolean = false
+    if (pointId === this._startPoint?.pointId) {
+      originalEndPoint = this._startPoint
+      oppositeEndPoint = this._endPoint
+      isStartBeingChanged = true
     } else if (pointId === this._endPoint?.pointId) {
-      const newEndPoint = copyPoint(this._endPoint, true, false)
-      newEndPoint.x = newPointX
-      newEndPoint.y = newPointY
-      const threePointsDeterminant = getThreePointDeterminantResult(
-        this._startPoint!,
-        newEndPoint,
-        this._midPoint!, 
-      )
-      
-      if (
-        areAlmostEqual(threePointsDeterminant, 0)
-      ) {
-        // new point, together with mid point and other end point, are colinear
-        // we cannot change the arc that way, so we just hide it (autoCAD does the same)
-       this.isShown = false
-      } else {
-        const oldPointsDeterminant = getThreePointDeterminantResult(
-          this._startPoint!,
-          this._endPoint,
-          this._midPoint!,
-        )
+      originalEndPoint = this._endPoint
+      oppositeEndPoint = this._startPoint
+      isStartBeingChanged = false
+    }
+    
+    if (!originalEndPoint) {
+      return false
+    }
 
-        // center point has to change side of imaginary line between start and end points
-        // (since midPoint seems to have changed it too)
-        const centerChangedSide = threePointsDeterminant > 0 !== oldPointsDeterminant > 0
-        if (centerChangedSide) {
+    const newEndPoint = copyPoint(originalEndPoint, true, false)
+    newEndPoint.x = newPointX
+    newEndPoint.y = newPointY
+
+
+    const threePointsDeterminant = isStartBeingChanged 
+      ? getThreePointDeterminantResult(
+      newEndPoint,
+      oppositeEndPoint!,
+      this._midPoint!, 
+    ) : getThreePointDeterminantResult(
+      oppositeEndPoint!,
+      newEndPoint,
+      this._midPoint!
+    )
+    
+    if (
+      areAlmostEqual(threePointsDeterminant, 0)
+    ) {
+      // new point, together with mid point and other end point, are colinear
+      // we cannot change the arc that way, so we just hide it (autoCAD does the same)
+      this.isShown = false
+    } else {
+      const oldPointsDeterminant = getThreePointDeterminantResult(
+        this._startPoint!,
+        this._endPoint!,
+        this._midPoint!,
+      )
+
+      // center point has to change side of imaginary line between start and end points
+      // (since midPoint seems to have changed it too), meaning start and end point must
+      // also switch
+      const centerChangedSide = threePointsDeterminant > 0 !== oldPointsDeterminant > 0
+      if (centerChangedSide) {
+        if (isStartBeingChanged) {
+          this._startPoint = this._endPoint
+          this._endPoint = newEndPoint
+        } else {
           this._endPoint = this._startPoint
+          this._startPoint = newEndPoint
+        }
+      } else {
+        if (isStartBeingChanged) {
           this._startPoint = newEndPoint
         } else {
           this._endPoint = newEndPoint
         }
-
-        this.__updateCenterPoint()
-        this.isShown = true
       }
 
-      // const newPoint = getPointByDeltasAndDistance(
-      //   this._centerPoint,
-      //   newPointX - this._centerPoint.x,
-      //   newPointY - this._centerPoint.y,
-      //   this._radius
-      // )
-
-      // newPoint.pointId = pointId
-      // newPoint.elementId = this._endPoint.elementId
-      // this._endPoint = newPoint
-
-      // isArcChanged = true
+      this.__updateCenterPoint()
+      this.__updateMidPoint()
+      this.isShown = true
     }
 
-    if (isArcChanged && this.isFullyDefined) {
+    if (this.isFullyDefined) {
       this.__updateDetails()
-      return true
     }
 
-    return false
+    return true
   }
 
   getBoundingBox() {
@@ -544,12 +511,12 @@ export default class Arc extends BaseArc {
   }
 
   __updateDetails() {
-    this.__updateMidPoint()
-    this.__updateBoundingBox()
-
-    if (!this._startPoint || !this._endPoint) {
+        if (!this._startPoint || !this._endPoint) {
       return
     }
+
+    this.__updateMidPoint()
+    this.__updateBoundingBox()
 
     const startAngle = this.__pointAngle(true)!
     const endAngle = this.__pointAngle(false)!
