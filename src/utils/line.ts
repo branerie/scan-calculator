@@ -36,20 +36,14 @@ const createLine = (
 }
 
 const copyLine = (line: FullyDefinedLine, keepIds = false, assignId = false): FullyDefinedLine => {
+  const newPointA = copyPoint(line.pointA, keepIds, !keepIds)
+  const newPointB = copyPoint(line.pointB, keepIds, !keepIds)
   if (keepIds) {
-    if (!line.pointA) {
-      throw new Error('Cannot copy line with keepIds = true if line does not have points set')
-    }
-
-    const newPointA = new Point(line.pointA.x, line.pointA.y, line.pointA.elementId)
-    newPointA.pointId = line.pointA.pointId
-
-    const newPointB = line.pointB ? copyPoint(line.pointB, keepIds) : null
     const newLine = new Line(newPointA, { 
       pointB: newPointB || undefined, 
       groupId: line.groupId || undefined, 
       id: line.id || undefined, 
-      midPointId: line.midPoint ? line.midPoint.pointId : undefined 
+      midPointId: line?.midPoint?.pointId || undefined 
     })
 
     if (assignId) {
@@ -60,14 +54,10 @@ const copyLine = (line: FullyDefinedLine, keepIds = false, assignId = false): Fu
   }
 
   const newLine = createLine(
-    line.pointA,
-    line.pointB,
-    { groupId: (line.groupId || undefined), assignId }
+    newPointA,
+    newPointB,
+    { assignId }
   )
-
-  if (line.pointB) {
-    newLine.setLastAttribute(line.pointB.x, line.pointB.y)
-  }
 
   return newLine
 }

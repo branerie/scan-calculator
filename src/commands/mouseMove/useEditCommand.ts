@@ -11,9 +11,11 @@ import { MousePosition } from '../../utils/types/index'
 
 const useEditCommand = () => {
   const useElementsStore = useElementsStoreContext()
+  const getElementById = useElementsStore((state) => state.getElementById)
   const currentlyEditedElements = useElementsStore((state) => state.currentlyEditedElements)
   const changeEditingElements = useElementsStore((state) => state.changeEditingElements)
   const selectedPoints = useElementsStore((state) => state.selectedPoints)
+  const snappedPoint = useElementsStore((state) => state.snappedPoint)
 
   const handleEditCmd = useCallback(
     (mousePosition: MousePosition) => {
@@ -22,11 +24,12 @@ const useEditCommand = () => {
       }
 
       const { mouseX, mouseY } = mousePosition
-      const mousePoint = createPoint(mouseX, mouseY)
+      const mousePoint = snappedPoint || createPoint(mouseX, mouseY)
 
       const newCurrentlyEditedElements = []
       for (const editedElement of Array.from(currentlyEditedElements!.values())) {
-        const editedElementCopy = ElementManipulator.copyElement(editedElement, {
+        const originalElement = getElementById(editedElement.id)!
+        const editedElementCopy = ElementManipulator.copyElement(originalElement, {
           keepIds: true,
           assignId: false,
         }) as ElementWithId
