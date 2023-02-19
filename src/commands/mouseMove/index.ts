@@ -48,26 +48,6 @@ const useMouseMoveCommands = () => {
       }
 
       let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
-
-      if (options.snap && tool.type !== 'select' && tool.type !== 'trim') {
-        snap({ mouseX: realClientX, mouseY: realClientY })
-      }
-
-      if (options.ortho && toolClicks && !snappedPoint && tool.type !== 'trim') {
-        const lastClick = getLastReferenceClick()
-        if (lastClick) {
-          const [finalX, finalY] = getOrthoCoordinates(lastClick.x, lastClick.y, realClientX, realClientY)
-          realClientX = finalX
-          realClientY = finalY
-        }
-      }
-
-      if (snappedPoint && tool.type !== 'trim') {
-        // [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
-        realClientX = snappedPoint.x
-        realClientY = snappedPoint.y
-      }
-
       const realMousePosition: MousePosition = { mouseX: realClientX, mouseY: realClientY }
 
       if (tool.type === 'trim') {
@@ -83,6 +63,25 @@ const useMouseMoveCommands = () => {
         }
 
         return
+      }
+
+      if (options.snap && tool.type !== 'select') {
+        snap({ mouseX: realClientX, mouseY: realClientY })
+      }
+
+      if (options.ortho && toolClicks && !snappedPoint) {
+        const lastClick = getLastReferenceClick()
+        if (lastClick) {
+          const [finalX, finalY] = getOrthoCoordinates(lastClick.x, lastClick.y, realClientX, realClientY)
+          realClientX = finalX
+          realClientY = finalY
+        }
+      }
+
+      if (snappedPoint) {
+        // [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
+        realClientX = snappedPoint.x
+        realClientY = snappedPoint.y
       }
 
       if (toolClicks) {

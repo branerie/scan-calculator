@@ -203,7 +203,7 @@ export type ToolsState = {
   clearCurrentTool(): void
 }
 
-export type Tool = (SelectTool | DrawTool | EditTool | CopyTool | TrimTool | TransformTool) & {
+export type Tool = (SelectTool | DrawTool | EditTool | CopyTool | TrimTool | TransformTool | ExplodeTool) & {
   isStarted?: boolean
   refClickIndex?: number
   props?: ToolProps
@@ -243,6 +243,11 @@ export type CopyTool = {
 export type TrimTool = {
   type: 'trim'
   name: 'trim' | 'extend'
+}
+
+export type ExplodeTool = {
+  type: 'explode',
+  name: 'explode' | 'join'
 }
 
 export type TransformTool = {

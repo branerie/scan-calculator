@@ -140,9 +140,18 @@ const Navbar = () => {
         Extend
         <input
           type='radio'
-          name='trim'
+          name='extend'
           checked={tool.name === 'extend'}
           onChange={() => setTool({ type: 'trim', name: 'extend' })}
+        />
+      </label>
+      <label>
+        Explode
+        <input
+          type='radio'
+          name='explode'
+          checked={tool.name === 'explode'}
+          onChange={() => setTool({ type: 'explode', name: 'explode' })}
         />
       </label>
     </div>
