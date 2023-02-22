@@ -7,6 +7,7 @@ const useCreateCommand = () => {
   const useElementsStore = useElementsStoreContext()
   const currentlyCreatedElement = useElementsStore((state) => state.currentlyCreatedElement)
   const addCurrentlyCreatedElement = useElementsStore((state) => state.addCurrentlyCreatedElement)
+  const snappedPoint = useElementsStore((state) => state.snappedPoint)
 
   const handleCreateCmd = useCallback(
     ({ mouseX, mouseY }: MousePosition) => {
@@ -19,7 +20,6 @@ const useCreateCommand = () => {
       })
 
       newCurrentlyCreatedElement.setLastAttribute(mouseX, mouseY)
-
       addCurrentlyCreatedElement(newCurrentlyCreatedElement)
       return true
     },

@@ -4,7 +4,7 @@ import { SELECT_DELTA } from '../utils/constants'
 import { SelectionPointType } from '../utils/enums/index'
 import { generateId } from '../utils/general'
 import { areAlmostEqual, isDiffSignificant } from '../utils/number'
-import { arePointsColinear, copyPoint, createPoint, getPointByDeltasAndDistance, getPointDistance, getRotatedPointAroundPivot, getThreePointDeterminantResult } from '../utils/point'
+import { copyPoint, createPoint, getPointByDeltasAndDistance, getPointDistance, getRotatedPointAroundPivot, getThreePointDeterminantResult } from '../utils/point'
 import { Ensure } from '../utils/types/generics'
 import { BoundingBox, SelectionPoint } from '../utils/types/index'
 import BaseArc from './baseArc'
@@ -467,6 +467,10 @@ export default class Arc extends BaseArc {
     this._startPoint = copyPoint(this._startPoint!, true)
     this._startPoint.x += dX
     this._startPoint.y += dY
+
+    this._midPoint = copyPoint(this._midPoint!, true)
+    this._midPoint.x += dX
+    this._midPoint.y += dY
 
     this._endPoint = copyPoint(this._endPoint!, true)
     this._endPoint.x += dX

@@ -3,6 +3,7 @@ import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 import { useToolsStore } from '../../stores/tools/index'
 import { createPoint } from '../../utils/elementFactory'
 import { getOrthoCoordinates } from '../../utils/options'
+import { copyPoint } from '../../utils/point'
 import useCopyCommand from './useCopyCommand'
 import useDrawCommand from './useDrawCommand'
 import useEditCommand from './useEditCommand'
@@ -36,7 +37,7 @@ const useMouseClickCommands = () => {
         realClientY = finalY
       }
 
-      const clickedPoint = snappedPoint ? snappedPoint : createPoint(realClientX, realClientY)
+      const clickedPoint = snappedPoint ? copyPoint(snappedPoint, false, true) : createPoint(realClientX, realClientY)
 
       switch (tool.type) {
         case 'copy':

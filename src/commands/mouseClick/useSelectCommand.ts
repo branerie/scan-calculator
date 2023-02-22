@@ -2,10 +2,13 @@ import { useCallback, MouseEvent } from 'react'
 import { useElementsStoreContext } from '../../contexts/ElementsStoreContext'
 import { ElementWithId } from '../../drawingElements/element'
 import Point from '../../drawingElements/point'
+import Polyline, { FullyDefinedPolyline } from '../../drawingElements/polyline'
 import { useToolsStore } from '../../stores/tools/index'
+import UserSelection from '../../utils/userSelection'
 
 const useSelectCommand = () => {
   const useElementsStore = useElementsStoreContext()
+  const getElementById = useElementsStore((state) => state.getElementById)
   const startEditingElements = useElementsStore((state) => state.startEditingElements)
   const getElementsContainingPoint = useElementsStore((state) => state.getElementsContainingPoint)
   const getElementsInContainer = useElementsStore((state) => state.getElementsInContainer)
@@ -74,11 +77,36 @@ const useSelectCommand = () => {
       }
 
       const initialClick = toolClicks[0]
-      const newlySelectedElements = getElementsInContainer(initialClick, clickedPoint, {
-        shouldSkipPartial: initialClick.x < clickedPoint.x,
+      const shouldSkipPartial = initialClick.x < clickedPoint.x
+      let newlySelectedElements = getElementsInContainer(initialClick, clickedPoint, {
+        shouldSkipPartial,
       })
 
       if (newlySelectedElements) {
+        const distinctSelectedElements = new Map<string, ElementWithId>()
+        const userSelection = new UserSelection([initialClick, clickedPoint])
+        for (const newlySelectedElement of newlySelectedElements) {
+          if (newlySelectedElement instanceof Polyline) {
+            // we will have received the polyline as a newlySelectedElement even if only one of
+            // its subElements should be selected. Therefore, we need to check if the polyline 
+            // should actually be selected. If we are selecting using partial selection, the
+            // polyline is automatically selected too
+            const isPolylineSelected = !shouldSkipPartial || userSelection.isElementSelected(
+              newlySelectedElement as FullyDefinedPolyline, 
+              'inside' 
+            )
+
+            if (isPolylineSelected) {
+              distinctSelectedElements.set(newlySelectedElement.id!, newlySelectedElement as ElementWithId)
+            }
+
+            continue
+          }
+  
+          distinctSelectedElements.set(newlySelectedElement.id!, newlySelectedElement as ElementWithId)
+        }
+
+        newlySelectedElements = Array.from(distinctSelectedElements.values())
         if (event.shiftKey) {
           removeSelectedElements(newlySelectedElements as ElementWithId[])
         } else {
@@ -90,6 +118,7 @@ const useSelectCommand = () => {
       return
     },
     [
+      getElementById,
       getElementsContainingPoint,
       getSelectDelta,
       toolClicks,

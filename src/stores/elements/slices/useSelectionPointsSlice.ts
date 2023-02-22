@@ -88,13 +88,13 @@ export default function useSelectionPointsSlice() {
 
       return point[0]
     },
-    findNearbyPoints(mouseX, mouseY, delta) {
+    findNearbyPoints(pointX, pointY, delta) {
       const pointsTree = get().pointsTree
-      const filteredPoints = pointsTree.find(mouseX - delta, mouseX + delta)
+      const filteredPoints = pointsTree.find(pointX - delta, pointX + delta)
 
       const nearbyPoints: SelectionPoint[] = []
       for (const point of filteredPoints) {
-        if (Math.abs(point.y - mouseY) <= delta) {
+        if (Math.abs(point.y - pointY) <= delta) {
           const nearbyPoint = {
             x: point.leafValue,
             y: point.y,

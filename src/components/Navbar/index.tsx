@@ -154,6 +154,15 @@ const Navbar = () => {
           onChange={() => setTool({ type: 'explode', name: 'explode' })}
         />
       </label>
+      <label>
+        Join
+        <input
+          type='radio'
+          name='explode'
+          checked={tool.name === 'join'}
+          onChange={() => setTool({ type: 'explode', name: 'join' })}
+        />
+      </label>
     </div>
     {/* <div>
       <button onClick={undo}>Undo</button>

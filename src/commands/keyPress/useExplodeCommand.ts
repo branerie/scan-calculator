@@ -40,7 +40,7 @@ const useExplodeCommand = () => {
         copiedElement.groupId = null
         return copiedElement
       })
-      replacements.set(selectedElement.id, {
+      replacements.set(selectedElement.id!, {
         removedSections: [selectedElement],
         replacingElements
       })

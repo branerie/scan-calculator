@@ -11,6 +11,7 @@ import { ENTER_KEY, ESCAPE_KEY, DELETE_KEY, SPACE_KEY } from '../../utils/consta
 import useKeyPress from '../../hooks/useKeyPress'
 import { useToolsStore } from '../../stores/tools/index'
 import useExplodeCommand from './useExplodeCommand'
+import useJoinCommand from './useJoinCommand'
 
 const useKeyPressCommands = () => {
   const useElementsStore = useElementsStoreContext()
@@ -28,7 +29,7 @@ const useKeyPressCommands = () => {
   const copy = useCopyCommand()
   const trim = useTrimCommand()
   const extend = useExtendCommand()
-  // const join = useJoinCommand()
+  const join = useJoinCommand()
   const explode = useExplodeCommand()
 
   const executeKeyPressCommand = useCallback(
@@ -73,7 +74,7 @@ const useKeyPressCommands = () => {
           if (tool.name === 'explode') {
             explode()
           } else {
-            // join()
+            join()
           }
 
           return

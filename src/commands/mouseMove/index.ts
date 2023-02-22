@@ -48,7 +48,7 @@ const useMouseMoveCommands = () => {
       }
 
       let [realClientX, realClientY] = getRealMouseCoordinates(event.clientX, event.clientY)
-      const realMousePosition: MousePosition = { mouseX: realClientX, mouseY: realClientY }
+      let realMousePosition: MousePosition = { mouseX: realClientX, mouseY: realClientY }
 
       if (tool.type === 'trim') {
         let isTrim = tool.name === 'trim'
@@ -82,6 +82,10 @@ const useMouseMoveCommands = () => {
         // [realClientX, realClientY] = getRealMouseCoordinates(snappedPoint.x, snappedPoint.y)
         realClientX = snappedPoint.x
         realClientY = snappedPoint.y
+        realMousePosition = {
+          mouseX: realClientX,
+          mouseY: realClientY
+        }
       }
 
       if (toolClicks) {

@@ -121,17 +121,17 @@ export default class Polyline extends Element {
   }
 
   get isClosed() {
-    if (this._elements.length < 2) return false
-
-    const lastElement = this._elements[this._elements.length - 1]
-    if (
-      this._elements[0].startPoint!.x !== lastElement.endPoint!.x ||
-      this._elements[0].startPoint!.y !== lastElement.endPoint!.y
-    ) {
+    if (this._elements.length < 2) {
       return false
     }
 
-    return true
+    const startPoint = this._startPoint || this._elements[0].startPoint
+    
+    const lastElement = this._elements[this._elements.length - 1]
+    return (
+      pointsMatch(startPoint, lastElement.endPoint) ||
+      pointsMatch(startPoint, lastElement.startPoint)
+    )
   }
 
   // get isJoined() { return this._isJoined }

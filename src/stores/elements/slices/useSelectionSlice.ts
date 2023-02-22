@@ -8,7 +8,7 @@ export type SelectionSlice = {
   selectedPoints: SelectionPoint[] | null,
   addSelectedElements(elements: ElementWithId[] | ElementWithId): void,
   removeSelectedElements(elements: ElementWithId[] | ElementWithId): void,
-  hasSelectedElement(element: ElementWithId): boolean,
+  hasSelectedElement(element: ElementWithId | string): boolean,
   setSelectedElements(newElements: ElementWithId[]): void,
   clearSelection(): void,
   setSelectedPoints(newPoints: SelectionPoint[]): void,
@@ -58,17 +58,21 @@ export default function useSelectionSlice() {
         }
       })
     },
-    hasSelectedElement(element) {
+    hasSelectedElement(elementOrElementId) {
       const selectedElements = get().selectedElements
       if (!selectedElements) {
         return false
       }
 
-      if (element.groupId) {
-        return selectedElements.has(element.groupId)
+      if (typeof elementOrElementId === 'string') {
+        return selectedElements.has(elementOrElementId)
       }
 
-      return selectedElements.has(element.id)
+      if (elementOrElementId.groupId) {
+        return selectedElements.has(elementOrElementId.groupId)
+      }
+
+      return selectedElements.has(elementOrElementId.id)
     },
     setSelectedElements(newElements) {
       set({
