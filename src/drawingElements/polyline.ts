@@ -41,22 +41,6 @@ export default class Polyline extends Element {
     if (elements) {
       // do not use this._elements directly; must go through setter logic
       this.elements = elements
-
-      if (elements.length > 1) {
-        this._isStartInPolyDirection = pointsMatch(
-          elements[0].endPoint,
-          elements[1].startPoint
-        )
-
-        this._isEndInPolyDirection = pointsMatch(
-          elements[elements.length - 2].endPoint,
-          elements[elements.length - 1].startPoint
-        )
-      } else {
-        this._isStartInPolyDirection = true
-        this._isEndInPolyDirection = true
-      }
-
       if (elements.every(e => e.isFullyDefined)) {
         this._updateEndPoints()
       }
@@ -465,6 +449,31 @@ export default class Polyline extends Element {
   }
 
   _updateEndPoints() {
+    const elements = this._elements
+    if (elements.length === 1) {
+      this._isStartInPolyDirection = true
+      this._isEndInPolyDirection = true
+      this._startPoint = copyPoint(elements[0].startPoint, true, false)
+      this._endPoint = copyPoint(elements[0].endPoint, true, false)
+      return
+    }
+
+    this._isStartInPolyDirection = pointsMatch(
+      elements[0].endPoint,
+      elements[1].startPoint
+    ) || pointsMatch(
+      elements[0].endPoint,
+      elements[1].endPoint
+    )
+
+    this._isEndInPolyDirection = pointsMatch(
+      elements[elements.length - 1].startPoint,
+      elements[elements.length - 2].endPoint,
+    ) || pointsMatch(
+      elements[elements.length - 1].startPoint,
+      elements[elements.length - 2].startPoint,
+    )
+
     const startPoint = this._isStartInPolyDirection
       ? this._elements[0].startPoint
       : this._elements[0].endPoint
@@ -481,11 +490,6 @@ export default class Polyline extends Element {
     if (this.id) {
       this._endPoint.elementId = this.id
     }
-
-    this._isStartInPolyDirection = pointsMatch(
-      this._elements[0].startPoint,
-      this._startPoint
-    )
   }
 
   _validateElementReplacement(elementIndex: number, newElement: Ensure<SubElement, 'startPoint' | 'endPoint'>) {

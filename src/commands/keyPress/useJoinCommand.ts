@@ -10,6 +10,7 @@ import ElementManipulator from '../../utils/elementManipulator'
 import { SelectionPointType } from '../../utils/enums/index'
 import { generateId } from '../../utils/general'
 import { pointsMatch } from '../../utils/point'
+import { SelectionPoint } from '../../utils/types/index'
 
 const getPointKey = (point: Point) => `${point.x.toFixed(3)},${point.y.toFixed(3)}`
 
@@ -38,7 +39,22 @@ const useJoinCommand = () => {
         continue
       }
 
-      const endPoints = selectedElement.getSelectionPoints(SelectionPointType.EndPoint)
+      let endPoints: SelectionPoint[]
+      if (selectedElement instanceof Polyline) {
+        endPoints = [
+          { 
+            ...selectedElement.startPoint as Required<Point>, 
+            pointType: SelectionPointType.EndPoint,
+          },
+          { 
+            ...selectedElement.endPoint as Required<Point>, 
+            pointType: SelectionPointType.EndPoint 
+          },
+        ]
+      } else {
+        endPoints = selectedElement.getSelectionPoints(SelectionPointType.EndPoint)
+      }
+      
       for (const endPoint of endPoints) {
         const pointKey = getPointKey(endPoint)
         if (elementsByEndPoints.has(pointKey)) {
@@ -47,7 +63,9 @@ const useJoinCommand = () => {
 
         // taking max two element points as we cannot join three elements at the same point
         const nearbyPoints = findNearbyPoints(endPoint.x, endPoint.y, MAX_NUM_ERROR)
-          .filter(p => p.pointType === SelectionPointType.EndPoint && hasSelectedElement(p.elementId))
+          .filter(p => 
+            (p.pointType === SelectionPointType.EndPoint && hasSelectedElement(p.elementId)) || p.pointId === endPoint.pointId
+          )
           .slice(0, 2)
         if (nearbyPoints.length < 2) {
           continue
@@ -56,7 +74,11 @@ const useJoinCommand = () => {
         elementsByEndPoints.set(
           pointKey, 
           nearbyPoints.map(nearbyPoint => {
-            const pointElement = getElementById(nearbyPoint.elementId)!
+            let pointElement = getElementById(nearbyPoint.elementId)!
+            if (pointElement.groupId) {
+              pointElement = getElementById(pointElement.groupId)!
+            }
+
             return {
               element: pointElement,
               isStartPoint: pointsMatch(pointElement.startPoint, endPoint)
@@ -185,6 +207,10 @@ const useJoinCommand = () => {
         removedSections: [firstSubElement]
       })
     }
+    /*
+    TODO: Има варианти да не сработи джойн. Издъни се веднъж при вече построена полилиния с джойн, с включващи арки и линии
+    Не искаше да добави нови елементи с джойн
+    */
 
     if (replacements.size > 0) {
       startReplacingElements(replacements)

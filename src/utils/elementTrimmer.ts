@@ -66,7 +66,8 @@ export default class ElementTrimmer {
   ) {
     const centerPoint = element.centerPoint
     const startAngle = element.startAngle
-    const distFunc = getDistFunc('arc', { centerPoint, startAngle })
+    const radius = element.radius
+    const distFunc = getDistFunc('arc', { centerPoint, startAngle, radius })
 
     return getTrimSections(element, trimPoints, selectPoints, distFunc, element.startPoint, element.endPoint)
   }
@@ -85,7 +86,8 @@ export default class ElementTrimmer {
 
     const centerPoint = element.centerPoint
     const startAngle = getAngleBetweenPoints(centerPoint, startPoint)
-    const distFunc = getDistFunc('circle', { centerPoint, startAngle })
+    const radius = element.radius
+    const distFunc = getDistFunc('circle', { centerPoint, startAngle, radius })
 
     const trimSections = getTrimSections(
       element,

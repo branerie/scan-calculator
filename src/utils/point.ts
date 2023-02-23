@@ -48,7 +48,11 @@ const getPointDistanceOnArc = (pointA: Point, pointB: Point, arcCenter: Point) =
   const angleA = getAngleBetweenPoints(arcCenter, pointA)
   const angleB = getAngleBetweenPoints(arcCenter, pointB)
 
-  const angleBetweenPoints = 360 - angleA + angleB
+  let angleBetweenPoints = Math.abs(angleB - angleA)
+  if (angleBetweenPoints > 180) {
+    angleBetweenPoints = 360 - angleBetweenPoints
+  }
+
   const arcRadius = getPointDistance(arcCenter, pointA)
   
   return 2 * Math.PI * arcRadius * angleBetweenPoints / 360

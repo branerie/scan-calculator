@@ -168,7 +168,7 @@ const useTrimUtils = () => {
         const elementToTrim = getElementById(polylineId)! as Ensure<FullyDefinedPolyline, 'id'>
 
         const elementIdsByTrimPoint: Record<string, Set<string>> = {}
-        const selectedSubElementIds = new Set<string>()
+        // const selectedSubElementIds = new Set<string>()
         const subElements = elementToTrim.elements as Ensure<SubElement, 'id'>[]
         let hasAnyTrimPoints = false
         let trimPointsBySubElementId: Record<string, Defined<Point, 'pointId'>[]> = {}
@@ -177,9 +177,9 @@ const useTrimUtils = () => {
          */
         for (let subElementIndex = 1; subElementIndex < subElements.length - 1; subElementIndex++) {
           const subElement = subElements[subElementIndex] as ElementWithId
-          if (userSelection.isElementSelected(subElement, 'crossing')) {
-            selectedSubElementIds.add(subElement.id)
-          }
+          // if (userSelection.isElementSelected(subElement, 'crossing')) {
+          //   selectedSubElementIds.add(subElement.id)
+          // }
           /**
            * TODO:
            * 1. Do we need to continue in loop if subElement has no selection points?

@@ -215,30 +215,49 @@ const trimSubsectionElements = (subsectionElements: PolylineTrimSubsectionElemen
     const subsectionElementInfo = subsectionElements[subIndex]
     const { element: subElement, trimStart, trimEnd, isInPolylineDirection } = subsectionElementInfo
     const trimmedSubElement = ElementManipulator.copyElement(subElement, { assignId: true }) as SubElement
-    if (!isInPolylineDirection) {
-      const tempEnd = trimmedSubElement.startPoint
-      trimmedSubElement.startPoint = trimmedSubElement.endPoint
-      trimmedSubElement.endPoint = tempEnd
-    }
+    // if (!isInPolylineDirection) {
+    //   const tempEnd = trimmedSubElement.startPoint
+    //   trimmedSubElement.startPoint = trimmedSubElement.endPoint
+    //   trimmedSubElement.endPoint = tempEnd
+    // }
 
     if (!trimStart) {
+      // whole subElement is included in the new subsection
       subElements.push(trimmedSubElement)
       lastSubElement = subElement
       continue
     }
 
     const isSameSubElement = lastSubElement === subElement
-    const lastTrimmedSub = subElements.length > 0 ? subElements[subElements.length - 1] : null
-    const lastTrimmedSubEnd = lastTrimmedSub ? lastTrimmedSub.endPoint : null
-    if (isSameSubElement && lastTrimmedSubEnd && pointsMatch(lastTrimmedSubEnd, trimStart)) {
-      // we just need to combine the last subElement with the current one
-      lastTrimmedSub!.endPoint = trimEnd!
-      lastSubElement = subElement
-      continue
+    if (isSameSubElement) {
+      let lastTrimmedSubEnd: Point | null = null
+      const lastTrimmedSub = subElements.length > 0 ? subElements[subElements.length - 1] : null
+      if (lastTrimmedSub) {
+        lastTrimmedSubEnd = isInPolylineDirection
+          ? lastTrimmedSub.endPoint
+          : lastTrimmedSub.startPoint
+      }
+
+      if (lastTrimmedSubEnd && pointsMatch(lastTrimmedSubEnd, trimStart)) {
+        // we just need to combine the last subElement with the current one
+        if (isInPolylineDirection) {
+          lastTrimmedSub!.endPoint = trimEnd!
+        } else {
+          lastTrimmedSub!.startPoint = trimEnd!
+        }
+  
+        lastSubElement = subElement
+        continue
+      }
     }
 
-    trimmedSubElement.startPoint = trimStart
-    trimmedSubElement.endPoint = trimEnd!
+    if (isInPolylineDirection) {
+      trimmedSubElement.startPoint = trimStart
+      trimmedSubElement.endPoint = trimEnd!
+    } else {
+      trimmedSubElement.startPoint = trimEnd!
+      trimmedSubElement.endPoint = trimStart
+    }
 
     subElements.push(trimmedSubElement)
     lastSubElement = subElement

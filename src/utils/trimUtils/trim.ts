@@ -31,7 +31,7 @@ type PointDistancesAndSubsections = {
 }
 
 type LineElementDistFuncParams = { startPoint: Point }
-type ArcElementDistFuncParams = { centerPoint: Point; startAngle: number }
+type ArcElementDistFuncParams = { centerPoint: Point; startAngle: number, radius: number, flipAngle?: boolean }
 
 /**
  * Joins subsections if the first subsection's startPoint coincides with the
@@ -271,14 +271,6 @@ function createSubsection(
 
       newSubsection.elements = subElements
 
-      if (!subsectionElementsInfo[0].isInPolylineDirection) {
-        newSubsection.startPoint = newSubsection.elements[0].endPoint
-      }
-
-      if (!subsectionElementsInfo[subsectionElementsInfo.length - 1].isInPolylineDirection) {
-        newSubsection.endPoint = newSubsection.elements[newSubsection.elements.length - 1].startPoint
-      }
-
       return newSubsection
     }
     default:
@@ -346,15 +338,37 @@ const assemblePointDistancesAndSubsections = (
       isInPolylineDirection ? subElement.endPoint : subElement.startPoint
     ) as Defined<Point, 'pointId'>
 
-    let subElementDistFunc =
-      subElement.baseType === 'line'
-        ? getDistFunc('line', { startPoint: lastEndPoint })
-        : getDistFunc('arc', {
-            centerPoint: (subElement as FullyDefinedArc).centerPoint,
-            startAngle: isInPolylineDirection
-              ? (subElement as FullyDefinedArc).startAngle
-              : (subElement as FullyDefinedArc).endAngle,
-          })
+    let subElementDistFunc: (point: Point) => number
+    if (subElement.baseType === 'line') {
+      subElementDistFunc = getDistFunc('line', { startPoint: lastEndPoint })
+    } else {
+      subElementDistFunc = getDistFunc('arc', {
+        centerPoint: (subElement as FullyDefinedArc).centerPoint,
+        startAngle: isInPolylineDirection
+          ? (subElement as FullyDefinedArc).startAngle
+          : (subElement as FullyDefinedArc).endAngle,
+        radius: (subElement as FullyDefinedArc).radius,
+        flipAngle: !isInPolylineDirection,
+      })
+
+      // if (isInPolylineDirection) {
+      //   subElementDistFunc = getDistFunc('arc', {
+      //     centerPoint: (subElement as FullyDefinedArc).centerPoint,
+      //     startAngle: (subElement as FullyDefinedArc).startAngle
+      //   })
+      // } else {
+      //   // distFunc for an arc calculates distance in degrees in the normal arc visualization
+      //   // direction (anti-clockwise). However, with an arc that is a subElement of a polyline
+      //   // and is in the opposite direction of the polyline, we need the distance to be calculated
+      //   // not only from the endAngle instead of the startAngle, but also in the clockwise direction
+      //   subElementDistFunc = (point: Point) => {
+      //     return 360 - getDistFunc('arc', {
+      //       centerPoint: (subElement as FullyDefinedArc).centerPoint,
+      //       startAngle: (subElement as FullyDefinedArc).endAngle
+      //     })(point)
+      //   }
+      // }
+    }
 
     const sortedSubElementTrimPoints = (trimPointsByElement[subElement.id!] || []).sort((a, b) =>
       subElementDistFunc(a) < subElementDistFunc(b) ? -1 : 1
@@ -463,20 +477,27 @@ const getDistFunc = (
     }
     case 'arc':
     case 'circle': {
-      const { centerPoint, startAngle } = elementParams as ArcElementDistFuncParams
+      // Note: flipAngle = true used when trimming an arc that is a subElement of a polyline
+      // and the arc happens to be in the opposite direction of the polyline (isInPolylineDirection = false)
+      const { centerPoint, startAngle, radius, flipAngle } = elementParams as ArcElementDistFuncParams
       return (point) => {
         const lineAngle = getAngleBetweenPoints(centerPoint, point)
 
+        let angle: number
         if (lineAngle === startAngle) {
           // line must be to endPoint
-          return 360
+          angle = 360
+        } else if (lineAngle > startAngle) {
+          angle = flipAngle 
+            ? lineAngle - startAngle
+            : 360 - lineAngle + startAngle
+        } else {
+          angle = flipAngle 
+            ? 360 - startAngle + lineAngle 
+            :  startAngle - lineAngle
         }
 
-        if (lineAngle > startAngle) {
-          return 360 - lineAngle + startAngle
-        }
-
-        return startAngle - lineAngle
+        return (angle / 360) * 2 * Math.PI * radius
       }
     }
     default:

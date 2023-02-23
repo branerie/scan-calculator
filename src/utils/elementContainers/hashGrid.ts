@@ -8,7 +8,7 @@ import { getArcIntersectionsWithAxis } from '../hashGrid/extensions/arc'
 import ElementManipulator from '../elementManipulator'
 import { getAngleBetweenPoints } from '../angle'
 import { getContainingDivsFromIntersectionPoint } from '../hashGrid/extensions/common'
-import { getPointsAngleDistance } from '../arc'
+import { createArc, getPointsAngleDistance } from '../arc'
 import ElementContainer, { DivContentsYieldResult } from './elementContainer'
 import HashGrid from '../hashGrid/index.js'
 import Point from '../../drawingElements/point'
@@ -207,16 +207,17 @@ class HashGridElementContainer implements ElementContainer {
       }
     }
 
-    const arcExtension = ElementManipulator.copyArc(arc, true)
-    const oldStartPoint = arcExtension.startPoint!
-    const oldEndPoint = arcExtension.endPoint!
+    const arcExtension = createArc(arc.centerPoint, arc.endPoint, arc.startPoint)
+    // const arcExtension = ElementManipulator.copyArc(arc, true)
+    // const oldStartPoint = arcExtension.startPoint!
+    // const oldEndPoint = arcExtension.endPoint!
 
-    if (!oldStartPoint.pointId || !oldEndPoint.pointId) {
-      throw new Error('Arc contains points with no pointId set')
-    }
+    // if (!oldStartPoint.pointId || !oldEndPoint.pointId) {
+    //   throw new Error('Arc contains points with no pointId set')
+    // }
 
-    arcExtension.setPointById(oldStartPoint.pointId, oldEndPoint.x, oldEndPoint.y)
-    arcExtension.setPointById(oldEndPoint.pointId, oldStartPoint.x, oldStartPoint.y)
+    // arcExtension.setPointById(oldStartPoint.pointId, oldEndPoint.x, oldEndPoint.y)
+    // arcExtension.setPointById(oldEndPoint.pointId, oldStartPoint.x, oldStartPoint.y)
 
     const { left, right, top, bottom } = arcExtension.getBoundingBox()
     const checkIfPointOnExtension = arcExtension.checkIfPointOnElement.bind(arcExtension)
